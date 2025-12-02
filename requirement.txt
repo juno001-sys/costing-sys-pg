@@ -1,0 +1,3 @@
+flask
+sqlite3-binary==0.0.1 ; python_version < "3.12"  # sqlite3は標準添付なので通常は不要
+gunicorn

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <title>仕入れ照会（月次）</title>
+    <style>
+  body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont,
+      "Segoe UI", sans-serif;
+    margin: 24px;
+  }
+  h1 {
+    font-size: 24px;
+    margin-bottom: 12px;
+  }
+  form {
+    margin-bottom: 16px;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  label {
+    margin-right: 12px;
+  }
+  select {
+    padding: 2px 4px;
+  }
+  button {
+    padding: 4px 12px;
+    margin-left: 8px;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 12px;
+  }
+  th,
+  td {
+    border: 1px solid #ccc;
+    padding: 4px 6px;
+    font-size: 12px;
+  }
+  th {
+    background: #f0f0f0;
+    white-space: nowrap;
+  }
+  td.right,
+  th.right {
+    text-align: right;
+  }
+
+  /* ★ 仕入れ先列：内容に合わせて幅を決める + 長すぎる時は省略表示 */
+  .col-supplier {
+    white-space: normal;
+    max-width: 10px;        /* ←幅の上限。調整OK（150〜300あたり） */
+    /*overflow: hidden; 
+    text-overflow: ellipsis;*/
+  }
+
+  .col-data {
+    width: 1%;
+    white-space: nowrap;
+  }
+
+  /* ★ 行のストライプ表示 */
+  tbody tr:nth-child(odd)  { background: #ffffff; }
+  tbody tr:nth-child(even) { background: #f7f7f7; }
+
+  /* ★ 合計行（tfoot）の強調 */
+  tfoot tr th,
+  tfoot tr td {
+    background: #e0e0e0;
+    font-weight: bold;
+  }
+</style>
+  </head>
+  <body>
+    <h1>仕入れ照会（月次）</h1>
+
+    <p>
+      <a href="{{ url_for('index') }}">← メニューへ戻る</a> /
+      <a href="{{ url_for('new_purchase') }}">仕入れ入力へ</a>
+    </p>
+
+    <!-- 条件入力フォーム：店舗のみ、期間は自動で直近13ヶ月 -->
+    <form method="get" action="{{ url_for('purchase_report') }}">
+      <label>
+        店舗：
+        <select name="store_id" onchange="this.form.submit()">
+          <option value="">全店舗</option>
+          {% for s in stores %}
+          <option value="{{ s['id'] }}"
+            {% if selected_store_id and s['id'] == selected_store_id %}selected{% endif %}>
+            {{ s['name'] }}
+          </option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <span style="font-size:0.9em; color:#555;">
+        表示期間：{{ month_keys[0] }} ～ {{ month_keys[-1] }}（直近13ヶ月）
+      </span>
+    </form>
+
+    {% if rows and month_keys %}
+    <div style="display:flex; align-items:baseline; gap:12px;">
+      <h2 style="margin:0;">集計結果</h2>
+      <span style="font-size:0.8em; color:#666;">
+        （縦軸：仕入先 / 横軸：月ごと / セル：金額合計）
+        {% if selected_store_id %}
+          － 選択店舗のみ
+        {% else %}
+          － 全店舗
+        {% endif %}
+      </span>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th class="col-supplier">仕入先</th>
+          {% for ym in month_keys %}
+          <th class="right col-data">{{ ym }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+
+      <tbody>
+  {% for r in rows %}
+  <tr>
+    <td class="col-supplier">
+      <a href="{{ url_for('purchase_report_supplier',
+                          supplier_id=r['supplier_id'],
+                          store_id=selected_store_id) }}">
+        {{ r["supplier_name"] }}
+      </a>
+    </td>
+    {% for ym in month_keys %}
+    {% set val = r["values"][ym] if ym in r["values"] else 0 %}
+    <td class="right">
+      {% if val %}
+        {{ "{:,}".format((val or 0) | int) }}
+      {% endif %}
+    </td>
+    {% endfor %}
+  </tr>
+  {% endfor %}
+</tbody>
+      <!-- ★ 列の合計（13ヶ月分） -->
+      <tfoot>
+        <tr>
+          <th class="col-supplier">合計</th>
+          {% for total in month_totals %}
+          <th class="right col-data">
+            {% if total %}
+              {{ "{:,}".format((total or 0) | int) }}
+            {% endif %}
+          </th>
+          {% endfor %}
+        </tr>
+      </tfoot>
+    </table>
+    {% else %}
+    <p>該当するデータがありません。</p>
+    {% endif %}
+  </body>
+</html>

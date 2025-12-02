@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>メニュー</title>
+    <style>
+      body {
+        font-family: system-ui;
+        margin: 40px;
+      }
+      h2 {
+        margin-top: 28px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>倉島事業開発 CMS</h1>
+
+    <!-- 入力メニュー -->
+    <h2>入力メニュー</h2>
+    <ul>
+      <li><a href="{{ url_for('new_purchase') }}">仕入れ（納品書）入力</a></li>
+      <li>
+        <a href="{{ url_for('inventory_count') }}"> 棚卸し入力 </a>
+      </li>
+    </ul>
+
+    <section>
+      <h2>照会・レポート</h2>
+      <ul>
+        <li>
+          <a href="{{ url_for('purchase_report') }}">
+            仕入れ照会（月次・仕入先別）
+          </a>
+        </li>
+    <!--<li>
+          <a href="{{ url_for('inventory_usage') }}"
+            >月次利用量（仕入＋月末一回のみ棚卸ベース）</a
+          >
+    -->        </li>
+        <li>
+          <a href="{{ url_for('usage_report') }}"
+            >月次利用量（仕入＋棚卸ベース）</a
+          >
+        </li>
+        
+        <li>
+          <a href="{{ url_for('cost_report') }}"> 売上原価 月次推移 </a>
+        </li>
+      </ul>
+    </section>
+    <!-- マスタ管理 -->
+    <h2>マスタ管理</h2>
+    <ul>
+      <li><a href="{{ url_for('suppliers_master') }}">仕入先マスタ</a></li>
+      <li><a href="{{ url_for('items_master') }}">品目マスタ</a></li>
+    </ul>
+  </body>
+</html>

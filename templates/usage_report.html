@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <title>利用量レポート（月次）</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        margin: 20px;
+      }
+      h1 {
+        font-size: 22px;
+        margin-bottom: 8px;
+      }
+      a {
+        text-decoration: none;
+        color: #0366d6;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      form {
+        margin-bottom: 16px;
+        padding: 8px 12px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 13px;
+      }
+      label {
+        margin-right: 12px;
+      }
+      select,
+      input[type="date"] {
+        padding: 2px 4px;
+        font-size: 13px;
+      }
+      button {
+        padding: 4px 12px;
+        font-size: 13px;
+        margin-left: 8px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 12px;
+        font-size: 13px;
+      }
+      th,
+      td {
+        border: 1px solid #ccc;
+        padding: 3px 4px;
+      }
+      th {
+        background: #f5f5f5;
+        white-space: nowrap;
+      }
+      td.right,
+      th.right {
+        text-align: right;
+      }
+      .col-code {
+        width: 8%;
+        white-space: nowrap;
+      }
+      .col-name {
+        width: 20%;
+      }
+      .col-metric {
+        width: 12%;
+        white-space: nowrap;
+      }
+      .metric-header {
+        font-size: 11px;
+        color: #555;
+      }
+      .item-row:nth-child(odd) {
+        background: #fafafa;
+      }
+      .item-row:nth-child(even) {
+        background: #ffffff;
+      }
+      .legend {
+        font-size: 11px;
+        color: #666;
+        margin-top: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>利用量レポート（月次）</h1>
+
+    <p>
+      <a href="{{ url_for('index') }}">← ホームへ戻る</a> |
+      <a href="{{ url_for('new_purchase') }}">仕入れ入力</a> |
+      <a href="{{ url_for('inventory_count') }}">棚卸し入力</a> |
+      <a href="{{ url_for('purchase_report') }}">仕入れ月次推移</a> |
+      <a href="{{ url_for('cost_report') }}">売上原価 月次推移</a>
+    </p>
+
+    <form method="get" action="{{ url_for('inventory_usage') }}">
+      <label>
+        店舗：
+        <select name="store_id">
+          <option value="">全店舗</option>
+          {% for s in stores %}
+          <option
+            value="{{ s['id'] }}"
+            {% if selected_store_id and s['id'] == selected_store_id %}selected{% endif %}
+          >
+            {{ s['name'] }}
+          </option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <button type="submit">表示</button>
+
+      <div class="legend">
+        セル表示：<strong>仕入数 / 利用数 / 棚卸数</strong>
+        （単位：数量）
+      </div>
+    </form>
+
+    {% if rows and month_keys %}
+    <table>
+      <thead>
+        <tr>
+          <th class="col-code">品目コード</th>
+          <th class="col-name">品目名</th>
+          <th class="col-metric">表示形式</th>
+          {% for ym in month_keys %}
+          <th class="right">{{ ym }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr class="item-row">
+          <td class="col-code">{{ row["item_code"] }}</td>
+          <td class="col-name">{{ row["item_name"] }}</td>
+          <td class="col-metric metric-header">仕入 / 利用 / 棚卸</td>
+
+          {% for ym in month_keys %}
+          {% set v = row["per_month"].get(ym) %}
+          {% if v %}
+          <td class="right">
+            {{ v.pur_qty }} / {{ v.used_qty }} / {{ v.end_qty }}
+          </td>
+          {% else %}
+          <td class="right"></td>
+          {% endif %}
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p>該当するデータがありません。</p>
+    {% endif %}
+  </body>
+</html>

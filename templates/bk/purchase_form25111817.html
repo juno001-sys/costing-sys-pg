@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <title>取引データ入力（納品書）</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 20px;
+      }
+      label {
+        display: inline-block;
+        width: 90px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 10px;
+        font-size: 13px;
+      }
+      th,
+      td {
+        border: 1px solid #ccc;
+        padding: 3px 4px;
+      }
+      th {
+        background: #f5f5f5;
+      }
+      input[type="number"] {
+        width: 80px;
+        text-align: right;
+      }
+      input[type="date"] {
+        width: 140px;
+      }
+      input[readonly] {
+        background: #f7f7f7;
+      }
+      select,
+      input[type="text"],
+      input[type="date"] {
+        padding: 2px 4px;
+        font-size: 13px;
+      }
+      .flash {
+        color: darkred;
+        margin-bottom: 10px;
+      }
+      .right {
+        text-align: right;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>取引データ入力（納品書）</h1>
+    <!--    <p style="color: red">DEBUG stores length = {{ stores|length }}</p>-->
+    <!-- 共通ナビ -->
+    <p>
+      <a href="{{ url_for('index') }}">ホーム</a> |
+      <a href="{{ url_for('suppliers_master') }}">仕入先マスタ</a> |
+      <a href="{{ url_for('items_master') }}">品目マスタ</a>
+    </p>
+    <hr />
+
+    {% with messages = get_flashed_messages() %} {% if messages %}
+    <div class="flash">
+      {% for msg in messages %}
+      <div>{{ msg }}</div>
+      {% endfor %}
+    </div>
+    {% endif %} {% endwith %}
+
+    <form method="post" action="{{ url_for('new_purchase') }}">
+      <fieldset>
+        <legend>ヘッダ</legend>
+
+        <p>
+          <label for="store_id">店舗</label>
+          <select name="store_id" id="store_id" required>
+            <option value="">--選択--</option>
+            {% for s in stores %}
+            <option value="{{ s['id'] }}">{{ s['name'] }}</option>
+            {% endfor %}
+          </select>
+        </p>
+      </fieldset>
+
+      <fieldset>
+        <legend>明細（納品書入力）</legend>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 4%">Seq</th>
+              <th style="width: 12%">納品日</th>
+              <th style="width: 12%">仕入先</th>
+              <th style="width: 10%">品目名</th>
+
+              <th style="width: 8%">数量</th>
+              <th style="width: 8%">単価</th>
+              <th style="width: 12%">金額</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for i in range(1, 6) %}
+            <tr class="detail-row">
+              <td class="right">{{ i }}</td>
+
+              <td>
+                <input
+                  type="date"
+                  name="detail_date_{{ i }}"
+                  class="col-date"
+                />
+              </td>
+
+              <td>
+                <select name="supplier_id_{{ i }}" class="col-supplier">
+                  <option value="">--選択--</option>
+                  {% for sup in suppliers %}
+                  <option value="{{ sup['id'] }}">{{ sup['name'] }}</option>
+                  {% endfor %}
+                </select>
+              </td>
+
+              <td>
+                <select name="item_id_{{ i }}" class="col-item">
+                  <option value="">--選択--</option>
+                  <!-- 中身は JS で仕入先に応じて埋める -->
+                </select>
+              </td>
+
+              <td>
+                <input type="text" class="col-item-name" readonly />
+              </td>
+
+              <!--<td>
+                <input type="text" class="col-unit" readonly />
+              </td>-->
+
+              <td>
+                <input
+                  type="number"
+                  step="0.01"
+                  name="quantity_{{ i }}"
+                  class="col-qty right"
+                />
+              </td>
+
+              <td>
+                <input
+                  type="number"
+                  step="0.01"
+                  name="unit_price_{{ i }}"
+                  class="col-price right"
+                />
+              </td>
+
+              <td class="right">
+                <span class="col-amount"></span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </fieldset>
+
+      <p style="margin-top: 10px">
+        <button type="submit">登録する</button>
+      </p>
+    </form>
+    <script>
+      document.querySelectorAll(".detail-row").forEach(function (row) {
+        const supplierSelect = row.querySelector(".col-supplier");
+        const itemSelect = row.querySelector(".col-item");
+        const itemNameInput = row.querySelector(".col-item-name");
+        const unitInput = row.querySelector(".col-unit");
+        const qty = row.querySelector(".col-qty");
+        const price = row.querySelector(".col-price");
+        const amt = row.querySelector(".col-amount");
+
+        // 仕入先を選んだとき、その仕入先に紐づく品目だけでプルダウンを作る
+        supplierSelect.addEventListener("change", function () {
+          const supplierId = this.value;
+
+          // 品目プルダウン初期化
+          itemSelect.innerHTML = "";
+          const defaultOpt = document.createElement("option");
+          defaultOpt.value = "";
+          defaultOpt.textContent = "--選択--";
+          itemSelect.appendChild(defaultOpt);
+
+          // 品名・規格もクリア
+          itemNameInput.value = "";
+          // unitInput.value = "";
+
+          if (!supplierId) {
+            return; // 未選択ならここで終わり
+          }
+
+          // API から品目一覧を取得
+          fetch(`/api/items/by_supplier/${supplierId}`)
+            .then((res) => res.json())
+            .then((items) => {
+              items.forEach((it) => {
+                const opt = document.createElement("option");
+                opt.value = it.id; // サーバに送る id
+                opt.textContent = `${it.name}`; // プルダウン表示は name
+                opt.dataset.code = it.code; // code
+                //opt.dataset.name = it.name; // 品名
+                //opt.dataset.unit = it.unit; // 規格
+                itemSelect.appendChild(opt);
+              });
+            })
+            .catch((err) => {
+              console.error("品目取得エラー:", err);
+            });
+        });
+
+        // 品目選択時、品名と規格を自動セット
+        itemSelect.addEventListener("change", function () {
+          const opt = this.options[this.selectedIndex];
+          // itemNameInput.value = opt.dataset.name || "";
+          // unitInput.value = opt.dataset.unit || "";
+        });
+
+        // 金額計算
+        function calc() {
+          const q = parseFloat(qty.value || "0");
+          const p = parseFloat(price.value || "0");
+          const a = q * p;
+          amt.textContent = a ? a.toLocaleString() : "";
+        }
+
+        qty.addEventListener("input", calc);
+        price.addEventListener("input", calc);
+      });
+    </script>
+  </body>
+</html>

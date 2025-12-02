@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <title>取引編集</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 20px;
+      }
+      h1 {
+        font-size: 20px;
+        margin-bottom: 8px;
+      }
+      label {
+        display: inline-block;
+        width: 90px;
+      }
+      select,
+      input[type="text"],
+      input[type="date"] {
+        padding: 2px 4px;
+        font-size: 13px;
+      }
+      input[type="text"].right {
+        text-align: right;
+      }
+      fieldset {
+        margin-bottom: 16px;
+        padding: 8px 12px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 10px;
+        font-size: 13px;
+      }
+      th,
+      td {
+        border: 1px solid #ccc;
+        padding: 3px 4px;
+      }
+      th {
+        background: #f5f5f5;
+      }
+      .right {
+        text-align: right;
+      }
+      .flash {
+        color: darkred;
+        margin-bottom: 10px;
+      }
+      .btn-danger {
+        background: #c62828;
+        color: #fff;
+        border: none;
+        padding: 4px 10px;
+        margin-left: 8px;
+        cursor: pointer;
+      }
+      .btn-primary {
+        padding: 4px 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>取引編集（ID: {{ purchase["id"] }}）</h1>
+
+    <p>
+      <a href="{{ url_for('index') }}">ホーム</a> |
+      <a href="{{ url_for('new_purchase', store_id=purchase['store_id']) }}"
+        >取引入力画面へ戻る</a
+      >
+    </p>
+
+    {% with messages = get_flashed_messages() %} {% if messages %}
+    <div class="flash">
+      {% for msg in messages %}
+      <div>{{ msg }}</div>
+      {% endfor %}
+    </div>
+    {% endif %} {% endwith %}
+
+    <form
+      method="post"
+      action="{{ url_for('edit_purchase', purchase_id=purchase['id']) }}"
+    >
+      <fieldset>
+        <legend>ヘッダ</legend>
+
+        <p>
+          <label for="store_id">店舗</label>
+          <select name="store_id" id="store_id" required>
+            {% for s in stores %}
+            <option
+              value="{{ s['id'] }}"
+              {% if s['id'] == purchase['store_id'] %}selected{% endif %}
+            >
+              {{ s['name'] }}
+            </option>
+            {% endfor %}
+          </select>
+        </p>
+
+        <p>
+          <label for="delivery_date">納品日</label>
+          <input
+            type="date"
+            id="delivery_date"
+            name="delivery_date"
+            value="{{ purchase['delivery_date'] }}"
+            required
+          />
+        </p>
+      </fieldset>
+
+      <fieldset>
+        <legend>明細</legend>
+
+        <table>
+          <thead>
+            <tr>
+              <th>仕入先</th>
+              <th>品目</th>
+              <th style="width: 10%">数量</th>
+              <th style="width: 12%">単価</th>
+              <th style="width: 12%">金額</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="detail-row">
+              <td>
+                <select name="supplier_id" class="col-supplier">
+                  <option value="">--選択--</option>
+                  {% for sup in suppliers %}
+                  <option
+                    value="{{ sup['id'] }}"
+                    {% if sup['id'] == purchase['supplier_id'] %}selected{% endif %}
+                  >
+                    {{ sup['name'] }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </td>
+
+              <td>
+                <select name="item_id" class="col-item">
+                  <option value="">--選択--</option>
+                  <!-- JS で該当仕入先の品目一覧を埋める -->
+                </select>
+              </td>
+
+              <td>
+                <input
+                  type="text"
+                  name="quantity"
+                  class="col-qty right"
+                  value="{{ purchase['quantity'] }}"
+                />
+              </td>
+
+              <td>
+                <input
+                  type="text"
+                  name="unit_price"
+                  class="col-price right"
+                  value="{{ purchase['unit_price'] }}"
+                />
+              </td>
+
+              <td class="right">
+                <span class="col-amount">
+                  {{ "{:,}".format(purchase['amount'] or 0) }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </fieldset>
+
+<style>
+  .btn {
+    padding: 6px 14px;
+    background: #fff;
+    border: 1px solid #999;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .btn:hover {
+    background: #f0f0f0;
+  }
+</style>
+
+<div style="margin-top: 20px; display: flex; gap: 12px;">
+
+  <!-- 保存 -->
+  <button type="submit" class="btn">保存する</button>
+
+  <!-- 削除（ソフトデリート + 確認付き） -->
+  <button type="submit"
+          name="delete"
+          value="1"
+          class="btn"
+          style="background:#d9534f; color:white;"
+          onclick="return confirm('本当に削除しますか？この操作は取り消せません。');">
+    削除する
+  </button>
+
+  <!-- キャンセル -->
+  <a href="{{ url_for('new_purchase', store_id=purchase.store_id) }}"
+     class="btn"
+     style="text-decoration:none; display:inline-block;">
+    キャンセル
+  </a>
+
+</div>
+    </form>
+
+    <script>
+      // ====== ここから JS（new_purchase の簡易版） ======
+
+      // 全角数字 → 半角数字
+      function toHalfWidth(str) {
+        return (str || "").replace(/[０-９]/g, function (ch) {
+          return String.fromCharCode(ch.charCodeAt(0) - 0xfee0);
+        });
+      }
+
+      (function () {
+        const row = document.querySelector(".detail-row");
+        if (!row) return;
+
+        const supplierSelect = row.querySelector(".col-supplier");
+        const itemSelect = row.querySelector(".col-item");
+        const qty = row.querySelector(".col-qty");
+        const price = row.querySelector(".col-price");
+        const amt = row.querySelector(".col-amount");
+
+        const currentItemId = "{{ purchase['item_id'] }}";
+
+        // 仕入先変更時：品目一覧をロード
+        function loadItems(supplierId, callback) {
+          itemSelect.innerHTML = "";
+          const opt0 = document.createElement("option");
+          opt0.value = "";
+          opt0.textContent = "--選択--";
+          itemSelect.appendChild(opt0);
+
+          if (!supplierId) {
+            if (callback) callback();
+            return;
+          }
+
+          fetch(`/api/items/by_supplier/${supplierId}`)
+            .then((res) => res.json())
+            .then((items) => {
+              items.forEach((it) => {
+                const opt = document.createElement("option");
+                opt.value = it.id;
+                opt.textContent = it.name;
+                opt.dataset.unit = it.unit;
+                itemSelect.appendChild(opt);
+              });
+
+              if (callback) callback();
+            })
+            .catch((err) => {
+              console.error("品目取得エラー:", err);
+              if (callback) callback();
+            });
+        }
+
+        supplierSelect.addEventListener("change", function () {
+          const supplierId = this.value;
+          loadItems(supplierId);
+        });
+
+        // 初期表示時：現在の supplier / item を反映
+        window.addEventListener("DOMContentLoaded", function () {
+          const supplierId = supplierSelect.value;
+          if (!supplierId) return;
+
+          loadItems(supplierId, function () {
+            if (currentItemId) {
+              itemSelect.value = currentItemId;
+            }
+            calc();
+          });
+
+          calc();
+        });
+
+        // 数量・単価入力で金額計算
+        function calc() {
+          const q = parseInt(
+            toHalfWidth(qty.value || "0").replace(/,/g, ""),
+            10
+          );
+          const p = parseInt(
+            toHalfWidth(price.value || "0").replace(/,/g, ""),
+            10
+          );
+
+          const qv = isNaN(q) ? 0 : q;
+          const pv = isNaN(p) ? 0 : p;
+          const a = qv * pv;
+
+          amt.textContent = a ? a.toLocaleString() : "";
+        }
+
+        qty.addEventListener("input", calc);
+        price.addEventListener("input", function () {
+          let raw = price.value || "";
+          raw = toHalfWidth(raw);
+          raw = raw.replace(/,/g, "");
+          raw = raw.replace(/[^\d]/g, "");
+          if (raw === "") {
+            price.value = "";
+            calc();
+            return;
+          }
+          const num = parseInt(raw, 10);
+          if (isNaN(num)) {
+            price.value = "";
+            calc();
+            return;
+          }
+          price.value = num.toLocaleString();
+          calc();
+        });
+      })();
+    </script>
+  </body>
+</html>

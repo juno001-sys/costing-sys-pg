@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <title>品目編集</title>
+    <style>
+      body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 20px; }
+      h1 { font-size: 20px; margin-bottom: 12px; }
+      label { display: block; margin: 6px 0; }
+      input[type="text"],
+      select { padding: 4px 6px; font-size: 13px; width: 260px; }
+      .small { width: 120px; }
+      button { padding: 6px 14px; font-size: 13px; margin-top: 12px; }
+      .flash { color: darkred; margin-bottom: 10px; }
+    </style>
+  </head>
+  <body>
+    <h1>品目編集（コード：{{ item.code }}）</h1>
+
+    <p>
+      <a href="{{ url_for('items_master') }}">← 品目マスタ一覧に戻る</a>
+    </p>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="flash">
+          {% for msg in messages %}
+            <div>{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form method="post">
+      <label>
+        品目名：
+        <input type="text" name="name" value="{{ item.name }}" />
+      </label>
+
+      <label>
+        仕入先：
+        <select name="supplier_id">
+          <option value="">-- 選択 --</option>
+          {% for s in suppliers %}
+            <option value="{{ s.id }}"
+              {% if item.supplier_id == s.id %}selected{% endif %}>
+              {{ s.code }} {{ s.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>
+        ケース入数（unit）：
+        <input type="text" name="unit" class="small"
+               value="{{ item.unit if item.unit is not none }}" />
+      </label>
+
+      <label>
+        仕入単位（purchase_unit）：
+        <input type="text" name="purchase_unit" class="small"
+               value="{{ item.purchase_unit if item.purchase_unit is not none }}" />
+      </label>
+
+      <label>
+        棚卸単位（inventory_unit）：
+        <input type="text" name="inventory_unit" class="small"
+               value="{{ item.inventory_unit if item.inventory_unit is not none }}" />
+      </label>
+
+      <label>
+        最小仕入単位（min_purchase_unit）：
+        <input type="text" name="min_purchase_unit" class="small"
+               value="{{ item.min_purchase_unit if item.min_purchase_unit is not none }}" />
+      </label>
+
+      <label>
+        温度帯（temp_zone）：
+        <select name="temp_zone">
+          <option value="">-- 未設定 --</option>
+          {% set tz = item.temp_zone %}
+          <option value="冷凍"  {% if tz == '冷凍' %}selected{% endif %}>冷凍</option>
+          <option value="冷蔵"  {% if tz == '冷蔵' %}selected{% endif %}>冷蔵</option>
+          <option value="常温"  {% if tz == '常温' %}selected{% endif %}>常温</option>
+          <option value="その他" {% if tz == 'その他' %}selected{% endif %}>その他</option>
+        </select>
+      </label>
+
+      <label>
+        内製フラグ：
+        <input type="checkbox" name="is_internal" value="1"
+          {% if item.is_internal == 1 %}checked{% endif %} />
+        内製品（自社加工品）の場合チェック
+      </label>
+
+            <label>
+        保管コスト（storage_cost）：
+        <input type="text" name="storage_cost" class="small"
+               value="{{ item.storage_cost if item.storage_cost is not none }}" />
+      </label>
+
+      <div style="margin-top: 12px;">
+  <button type="submit">更新する</button>
+
+  <!-- 削除ボタン（確認ダイアログ付き） -->
+  <button type="submit"
+          name="delete"
+          value="1"
+          style="margin-left: 12px; background-color: #c00; color: #fff;"
+          onclick="return confirm('この品目を本当に削除しますか？\n過去のデータからは品目名が消える場合があります。');">
+    削除する
+  </button>
+</div>
+    </form>
+  </body>
+</html>
