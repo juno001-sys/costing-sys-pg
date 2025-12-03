@@ -1096,7 +1096,6 @@ def purchase_report():
 
 # ----------------------------------------
 # 仕入れ照会（月次・仕入先別 → 品目別）
-# /purchases/report/supplier/<supplier_id>
 # ----------------------------------------
 @app.route("/purchases/report/supplier/<int:supplier_id>", methods=["GET"])
 def purchase_report_supplier(supplier_id):
@@ -1115,19 +1114,19 @@ def purchase_report_supplier(supplier_id):
     # 店舗（クエリパラメータ）
     store_id = request.args.get("store_id") or ""
 
-    # 仕入先名（表示用）
+    # 仕入先名
     if supplier_id == 0:
         supplier_name = "（仕入先を選択してください）"
     else:
         supplier_row = db.execute(
-            "SELECT id, name FROM suppliers WHERE id = ?",
-            (supplier_id,),
+            "SELECT id, name FROM suppliers WHERE id = %s",
+            [supplier_id],
         ).fetchone()
         if supplier_row is None:
             return redirect(url_for("purchase_report"))
         supplier_name = supplier_row["name"]
 
-    # 今日を基準に直近13ヶ月
+    # 直近13ヶ月
     today = datetime.now().date()
     year = today.year
     month = today.month
@@ -1141,11 +1140,12 @@ def purchase_report_supplier(supplier_id):
             year -= 1
     month_keys = list(reversed(month_keys))
 
-    # SQL用の日付範囲
+    # 日付範囲
     start_ym = month_keys[0]
     end_ym = month_keys[-1]
 
     start_date = f"{start_ym}-01"
+
     end_year = int(end_ym[:4])
     end_month = int(end_ym[5:7])
     if end_month == 12:
@@ -1161,30 +1161,32 @@ def purchase_report_supplier(supplier_id):
     if supplier_id != 0:
         where_clauses = [
             "p.is_deleted = 0",
-            "p.delivery_date >= ?",
-            "p.delivery_date < ?",
-            "i.supplier_id = ?",
+            "p.delivery_date >= %s",
+            "p.delivery_date < %s",
+            "i.supplier_id = %s",
         ]
         params = [start_date, end_date, supplier_id]
 
         if store_id:
-            where_clauses.append("p.store_id = ?")
+            where_clauses.append("p.store_id = %s")
             params.append(store_id)
 
         where_sql = " AND ".join(where_clauses)
 
+        # Postgres用のSQL（strftime → TO_CHAR）
         sql = f"""
             SELECT
                 i.id   AS item_id,
                 i.code AS item_code,
                 i.name AS item_name,
-                strftime('%Y-%m', p.delivery_date) AS ym,
+                TO_CHAR(p.delivery_date, 'YYYY-MM') AS ym,
                 SUM(p.quantity) AS total_qty,
                 SUM(p.amount)   AS total_amount
             FROM purchases p
             LEFT JOIN items i ON p.item_id = i.id
             WHERE {where_sql}
             GROUP BY i.id, i.code, i.name, ym
+            ORDER BY i.code, ym
         """
         rows_raw = db.execute(sql, params).fetchall()
 
@@ -1215,7 +1217,7 @@ def purchase_report_supplier(supplier_id):
         item_map[iid]["total_amount"] += amt
         item_map[iid]["total_qty"] += qty
 
-    # 単価
+    # 単価計算
     for item in item_map.values():
         for ym in month_keys:
             a = item["amount"][ym]
@@ -1224,7 +1226,7 @@ def purchase_report_supplier(supplier_id):
 
     item_rows = list(item_map.values())
 
-    # 各月の金額・数量合計
+    # 月ごとの金額合計・数量合計
     month_totals_amount = []
     month_totals_qty = []
     for ym in month_keys:
