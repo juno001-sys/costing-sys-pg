@@ -1902,7 +1902,6 @@ def inventory_usage():
         item_rows=item_rows,
     )
 
-
 # ----------------------------------------
 # 売上原価 月次推移（棚卸しは最新棚卸しを FIFO 単価で評価）
 # /cost/report
@@ -1916,11 +1915,11 @@ def cost_report():
         "SELECT id, name FROM stores ORDER BY code"
     ).fetchall()
 
-    # 店舗（クエリ / 空文字なら全店舗）
+    # 店舗
     store_id = request.args.get("store_id") or ""
     selected_store_id = int(store_id) if store_id else None
 
-    # 対象月（直近13ヶ月）
+    # 対象13ヶ月
     today = datetime.now().date()
     y, m = today.year, today.month
 
@@ -1936,29 +1935,29 @@ def cost_report():
     # 日付範囲
     start_date = month_keys[0] + "-01"
     end_last = month_keys[-1]
-    end_year, end_month = map(int, end_last.split("-"))
-    if end_month == 12:
-        end_year += 1
-        end_month = 1
+    ey, em = map(int, end_last.split("-"))
+    if em == 12:
+        ey += 1
+        em = 1
     else:
-        end_month += 1
-    end_date = f"{end_year:04d}-{end_month:02d}-01"
+        em += 1
+    end_date = f"{ey:04d}-{em:02d}-01"
 
+    #
     # 1. 当月仕入高
+    #
     sql_pur = """
         SELECT
-          strftime('%Y-%m', p.delivery_date) AS ym,
+          TO_CHAR(p.delivery_date, 'YYYY-MM') AS ym,
           SUM(p.amount) AS total_amount
         FROM purchases p
-        WHERE p.delivery_date >= ?
-          AND p.delivery_date < ?
+        WHERE p.delivery_date >= %s
+          AND p.delivery_date < %s
           AND p.is_deleted = 0
-          AND (? = '' OR p.store_id = ?)
+          AND (%s = '' OR p.store_id = %s)
         GROUP BY ym
     """
-    pur_rows = db.execute(
-        sql_pur, [start_date, end_date, store_id, store_id]
-    ).fetchall()
+    pur_rows = db.execute(sql_pur, [start_date, end_date, store_id, store_id]).fetchall()
 
     purchases_by_month = {ym: 0 for ym in month_keys}
     for r in pur_rows:
@@ -1967,23 +1966,25 @@ def cost_report():
         if ym in purchases_by_month:
             purchases_by_month[ym] = amt
 
-    # 2. 期末棚卸高（FIFO評価）
+    #
+    # 2. 期末棚卸（FIFO 評価）
+    #
     sql_inv_fifo = """
         WITH latest AS (
             SELECT
               sc.store_id,
               sc.item_id,
-              date(sc.count_date) AS count_date,
-              strftime('%Y-%m', sc.count_date) AS ym,
+              sc.count_date,
+              TO_CHAR(sc.count_date, 'YYYY-MM') AS ym,
               sc.counted_qty,
               ROW_NUMBER() OVER (
-                PARTITION BY sc.store_id, sc.item_id, strftime('%Y-%m', sc.count_date)
+                PARTITION BY sc.store_id, sc.item_id, TO_CHAR(sc.count_date, 'YYYY-MM')
                 ORDER BY sc.count_date DESC, sc.id DESC
               ) AS rn
             FROM stock_counts sc
-            WHERE sc.count_date >= ?
-              AND sc.count_date < ?
-              AND (? = '' OR sc.store_id = ?)
+            WHERE sc.count_date >= %s
+              AND sc.count_date < %s
+              AND (%s = '' OR sc.store_id = %s)
         ),
         end_stock AS (
             SELECT
@@ -1993,8 +1994,7 @@ def cost_report():
               count_date,
               counted_qty AS end_qty
             FROM latest
-            WHERE rn = 1
-              AND counted_qty > 0
+            WHERE rn = 1 AND counted_qty > 0
         ),
         fifo_base AS (
             SELECT
@@ -2003,19 +2003,19 @@ def cost_report():
               e.ym,
               e.end_qty,
               p.id AS purchase_id,
-              date(p.delivery_date) AS delivery_date,
+              p.delivery_date,
               p.quantity,
               p.unit_price,
               SUM(p.quantity) OVER (
                 PARTITION BY e.store_id, e.item_id, e.ym
-                ORDER BY date(p.delivery_date) DESC, p.id DESC
+                ORDER BY p.delivery_date DESC, p.id DESC
                 ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
               ) AS running_qty
             FROM end_stock e
             JOIN purchases p
               ON p.store_id = e.store_id
              AND p.item_id  = e.item_id
-             AND date(p.delivery_date) <= e.count_date
+             AND p.delivery_date <= e.count_date
         ),
         fifo_layers AS (
             SELECT
@@ -2046,31 +2046,29 @@ def cost_report():
         FROM fifo_layers
         GROUP BY ym
     """
-    inv_rows = db.execute(
-        sql_inv_fifo,
-        [start_date, end_date, store_id, store_id],
-    ).fetchall()
+    inv_rows = db.execute(sql_inv_fifo, [start_date, end_date, store_id, store_id]).fetchall()
 
-    end_inv_by_month = {ym: 0 for ym in month_keys}
+    end_inv_by_month = {ym: 0.0 for ym in month_keys}
     for r in inv_rows:
-        ym = r["ym"]
-        amt = r["inv_amount"] or 0
-        if ym in end_inv_by_month:
-            end_inv_by_month[ym] = float(amt)
+        end_inv_by_month[r["ym"]] = float(r["inv_amount"] or 0)
 
-    # 3. 期首棚卸高（前月期末）
+    #
+    # 3. 期首棚卸（前月の期末）
+    #
     beg_inv_by_month = {}
     prev_end = 0.0
     for ym in month_keys:
         beg_inv_by_month[ym] = prev_end
         prev_end = end_inv_by_month.get(ym, 0.0)
 
+    #
     # 4. 売上原価 = 期首 + 仕入 - 期末
+    #
     cogs_by_month = {}
     for ym in month_keys:
-        beg = beg_inv_by_month.get(ym, 0.0)
-        pur = purchases_by_month.get(ym, 0.0)
-        end = end_inv_by_month.get(ym, 0.0)
+        beg = beg_inv_by_month[ym]
+        pur = purchases_by_month[ym]
+        end = end_inv_by_month[ym]
         cogs_by_month[ym] = beg + pur - end
 
     purchases_total = sum(purchases_by_month.values())
@@ -2092,7 +2090,6 @@ def cost_report():
         end_inv_total=end_inv_total,
         cogs_total=cogs_total,
     )
-
 
 # ----------------------------------------
 # メイン起動
