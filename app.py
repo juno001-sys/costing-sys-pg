@@ -106,10 +106,23 @@ def close_db(exc):
 # 取引変更ログ ヘルパー
 # ----------------------------------------
 def _row_to_dict(row):
-    """sqlite3.Row → dict（ログ用）"""
+    """
+    sqlite3.Row → dict に変換
+    None や dict が来ても落ちない
+    """
     if row is None:
         return None
-    return {k: row[k] for k in row.keys()}
+
+    # すでに dict の場合
+    if isinstance(row, dict):
+        return row
+
+    # sqlite3.Row の場合
+    try:
+        return {k: row[k] for k in row.keys()}
+    except Exception:
+        # どうしても無理な時は string 化
+        return {"value": str(row)}
 
 
 def log_purchase_change(db, purchase_id, action, old_row=None, new_row=None, changed_by=None):
