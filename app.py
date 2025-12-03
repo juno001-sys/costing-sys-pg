@@ -30,37 +30,54 @@ BASE_DIR = Path(__file__).resolve().parent
 DATABASE = BASE_DIR / "costing.sqlite3"
 
 # ----------------------------------------
-# Postgres専用 DB ヘルパー
+# Postgres専用 DB ヘルパー（db.execute をそのまま使える）
 # ----------------------------------------
 import psycopg2
 import psycopg2.extras
 
+class DBWrapper:
+    def __init__(self, conn):
+        self.conn = conn
+
+    def execute(self, sql, params=None):
+        """
+        SQLite の ? を Postgres の %s に自動変換して実行する。
+        """
+        if params is None:
+            params = []
+
+        # SQLite の ? → Postgres の %s
+        fixed_sql = sql.replace("?", "%s")
+
+        cur = self.conn.cursor()
+        cur.execute(fixed_sql, params)
+        return cur
+
+    def commit(self):
+        return self.conn.commit()
+
+    def rollback(self):
+        return self.conn.rollback()
+
+    def cursor(self):
+        return self.conn.cursor()
+
+    def __getattr__(self, name):
+        return getattr(self.conn, name)
+
+
 def get_db():
     """
-    Railway Postgres に接続し、DictCursor を返す。
+    Postgres接続＋DBWrapperを返す。
     """
     if "pg" not in g:
         db_url = os.environ["DATABASE_URL"]
-        g.pg = psycopg2.connect(
+        conn = psycopg2.connect(
             db_url,
-            cursor_factory=psycopg2.extras.DictCursor,
+            cursor_factory=psycopg2.extras.RealDictCursor
         )
+        g.pg = DBWrapper(conn)
     return g.pg
-
-
-# ----------------------------------------
-# SQLite の ? → Postgres の %s に自動変換する execute ラッパ
-# ----------------------------------------
-def pg_execute(conn, sql, params=None):
-    if params is None:
-        params = []
-
-    # SQLite の ? を安全に %s に変換
-    fixed_sql = sql.replace("?", "%s")
-
-    cur = conn.cursor()
-    cur.execute(fixed_sql, params)
-    return cur
 
 # ----------------------------------------
 # teardown
