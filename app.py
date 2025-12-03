@@ -1743,7 +1743,6 @@ def usage_report():
         item_rows=item_rows,
     )
 
-
 # ----------------------------------------
 # 月次 利用量照会（仕入＋棚卸ベース）
 # /inventory/usage
@@ -1808,7 +1807,7 @@ def inventory_usage():
         SELECT
           i.id   AS item_id,
           i.name AS item_name,
-          strftime('%Y-%m', p.delivery_date) AS ym,
+          TO_CHAR(p.delivery_date, 'YYYY-MM') AS ym,
           SUM(p.quantity) AS qty
         FROM purchases p
         JOIN items i ON i.id = p.item_id
@@ -1818,18 +1817,23 @@ def inventory_usage():
     purchase_rows = db.execute(purchases_sql, params_p).fetchall()
 
     # 棚卸数量（月末）
-    where_s = ["sc.count_date >= ?", "sc.count_date < ?"]
+    where_s = [
+        "sc.count_date >= ?",
+        "sc.count_date < ?"
+    ]
     params_s = [start_date, end_date]
+
     if store_id:
         where_s.append("sc.store_id = ?")
         params_s.append(store_id)
+
     where_s_sql = " AND ".join(where_s)
 
     stock_sql = f"""
         SELECT
           sc.item_id AS item_id,
           i.name     AS item_name,
-          strftime('%Y-%m', sc.count_date) AS ym,
+          TO_CHAR(sc.count_date, 'YYYY-MM') AS ym,
           MAX(sc.counted_qty) AS stock_qty
         FROM stock_counts sc
         JOIN items i ON i.id = sc.item_id
@@ -1838,7 +1842,7 @@ def inventory_usage():
     """
     stock_rows = db.execute(stock_sql, params_s).fetchall()
 
-    # Python側でピボット＆利用量計算
+    # Python側でピボット
     item_map = {}
 
     def ensure_item(iid, name):
@@ -1886,6 +1890,7 @@ def inventory_usage():
 
             prev_stock = closing
 
+    # 使用量順
     item_rows = list(item_map.values())
     item_rows.sort(key=lambda x: x["total_usage"], reverse=True)
 
