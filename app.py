@@ -1,36 +1,32 @@
-import os
-import sqlite3
-from datetime import datetime, date, timedelta
-from pathlib import Path
-
-from flask import (
-    Flask,
-    render_template,
-    request,
-    redirect,
-    url_for,
-    g,
-    flash,
-    jsonify,
-)
-import json
-from datetime import datetime
-
 # ----------------------------------------
-# 基本設定
+# DB ヘルパー（SQLite / Postgres 自動切替）
 # ----------------------------------------
-BASE_DIR = Path(__file__).resolve().parent
-DATABASE = BASE_DIR / "costing.sqlite3"
+import psycopg2
+import urllib.parse
 
-app = Flask(__name__)
-app.config["SECRET_KEY"] = "kurajika-dev"  # flash用。必要ならあとで変更可
-app.config["JSON_AS_ASCII"] = False
-
-
-# ----------------------------------------
-# DB ヘルパー
-# ----------------------------------------
 def get_db():
+    """
+    DB_MODE=postgres のとき → Railway Postgres に接続
+    それ以外 → costing.sqlite3 に接続
+    """
+    mode = os.environ.get("DB_MODE", "sqlite")
+
+    # ----------------------
+    # PostgreSQL （Railway）
+    # ----------------------
+    if mode == "postgres":
+        if "pg" not in g:
+            db_url = os.environ.get("DATABASE_URL")
+            if not db_url:
+                raise RuntimeError("DATABASE_URL が設定されていません。")
+
+            # ← psycopg2 で URL を直接渡すだけで OK
+            g.pg = psycopg2.connect(db_url)
+        return g.pg
+
+    # ----------------------
+    # SQLite（ローカル）
+    # ----------------------
     if "db" not in g:
         conn = sqlite3.connect(DATABASE)
         conn.row_factory = sqlite3.Row
@@ -40,6 +36,13 @@ def get_db():
 
 @app.teardown_appcontext
 def close_db(exc):
+    """
+    Postgres / SQLite を両方 close できるようにする
+    """
+    pg = g.pop("pg", None)
+    if pg is not None:
+        pg.close()
+
     db = g.pop("db", None)
     if db is not None:
         db.close()
