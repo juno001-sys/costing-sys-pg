@@ -1919,6 +1919,8 @@ def cost_report():
     store_id = request.args.get("store_id") or ""
     selected_store_id = int(store_id) if store_id else None
 
+    store_id_param = None if store_id == "" else int(store_id)
+    
     # 対象13ヶ月
     today = datetime.now().date()
     y, m = today.year, today.month
