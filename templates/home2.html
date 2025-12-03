@@ -22,10 +22,7 @@
 <section>
     <h2>■ 入力メニュー</h2>
     <ul>
-        <!-- 新規仕入 -->
         <li><a href="{{ url_for('purchase.new_purchase') }}">新規仕入（購入）入力</a></li>
-
-        <!-- 棚卸入力 -->
         <li><a href="{{ url_for('stock.inventory_count') }}">棚卸入力</a></li>
     </ul>
 </section>
@@ -33,19 +30,17 @@
 <section>
     <h2>■ レポート</h2>
     <ul>
-        <!-- 今は report.py を未使用のため一旦コメントアウト -->
-        <!-- <li><a href="{{ url_for('report.purchase_report') }}">仕入れ履歴（仕入先別）</a></li> -->
-        <!-- <li><a href="{{ url_for('report.usage_report') }}">仕入れ履歴（月次・仕入先別）</a></li> -->
-        <!-- <li><a href="{{ url_for('report.cost_report') }}">食材原価 月次実績</a></li> -->
+        {# <li><a href="{{ url_for('report.purchase_report') }}">仕入れ履歴（仕入先別）</a></li> #}
+        {# <li><a href="{{ url_for('report.usage_report') }}">仕入れ履歴（月次）</a></li> #}
+        {# <li><a href="{{ url_for('report.cost_report') }}">食材原価 月次実績</a></li> #}
     </ul>
 </section>
 
 <section>
     <h2>■ マスタ管理</h2>
     <ul>
-        <!-- 今は report.suppliers_master / items_master は未実装のためコメントアウト -->
-        <!-- <li><a href="{{ url_for('report.suppliers_master') }}">仕入先マスタ</a></li> -->
-        <!-- <li><a href="{{ url_for('report.items_master') }}">食材マスタ</a></li> -->
+        {# <li><a href="{{ url_for('report.suppliers_master') }}">仕入先マスタ</a></li> #}
+        {# <li><a href="{{ url_for('report.items_master') }}">食材マスタ</a></li> #}
     </ul>
 </section>
 
