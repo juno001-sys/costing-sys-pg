@@ -10,6 +10,6 @@ def index():
 # ---------------------------------------
 # home.html が呼んでいる old endpoint 互換
 # ---------------------------------------
-@purchase_bp.route("/new", endpoint=".new_purchase")
-def new_purchase():
-    return index()
+@purchase_bp.route("/new", endpoint="purchase_new_purchase")
+def purchase_new_purchase():
+    return "new purchase screen"
