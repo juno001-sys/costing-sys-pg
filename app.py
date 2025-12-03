@@ -106,10 +106,10 @@ def close_db(exc):
 # 取引変更ログ ヘルパー
 # ----------------------------------------
 def _row_to_dict(row):
-    """
-    sqlite3.Row → dict に変換
-    None や dict が来ても落ちない
-    """
+  #  """
+  #  sqlite3.Row → dict に変換
+  #  None や dict が来ても落ちない
+  #  """
     if row is None:
         return None
 
