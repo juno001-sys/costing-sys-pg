@@ -32,33 +32,45 @@ DATABASE = BASE_DIR / "costing.sqlite3"
 # ----------------------------------------
 # DB ヘルパー（SQLite / Postgres 自動切替）
 # ----------------------------------------
+
+import psycopg2.extras
+
+class DBWrapper:
+    def __init__(self, conn):
+        self.conn = conn
+
+    def execute(self, *args, **kwargs):
+        cur = self.conn.cursor()
+        cur.execute(*args, **kwargs)
+        return cur
+
+    def __getattr__(self, name):
+        return getattr(self.conn, name)
+
+
 def get_db():
-    """
-    DB_MODE=postgres のとき → Railway Postgres に接続
-    それ以外 → costing.sqlite3 に接続
-    """
     mode = os.environ.get("DB_MODE", "sqlite")
 
-    # ----------------------
-    # PostgreSQL （Railway）
-    # ----------------------
+    # ---- Postgres （Railway）----
     if mode == "postgres":
         if "pg" not in g:
             db_url = os.environ.get("DATABASE_URL")
             if not db_url:
                 raise RuntimeError("DATABASE_URL が設定されていません。")
 
-            # psycopg2 は URL そのままで接続できる
-            g.pg = psycopg2.connect(db_url)
+            conn = psycopg2.connect(
+                db_url,
+                cursor_factory=psycopg2.extras.RealDictCursor
+            )
+            g.pg = DBWrapper(conn)
         return g.pg
 
-    # ----------------------
-    # SQLite（ローカル）
-    # ----------------------
+    # ---- SQLite ----
     if "db" not in g:
         conn = sqlite3.connect(DATABASE)
         conn.row_factory = sqlite3.Row
-        g.db = conn
+        g.db = DBWrapper(conn)
+
     return g.db
 
 # ----------------------------------------
