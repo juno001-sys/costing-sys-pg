@@ -1,15 +1,15 @@
-from flask import Blueprint, render_template
+from flask import Blueprint
 
 purchase_bp = Blueprint("purchase", __name__, url_prefix="/purchases")
 
-@purchase_bp.route("/")
-def index():
-    return "purchase screen"
 
-
-# ---------------------------------------
-# home.html が呼んでいる old endpoint 互換
-# ---------------------------------------
-@purchase_bp.route("/new", endpoint="purchase_new_purchase")
-def purchase_new_purchase():
+# 仕入れ入力（home.html の new_purchase に合わせる）
+@purchase_bp.route("/new")
+def new_purchase():
     return "new purchase screen"
+
+
+# 仕入れレポート（home.html の purchase_report）
+@purchase_bp.route("/report")
+def purchase_report():
+    return "purchase report"
