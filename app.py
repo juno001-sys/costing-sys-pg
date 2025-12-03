@@ -2021,9 +2021,3 @@ if __name__ == "__main__":
 
     port = int(os.environ.get("PORT", 5000))
     debug = os.environ.get("FLASK_DEBUG", "0") == "1"
-
-<<<<<<< HEAD
-    app.run(host="0.0.0.0", port=port, debug=debug)
-=======
-    app.run(host="0.0.0.0", port=port, debug=debug)
->>>>>>> 0ca80ad5ac1f5521be3b8b1a4f4569b255600f74
