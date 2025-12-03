@@ -2,29 +2,24 @@ import os
 from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 
+# --- SQLite 用の DB 初期化 ---
 db = SQLAlchemy()
 
 # -------------------------------------------------------
-# Flask 基本設定
+# Flask アプリ工場（SQLite 前提）
 # -------------------------------------------------------
 def create_app():
     app = Flask(__name__)
     app.config["SECRET_KEY"] = "kurajika-dev"
     app.config["JSON_AS_ASCII"] = False
 
-    # Postgres URL 補正
-    db_url = os.environ.get("DATABASE_URL")
-    if db_url and db_url.startswith("postgres://"):
-        db_url = db_url.replace("postgres://", "postgresql+psycopg2://", 1)
-    elif db_url and db_url.startswith("postgresql://"):
-        db_url = db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
-
-    app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+    # --- SQLite の DB ファイルを使用 ---
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///costing.sqlite3"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     db.init_app(app)
 
-    # ---- ルート登録（Blueprint読み込み） ----
+    # ---- Blueprint 読み込み ----
     from views.purchase import purchase_bp
     from views.stock import stock_bp
     from views.delivery import delivery_bp
@@ -38,17 +33,17 @@ def create_app():
     # ---- ホーム ----
     @app.route("/")
     def home():
-        return render_template("home2.html")
+        return render_template("home.html")   # ← home2 は使わない
 
     return app
 
 
 # -------------------------------------------------------
-# 本番起動
+# ローカル起動
 # -------------------------------------------------------
 app = create_app()
 
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    app.run(host="0.0.0.0", port=5000)
