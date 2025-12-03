@@ -30,48 +30,37 @@ BASE_DIR = Path(__file__).resolve().parent
 DATABASE = BASE_DIR / "costing.sqlite3"
 
 # ----------------------------------------
-# DB ヘルパー（SQLite / Postgres 自動切替）
+# Postgres専用 DB ヘルパー
 # ----------------------------------------
-
+import psycopg2
 import psycopg2.extras
 
-class DBWrapper:
-    def __init__(self, conn):
-        self.conn = conn
-
-    def execute(self, *args, **kwargs):
-        cur = self.conn.cursor()
-        cur.execute(*args, **kwargs)
-        return cur
-
-    def __getattr__(self, name):
-        return getattr(self.conn, name)
-
-
 def get_db():
-    mode = os.environ.get("DB_MODE", "sqlite")
+    """
+    Railway Postgres に接続し、DictCursor を返す。
+    """
+    if "pg" not in g:
+        db_url = os.environ["DATABASE_URL"]
+        g.pg = psycopg2.connect(
+            db_url,
+            cursor_factory=psycopg2.extras.DictCursor,
+        )
+    return g.pg
 
-    # ---- Postgres （Railway）----
-    if mode == "postgres":
-        if "pg" not in g:
-            db_url = os.environ.get("DATABASE_URL")
-            if not db_url:
-                raise RuntimeError("DATABASE_URL が設定されていません。")
 
-            conn = psycopg2.connect(
-                db_url,
-                cursor_factory=psycopg2.extras.RealDictCursor
-            )
-            g.pg = DBWrapper(conn)
-        return g.pg
+# ----------------------------------------
+# SQLite の ? → Postgres の %s に自動変換する execute ラッパ
+# ----------------------------------------
+def pg_execute(conn, sql, params=None):
+    if params is None:
+        params = []
 
-    # ---- SQLite ----
-    if "db" not in g:
-        conn = sqlite3.connect(DATABASE)
-        conn.row_factory = sqlite3.Row
-        g.db = DBWrapper(conn)
+    # SQLite の ? を安全に %s に変換
+    fixed_sql = sql.replace("?", "%s")
 
-    return g.db
+    cur = conn.cursor()
+    cur.execute(fixed_sql, params)
+    return cur
 
 # ----------------------------------------
 # teardown
