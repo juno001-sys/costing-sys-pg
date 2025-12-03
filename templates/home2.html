@@ -1,48 +1,36 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8" />
-    <title>メニュー</title>
+    <meta charset="UTF-8">
+    <title>Kurajika CMS</title>
     <style>
-        body {
-            font-family: system-ui, sans-serif;
-            margin: 40px;
-        }
-        h2 {
-            margin-top: 20px;
-        }
-        ul { margin-bottom: 20px; }
+        body { font-family: system-ui, sans-serif; margin: 40px; }
+        h1 { font-size: 32px; margin-bottom: 20px; }
+        ul { list-style: none; padding: 0; }
+        li { margin-bottom: 12px; }
+        a { text-decoration: none; color: #005bbb; }
+        a:hover { text-decoration: underline; }
     </style>
 </head>
-
 <body>
 
-<h1>倉島事業開発 ORS Dev Env</h1>
+    <h1>Kurajika CMS</h1>
 
-<section>
-    <h2>■ 入力メニュー</h2>
+    <h2>仕入れ・納品書入力</h2>
     <ul>
-        <li><a href="{{ url_for('purchase.new_purchase') }}">新規仕入（購入）入力</a></li>
-        <li><a href="{{ url_for('stock.inventory_count') }}">棚卸入力</a></li>
+        <li><a href="{{ url_for('purchase.index') }}">仕入れ一覧（Purchase Index）</a></li>
+        <li><a href="{{ url_for('purchase.new_purchase') }}">仕入れ登録（New Purchase）</a></li>
     </ul>
-</section>
 
-<section>
-    <h2>■ レポート</h2>
+    <h2>棚卸し</h2>
     <ul>
-        {# <li><a href="{{ url_for('report.purchase_report') }}">仕入れ履歴（仕入先別）</a></li> #}
-        {# <li><a href="{{ url_for('report.usage_report') }}">仕入れ履歴（月次）</a></li> #}
-        {# <li><a href="{{ url_for('report.cost_report') }}">食材原価 月次実績</a></li> #}
+        <li><a href="{{ url_for('stock.inventory_count') }}">棚卸し入力</a></li>
     </ul>
-</section>
 
-<section>
-    <h2>■ マスタ管理</h2>
+    <h2>納品</h2>
     <ul>
-        {# <li><a href="{{ url_for('report.suppliers_master') }}">仕入先マスタ</a></li> #}
-        {# <li><a href="{{ url_for('report.items_master') }}">食材マスタ</a></li> #}
+        <li><a href="{{ url_for('delivery.index') }}">納品一覧</a></li>
     </ul>
-</section>
 
 </body>
 </html>
