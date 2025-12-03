@@ -39,7 +39,7 @@ def create_app():
     # ---- ホーム ----
     @app.route("/")
     def home():
-        return render_template("home.html")   # ← home2 は使わない
+        return render_template("home2.html")   # ← home2 は使わない
 
     return app
 
