@@ -1901,7 +1901,6 @@ def inventory_usage():
         month_keys=month_keys,
         item_rows=item_rows,
     )
-
 # ----------------------------------------
 # 売上原価 月次推移（棚卸しは最新棚卸しを FIFO 単価で評価）
 # /cost/report
@@ -1919,8 +1918,9 @@ def cost_report():
     store_id = request.args.get("store_id") or ""
     selected_store_id = int(store_id) if store_id else None
 
+    # 空文字のときは None（= 全店舗）、指定があれば int にキャスト
     store_id_param = None if store_id == "" else int(store_id)
-    
+
     # 対象13ヶ月
     today = datetime.now().date()
     y, m = today.year, today.month
@@ -1946,7 +1946,7 @@ def cost_report():
     end_date = f"{ey:04d}-{em:02d}-01"
 
     #
-    # 1. 当月仕入高
+    # 1. 当月仕入高（Postgres版）
     #
     sql_pur = """
         SELECT
@@ -1960,8 +1960,8 @@ def cost_report():
         GROUP BY ym
     """
     pur_rows = db.execute(
-    sql_pur,
-    [start_date, end_date, store_id_param, store_id_param]
+        sql_pur,
+        [start_date, end_date, store_id_param, store_id_param],
     ).fetchall()
 
     purchases_by_month = {ym: 0 for ym in month_keys}
@@ -1972,7 +1972,7 @@ def cost_report():
             purchases_by_month[ym] = amt
 
     #
-    # 2. 期末棚卸（FIFO 評価）
+    # 2. 期末棚卸（FIFO 評価 / Postgres版）
     #
     sql_inv_fifo = """
         WITH latest AS (
@@ -1989,7 +1989,7 @@ def cost_report():
             FROM stock_counts sc
             WHERE sc.count_date >= %s
               AND sc.count_date < %s
-              AND (%s = '' OR sc.store_id = %s)
+              AND ( %s IS NULL OR sc.store_id = %s )
         ),
         end_stock AS (
             SELECT
@@ -2051,7 +2051,10 @@ def cost_report():
         FROM fifo_layers
         GROUP BY ym
     """
-    inv_rows = db.execute(sql_inv_fifo, [start_date, end_date, store_id, store_id]).fetchall()
+    inv_rows = db.execute(
+        sql_inv_fifo,
+        [start_date, end_date, store_id_param, store_id_param],
+    ).fetchall()
 
     end_inv_by_month = {ym: 0.0 for ym in month_keys}
     for r in inv_rows:
