@@ -106,22 +106,21 @@ def close_db(exc):
 # 取引変更ログ ヘルパー
 # ----------------------------------------
 def _row_to_dict(row):
-  #  """
-  #  sqlite3.Row → dict に変換
-  #  None や dict が来ても落ちない
-  #  """
+    """
+    sqlite3.Row を想定しつつ、dict や想定外の型でも落ちないようにする。
+    """
     if row is None:
         return None
 
-    # すでに dict の場合
+    # row が dict ならそのまま
     if isinstance(row, dict):
         return row
 
-    # sqlite3.Row の場合
+    # sqlite3.Row 想定
     try:
         return {k: row[k] for k in row.keys()}
     except Exception:
-        # どうしても無理な時は string 化
+        # row が想定外の型でも落ちずに返す
         return {"value": str(row)}
 
 
