@@ -1525,9 +1525,8 @@ def inventory_count():
         grouped_items=grouped_items,
     )
 
-
 # ----------------------------------------
-# 月次利用量レポート
+# 月次利用量レポート（Postgres/SQLite 両対応版）
 # /usage/report
 # ----------------------------------------
 @app.route("/usage/report", methods=["GET"])
@@ -1540,7 +1539,9 @@ def usage_report():
     ).fetchall()
     store_id = request.args.get("store_id") or ""
 
+    # -----------------------------
     # 直近13ヶ月
+    # -----------------------------
     today = datetime.now().date()
     year = today.year
     month = today.month
@@ -1554,7 +1555,9 @@ def usage_report():
             year -= 1
     month_keys = list(reversed(month_keys))
 
+    # -----------------------------
     # 日付範囲
+    # -----------------------------
     start_ym = month_keys[0]
     end_ym = month_keys[-1]
 
@@ -1569,16 +1572,20 @@ def usage_report():
         next_month = end_month + 1
     end_date = f"{next_year:04d}-{next_month:02d}-01"
 
+    is_postgres = (os.environ.get("DB_MODE") == "postgres")
+
+    # -----------------------------
     # ① 月内仕入数量
+    # -----------------------------
     where_pur = [
-        "p.delivery_date >= ?",
-        "p.delivery_date < ?",
+        "p.delivery_date >= %s" if is_postgres else "p.delivery_date >= ?",
+        "p.delivery_date < %s"  if is_postgres else "p.delivery_date < ?",
         "p.is_deleted = 0",
     ]
     params_pur = [start_date, end_date]
 
     if store_id:
-        where_pur.append("p.store_id = ?")
+        where_pur.append("p.store_id = %s" if is_postgres else "p.store_id = ?")
         params_pur.append(store_id)
 
     where_pur_sql = " AND ".join(where_pur)
@@ -1586,12 +1593,13 @@ def usage_report():
     sql_pur = f"""
         SELECT
             p.item_id,
-            strftime('%Y-%m', p.delivery_date) AS ym,
+            {"TO_CHAR(p.delivery_date, 'YYYY-MM')" if is_postgres else "strftime('%Y-%m', p.delivery_date)"} AS ym,
             SUM(p.quantity) AS pur_qty
         FROM purchases p
         WHERE {where_pur_sql}
         GROUP BY p.item_id, ym
     """
+
     rows_pur = db.execute(sql_pur, params_pur).fetchall()
 
     pur_map = {}
@@ -1601,12 +1609,19 @@ def usage_report():
         qty = int(r["pur_qty"] or 0)
         pur_map.setdefault(iid, {})[ym] = qty
 
+    # -----------------------------
     # ② 各月の最新棚卸数量
-    where_inv = ["sc.count_date >= ?", "sc.count_date < ?"]
+    # -----------------------------
+    where_inv = [
+        "sc.count_date >= %s" if is_postgres else "sc.count_date >= ?",
+        "sc.count_date < %s"  if is_postgres else "sc.count_date < ?",
+    ]
     params_inv = [start_date, end_date]
+
     if store_id:
-        where_inv.append("sc.store_id = ?")
+        where_inv.append("sc.store_id = %s" if is_postgres else "sc.store_id = ?")
         params_inv.append(store_id)
+
     where_inv_sql = " AND ".join(where_inv)
 
     sql_inv = f"""
@@ -1614,8 +1629,8 @@ def usage_report():
           SELECT
             sc.store_id,
             sc.item_id,
-            strftime('%Y-%m', sc.count_date) AS ym,
-            MAX(sc.count_date)               AS max_date
+            {"TO_CHAR(sc.count_date, 'YYYY-MM')" if is_postgres else "strftime('%Y-%m', sc.count_date)"} AS ym,
+            MAX(sc.count_date) AS max_date
           FROM stock_counts sc
           WHERE {where_inv_sql}
           GROUP BY sc.store_id, sc.item_id, ym
@@ -1632,12 +1647,11 @@ def usage_report():
            AND sc.item_id   = lc.item_id
            AND sc.count_date = lc.max_date
         )
-        SELECT
-          item_id,
-          ym,
-          counted_qty
+        SELECT item_id, ym, counted_qty
         FROM month_end_inventory
+        ORDER BY item_id, ym
     """
+
     rows_inv = db.execute(sql_inv, params_inv).fetchall()
 
     end_inv_map = {}
@@ -1647,10 +1661,14 @@ def usage_report():
         qty = int(r["counted_qty"] or 0)
         end_inv_map.setdefault(iid, {})[ym] = qty
 
+    # -----------------------------
     # ③ アイテム情報
+    # -----------------------------
     item_ids = set(pur_map.keys()) | set(end_inv_map.keys())
     if item_ids:
-        placeholders = ",".join(["?"] * len(item_ids))
+        placeholders = ",".join(
+            ["%s" if is_postgres else "?"] * len(item_ids)
+        )
         sql_items = f"""
             SELECT id, code, name
             FROM items
@@ -1663,7 +1681,9 @@ def usage_report():
 
     item_meta = {row["id"]: row for row in items}
 
-    # ④ 品目ごとに期首・仕入・期末・利用量を計算
+    # -----------------------------
+    # ④ 期首・仕入・期末・利用量を計算
+    # -----------------------------
     item_rows = []
 
     for iid in sorted(item_ids):
@@ -1679,7 +1699,7 @@ def usage_report():
         total_used = 0
         total_end = 0
 
-        prev_end_qty = 0
+        prev_end_qty = 0  # 前月の期末＝当月の期首
 
         for ym in month_keys:
             pur = pur_map.get(iid, {}).get(ym, 0)
