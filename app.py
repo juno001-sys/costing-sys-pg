@@ -30,6 +30,12 @@ def create_app():
     app.register_blueprint(delivery_bp)
     app.register_blueprint(report_bp)
 
+
+    @app.route("/_alias/new_purchase")
+    def new_purchase():
+        # 実体は Blueprint 内の関数
+        return app.view_functions["purchase.purchase_new_purchase"]()
+
     # ---- ホーム ----
     @app.route("/")
     def home():
