@@ -1954,7 +1954,7 @@ def cost_report():
         WHERE p.delivery_date >= %s
           AND p.delivery_date < %s
           AND p.is_deleted = 0
-          AND (%s = '' OR p.store_id = %s)
+          AND ( %s = '' OR p.store_id = %s::int )
         GROUP BY ym
     """
     pur_rows = db.execute(sql_pur, [start_date, end_date, store_id, store_id]).fetchall()
