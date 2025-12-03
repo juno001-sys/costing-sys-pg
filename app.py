@@ -1,9 +1,37 @@
+import os
+import sqlite3
+import psycopg2
+import urllib.parse
+from datetime import datetime, date, timedelta
+from pathlib import Path
+
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    g,
+    flash,
+    jsonify,
+)
+
+# ----------------------------------------
+# Flask アプリ
+# ----------------------------------------
+app = Flask(__name__)
+app.config["SECRET_KEY"] = "kurajika-dev"
+app.config["JSON_AS_ASCII"] = False
+
+# ----------------------------------------
+# パス設定（SQLite 用）
+# ----------------------------------------
+BASE_DIR = Path(__file__).resolve().parent
+DATABASE = BASE_DIR / "costing.sqlite3"
+
 # ----------------------------------------
 # DB ヘルパー（SQLite / Postgres 自動切替）
 # ----------------------------------------
-import psycopg2
-import urllib.parse
-
 def get_db():
     """
     DB_MODE=postgres のとき → Railway Postgres に接続
@@ -20,7 +48,7 @@ def get_db():
             if not db_url:
                 raise RuntimeError("DATABASE_URL が設定されていません。")
 
-            # ← psycopg2 で URL を直接渡すだけで OK
+            # psycopg2 は URL そのままで接続できる
             g.pg = psycopg2.connect(db_url)
         return g.pg
 
@@ -33,7 +61,9 @@ def get_db():
         g.db = conn
     return g.db
 
-
+# ----------------------------------------
+# teardown
+# ----------------------------------------
 @app.teardown_appcontext
 def close_db(exc):
     """
@@ -46,6 +76,7 @@ def close_db(exc):
     db = g.pop("db", None)
     if db is not None:
         db.close()
+
 
 
 # ----------------------------------------
