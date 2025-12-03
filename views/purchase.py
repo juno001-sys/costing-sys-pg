@@ -1,16 +1,15 @@
-from flask import Blueprint, request, render_template, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from datetime import datetime
-from app import get_db   # ← app.py の get_db() を使う
-from app import log_purchase_change  # ← ログ関数も app.py から利用
 
-purchase_bp = Blueprint("purchase", __name__, url_prefix="/purchase")
+purchase_bp = Blueprint("purchase", __name__)
 
-# --------------------------------------------------------
-# 仕入れ入力フォーム
-# /purchase/new
-# --------------------------------------------------------
+# --------------------------------------------------
+# 仕入れ入力フォーム（/purchase/new）
+# --------------------------------------------------
 @purchase_bp.route("/new", methods=["GET", "POST"])
 def new_purchase():
+    # ★ 循環 import 回避のため、関数内で import する
+    from app import get_db
     db = get_db()
 
     # 店舗一覧
@@ -23,17 +22,14 @@ def new_purchase():
         "SELECT id, name FROM suppliers ORDER BY code"
     ).fetchall()
 
+    # NameError対策
     purchases = []
     results_count = 0
 
-    # ----------------------------------------------------
-    # POST（登録処理）
-    # ----------------------------------------------------
     if request.method == "POST":
         store_id = request.form.get("store_id") or None
 
         def to_int(val: str) -> int:
-            """カンマ入り・全角混じりでも int に変換"""
             if not val:
                 return 0
             s = str(val)
@@ -49,7 +45,7 @@ def new_purchase():
 
         any_inserted = False
 
-        # 1〜5 行ループ
+        # 明細5行ループ
         for i in range(1, 6):
             delivery_date = request.form.get(f"detail_date_{i}") or ""
             supplier_id = request.form.get(f"supplier_id_{i}") or ""
@@ -61,7 +57,6 @@ def new_purchase():
             unit_price_val = to_int(unit_price_raw)
             amount_val = qty_val * unit_price_val
 
-            # 完全空行
             if (
                 not delivery_date
                 and not supplier_id
@@ -71,16 +66,14 @@ def new_purchase():
             ):
                 continue
 
-            # 必須チェック
             if not delivery_date or not item_id:
                 continue
 
-            # INSERT
             cur = db.execute(
                 """
                 INSERT INTO purchases
-                (store_id, supplier_id, item_id,
-                 delivery_date, quantity, unit_price, amount, created_at)
+                  (store_id, supplier_id, item_id,
+                   delivery_date, quantity, unit_price, amount, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
@@ -94,24 +87,6 @@ def new_purchase():
                     datetime.now().isoformat(timespec="seconds"),
                 ),
             )
-            new_id = cur.lastrowid
-
-            # 新レコード再取得
-            new_row = db.execute(
-                "SELECT * FROM purchases WHERE id = ?",
-                (new_id,),
-            ).fetchone()
-
-            # ログ
-            log_purchase_change(
-                db,
-                purchase_id=new_id,
-                action="CREATE",
-                old_row=None,
-                new_row=new_row,
-                changed_by=None,
-            )
-
             any_inserted = True
 
         if any_inserted:
@@ -120,44 +95,50 @@ def new_purchase():
         else:
             flash("登録対象の行がありません。")
 
-        return redirect(url_for("purchase.new_purchase", store_id=store_id))
+        if store_id:
+            return redirect(url_for("purchase.new_purchase", store_id=store_id))
+        else:
+            return redirect(url_for("purchase.new_purchase"))
 
-    # ----------------------------------------------------
-    # GET（画面表示）
-    # ----------------------------------------------------
+    # GET
     store_id = request.args.get("store_id") or ""
     selected_store_id = int(store_id) if store_id else None
 
-    # 条件クリア
     if request.args.get("clear") == "1":
-        return redirect(url_for("purchase.new_purchase"))
+        if store_id:
+            return redirect(url_for("purchase.new_purchase", store_id=store_id))
+        else:
+            return redirect(url_for("purchase.new_purchase"))
 
     from_date = request.args.get("from_date") or ""
     to_date = request.args.get("to_date") or ""
     search_q = (request.args.get("q") or "").strip()
 
-    # where 条件
-    where = ["p.is_deleted = 0"]
+    where_clauses = ["p.is_deleted = 0"]
     params = []
 
     if store_id:
-        where.append("p.store_id = ?")
+        where_clauses.append("p.store_id = ?")
         params.append(store_id)
 
     if from_date:
-        where.append("p.delivery_date >= ?")
+        where_clauses.append("p.delivery_date >= ?")
         params.append(from_date)
 
     if to_date:
-        where.append("p.delivery_date <= ?")
+        where_clauses.append("p.delivery_date <= ?")
         params.append(to_date)
 
     if search_q:
-        where.append("(i.name LIKE ? OR s.name LIKE ? OR i.code LIKE ?)")
+        where_clauses.append(
+            "(i.name LIKE ? OR s.name LIKE ? OR i.code LIKE ?)"
+        )
         like = f"%{search_q}%"
         params.extend([like, like, like])
 
-    where_sql = "WHERE " + " AND ".join(where) if where else ""
+    where_sql = ""
+    if where_clauses:
+        where_sql = "WHERE " + " AND ".join(where_clauses)
 
     sql = f"""
         SELECT
@@ -175,6 +156,7 @@ def new_purchase():
         ORDER BY p.delivery_date DESC, p.id DESC
         LIMIT 50
     """
+
     purchases = db.execute(sql, params).fetchall()
 
     return render_template(
@@ -189,13 +171,14 @@ def new_purchase():
     )
 
 
-# --------------------------------------------------------
-# API: supplier → items
-# GET /purchase/api/items/<supplier_id>
-# --------------------------------------------------------
-@purchase_bp.route("/api/items/<int:supplier_id>")
+# --------------------------------------------------
+# API: supplier に紐づく items 一覧
+# --------------------------------------------------
+@purchase_bp.route("/api/items/by_supplier/<int:supplier_id>")
 def api_items_by_supplier(supplier_id):
+    from app import get_db
     db = get_db()
+
     rows = db.execute(
         """
         SELECT id, code, name, unit
