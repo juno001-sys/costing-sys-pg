@@ -977,9 +977,8 @@ def edit_item(item_id):
         suppliers=suppliers,
     )
 
-
 # ----------------------------------------
-# 仕入れ照会（月次）
+# 仕入れ照会（月次：13ヶ月版）
 # ----------------------------------------
 @app.route("/purchases/report")
 def purchase_report():
@@ -990,45 +989,88 @@ def purchase_report():
         "SELECT id, name FROM stores ORDER BY code"
     ).fetchall()
 
-    # パラメータ
-    store_id = request.args.get("store_id")
-    year_month = request.args.get("year_month")  # "2025-12" 形式
+    # 選択店舗（None → 全店舗）
+    selected_store_id = request.args.get("store_id")
 
-    rows = []
-    summary = {"total_amount": 0, "total_quantity": 0}
+    # -------------------------------
+    # 直近13ヶ月の YYYY-MM リスト生成
+    # -------------------------------
+    today = date.today().replace(day=1)
+    month_keys = []
+    for i in range(13):
+        d = today - timedelta(days=30 * (12 - i))
+        ym = d.strftime("%Y-%m")
+        month_keys.append(ym)
 
-    if store_id and year_month:
-        # Postgresでは strftime → TO_CHAR
-        sql = """
-            SELECT
-                p.id,
-                p.date,
-                i.name AS item_name,
-                s.name AS supplier_name,
-                p.quantity,
-                p.unit_price,
-                (p.quantity * p.unit_price) AS amount
-            FROM purchases p
-            JOIN items i   ON p.item_id = i.id
-            JOIN suppliers s ON p.supplier_id = s.id
-            WHERE p.store_id = ?
-              AND TO_CHAR(p.date, 'YYYY-MM') = ?
-            ORDER BY p.date, p.id
-        """
+    # -------------------------------
+    # SQL実行
+    # Postgres: date → TO_CHAR(date,'YYYY-MM')
+    # -------------------------------
+    sql = """
+        SELECT
+            s.id AS supplier_id,
+            s.name AS supplier_name,
+            TO_CHAR(p.date, 'YYYY-MM') AS ym,
+            SUM(p.quantity * p.unit_price) AS total_amount
+        FROM purchases p
+        JOIN suppliers s ON p.supplier_id = s.id
+        {store_filter}
+        AND p.date >= %s::date
+        GROUP BY s.id, s.name, ym
+        ORDER BY s.code, s.id, ym
+    """
 
-        rows = db.execute(sql, [store_id, year_month]).fetchall()
+    start_date = month_keys[0] + "-01"
 
-        for r in rows:
-            summary["total_amount"] += r["amount"]
-            summary["total_quantity"] += r["quantity"]
+    store_filter = ""
+    params = [start_date]
 
+    if selected_store_id:
+        store_filter = "WHERE p.store_id = %s"
+        params = [selected_store_id, start_date]
+    else:
+        store_filter = "WHERE p.store_id IS NOT NULL"
+
+    sql = sql.format(store_filter=store_filter)
+
+    rows_raw = db.execute(sql, params).fetchall()
+
+    # -------------------------------
+    # rows_raw → テンプレート用 rows に変換
+    # -------------------------------
+    rows_dict = {}  # supplier_id → dict
+
+    for r in rows_raw:
+        sup_id = r["supplier_id"]
+        if sup_id not in rows_dict:
+            rows_dict[sup_id] = {
+                "supplier_id": sup_id,
+                "supplier_name": r["supplier_name"],
+                "values": {k: 0 for k in month_keys}
+            }
+        rows_dict[sup_id]["values"][r["ym"]] = int(r["total_amount"])
+
+    # dict → list
+    rows = list(rows_dict.values())
+
+    # -------------------------------
+    # 月ごとの合計: month_totals
+    # -------------------------------
+    month_totals = []
+    for ym in month_keys:
+        v = sum(r["values"][ym] for r in rows)
+        month_totals.append(v)
+
+    # -------------------------------
+    # 描画
+    # -------------------------------
     return render_template(
         "purchase_report.html",
         stores=stores,
         rows=rows,
-        summary=summary,
-        store_id=store_id,
-        year_month=year_month,
+        month_keys=month_keys,
+        month_totals=month_totals,
+        selected_store_id=selected_store_id,
     )
 
 
