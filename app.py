@@ -1954,10 +1954,13 @@ def cost_report():
         WHERE p.delivery_date >= %s
           AND p.delivery_date < %s
           AND p.is_deleted = 0
-          AND ( %s = '' OR p.store_id = %s::int )
+          AND ( %s IS NULL OR p.store_id = %s )
         GROUP BY ym
     """
-    pur_rows = db.execute(sql_pur, [start_date, end_date, store_id, store_id]).fetchall()
+    pur_rows = db.execute(
+    sql_pur,
+    [start_date, end_date, store_id_param, store_id_param]
+    ).fetchall()
 
     purchases_by_month = {ym: 0 for ym in month_keys}
     for r in pur_rows:
