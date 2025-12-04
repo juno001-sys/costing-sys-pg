@@ -383,10 +383,20 @@ def api_items_by_supplier(supplier_id):
     db = get_db()
     rows = db.execute(
         """
-        SELECT id, code, name, unit
-        FROM items
-        WHERE supplier_id = ?
-        ORDER BY name
+        SELECT 
+            i.id,
+            i.code,
+            i.name,
+            i.unit,
+            COALESCE(SUM(p.amount), 0) AS total_amount
+        FROM items i
+        LEFT JOIN purchases p 
+            ON p.item_id = i.id
+            AND p.supplier_id = i.supplier_id
+            AND p.delivery_date >= CURRENT_DATE - INTERVAL '3 months'
+        WHERE i.supplier_id = ?
+        GROUP BY i.id, i.code, i.name, i.unit
+        ORDER BY total_amount DESC, i.name;
         """,
         (supplier_id,),
     ).fetchall()
