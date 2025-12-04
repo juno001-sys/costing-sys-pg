@@ -394,16 +394,23 @@ def api_items_by_supplier(supplier_id):
             ON p.item_id = i.id
             AND p.supplier_id = i.supplier_id
             AND p.delivery_date >= CURRENT_DATE - INTERVAL '3 months'
-        WHERE i.supplier_id = ?
+            AND p.is_deleted = 0
+        WHERE i.supplier_id = %s
         GROUP BY i.id, i.code, i.name, i.unit
-        ORDER BY total_amount DESC, i.name;
+        ORDER BY total_amount DESC, i.name ASC;
         """,
         (supplier_id,),
     ).fetchall()
 
     return jsonify(
         [
-            {"id": r["id"], "code": r["code"], "name": r["name"], "unit": r["unit"]}
+            {
+                "id": r["id"],
+                "code": r["code"],
+                "name": r["name"],
+                "unit": r["unit"],
+                "total_amount": r["total_amount"]
+            }
             for r in rows
         ]
     )
