@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="ja">
   <head>
     <meta charset="utf-8" />
@@ -49,150 +50,171 @@
       .right {
         text-align: right;
       }
-      /* 検索フォーム用レイアウト */
-      .search-box {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 8px 16px;
-        font-size: 12px;
-      }
-      .search-group {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-      }
-      .search-label {
-        white-space: nowrap;  /* 「期間：」「キーワード：」を1行に */
-      }
-      .search-box input[type="date"],
-      .search-box input[type="text"] {
-        padding: 2px 4px;
-        font-size: 12px;
-      }
-    </style>
+
+```
+  /* 検索フォーム用レイアウト */
+  .search-box {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    font-size: 12px;
+  }
+  .search-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .search-label {
+    white-space: nowrap;
+  }
+  .search-box input[type="date"],
+  .search-box input[type="text"] {
+    padding: 2px 4px;
+    font-size: 12px;
+  }
+
+  /* 登録済み取引テーブル：1行おきに背景色 */
+  table.list-table tbody tr:nth-child(odd) {
+    background-color: #f9f9f9;  /* 1,3,5,... 行目 */
+  }
+  table.list-table tbody tr:nth-child(even) {
+    background-color: #ffffff;  /* 2,4,6,... 行目 */
+  }
+</style>
+```
+
   </head>
   <body>
     <h1>取引データ入力（納品書）</h1>
-    <!--    <p style="color: red">DEBUG stores length = {{ stores|length }}</p>-->
-    <!-- 共通ナビ -->
-    <p>
-      <a href="{{ url_for('index') }}">ホーム</a> |
-      <a href="{{ url_for('suppliers_master') }}">仕入先マスタ</a> |
-      <a href="{{ url_for('items_master') }}">品目マスタ</a>
-    </p>
-    <hr />
 
-    {% with messages = get_flashed_messages() %} {% if messages %}
-    <div class="flash">
-      {% for msg in messages %}
-      <div>{{ msg }}</div>
-      {% endfor %}
-    </div>
-    {% endif %} {% endwith %}
-
-    <form method="post" action="{{ url_for('new_purchase') }}">
-      <fieldset>
-        <legend>ヘッダ</legend>
-
-        <p>
-          <label for="store_id">店舗</label>
-          <select name="store_id" id="store_id" required>
-            <option value="">--選択--</option>
-            {% for s in stores %}
-             <option value="{{ s['id'] }}"
-             {% if selected_store_id and s['id'] == selected_store_id %}selected{% endif %}>
-            {{ s['name'] }}
-             </option>
-            {% endfor %}
-          </select>
-        </p>
-      </fieldset>
-
-      <fieldset>
-        <legend>明細（納品書入力）</legend>
-
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 4%">Seq</th>
-              <th style="width: 12%">納品日</th>
-              <th style="width: 12%">仕入先</th>
-              <th style="width: 10%">品目名</th>
-              <th style="width: 10%">数量</th>
-              <th style="width: 8%">単価</th>
-              <th style="width: 12%">金額</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for i in range(1, 6) %}
-            <tr class="detail-row">
-              <!-- Seq -->
-              <td class="right">{{ i }}</td>
-
-              <!-- 納品日 -->
-              <td>
-                <input
-                  type="date"
-                  name="detail_date_{{ i }}"
-                  class="col-date"
-                />
-              </td>
-
-              <!-- 仕入先 -->
-              <td>
-                <select name="supplier_id_{{ i }}" class="col-supplier">
-                  <option value="">--選択--</option>
-                  {% for sup in suppliers %}
-                  <option value="{{ sup['id'] }}">{{ sup['name'] }}</option>
-                  {% endfor %}
-                </select>
-              </td>
-
-              <!-- 品目名 -->
-              <td>
-                <select name="item_id_{{ i }}" class="col-item">
-                  <option value="">--選択--</option>
-                  <!-- JS で動的に埋める -->
-                </select>
-              </td>
-
-              <!-- 数量（整数） -->
-              <td>
-                <input
-                  type="text"
-                  inputmode="numeric"
-                  name="quantity_{{ i }}"
-                  class="col-qty right"
-                />
-              </td>
-
-              <!-- 単価（整数） -->
-              <td>
-                <input
-                  type="text"
-                  inputmode="numeric"
-                  name="unit_price_{{ i }}"
-                  class="col-price right"
-                />
-              </td>
-
-              <!-- 金額（表示専用） -->
-              <td class="right">
-                <span class="col-amount"></span>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </fieldset>
-
-      <p style="margin-top: 10px">
-        <button type="submit">登録する</button>
-      </p>
-    </form>
-   
+```
+<p>
+  <a href="{{ url_for('index') }}">ホーム</a> |
+  <a href="{{ url_for('suppliers_master') }}">仕入先マスタ</a> |
+  <a href="{{ url_for('items_master') }}">品目マスタ</a>
+</p>
 <hr />
+
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+<div class="flash">
+  {% for msg in messages %}
+  <div>{{ msg }}</div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<form method="post" action="{{ url_for('new_purchase') }}">
+  <fieldset>
+    <legend>ヘッダ</legend>
+
+    <p>
+      <label for="store_id">店舗</label>
+      <select name="store_id" id="store_id" required>
+        <option value="">--選択--</option>
+        {% for s in stores %}
+        <option value="{{ s['id'] }}"
+          {% if selected_store_id and s['id'] == selected_store_id %}selected{% endif %}>
+          {{ s['name'] }}
+        </option>
+        {% endfor %}
+      </select>
+    </p>
+  </fieldset>
+
+  <fieldset>
+    <legend>明細（納品書入力）</legend>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 130px;">納品日</th>
+          <th style="width: 180px;">仕入先</th>
+          <th>品目</th>
+          <th style="width: 90px;">数量</th>
+          <th style="width: 100px;">単価</th>
+          <th style="width: 110px;">金額</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for i in range(1, 6) %}
+        <tr class="detail-row">
+          <!-- 納品日 -->
+          <td>
+            <input
+              type="date"
+              name="detail_date_{{ i }}"
+              value="{{ request.form.get('detail_date_' ~ i, '') }}"
+            />
+          </td>
+
+          <!-- 仕入先 -->
+          <td>
+            <select name="supplier_id_{{ i }}" class="col-supplier">
+              <option value="">--選択--</option>
+              {% for sup in suppliers %}
+              <option value="{{ sup.id }}">
+                {{ sup.name }}
+              </option>
+              {% endfor %}
+            </select>
+          </td>
+
+          <!-- 品目 -->
+          <td>
+            <select name="item_id_{{ i }}" class="col-item">
+              <option value="">--選択--</option>
+              <!-- 仕入先選択時に JS で差し替え -->
+            </select>
+          </td>
+
+          <!-- 数量 -->
+          <td>
+            <input
+              type="text"
+              name="quantity_{{ i }}"
+              class="col-qty right"
+              value="{{ request.form.get('quantity_' ~ i, '') }}"
+            />
+          </td>
+
+          <!-- 単価 -->
+          <td>
+            <input
+              type="text"
+              name="unit_price_{{ i }}"
+              class="col-price right"
+              value="{{ request.form.get('unit_price_' ~ i, '') }}"
+            />
+          </td>
+
+          <!-- 金額（読み取り専用） -->
+          <td class="right">
+            <span class="col-amount"></span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <th colspan="5" class="right">合計</th>
+          <th class="right">
+            <span id="grand-total"></span>
+          </th>
+        </tr>
+      </tfoot>
+    </table>
+  </fieldset>
+
+  <p style="margin-top: 10px">
+    <button type="submit">登録する</button>
+  </p>
+</form>
+
+<hr />
+
 <div style="display:flex; align-items:baseline; gap:12px;">
   <h2 style="margin:0;">登録済みの取引</h2>
   <h6 style="margin:0; font-weight:normal; color:#555;">
@@ -245,22 +267,22 @@
     </tr>
   </thead>
   <tbody>
-  {% for row in purchases %}
-  <tr>
-    <td>
-      <a href="{{ url_for('edit_purchase', purchase_id=row['id']) }}">
-        {{ row["id"] }}
-      </a>
-    </td>
-    <td>{{ row["delivery_date"] }}</td>
-    <td>{{ row["supplier_name"] or "" }}</td>
-    <td>{{ row["item_name"] or "" }}</td>
-    <td class="right">{{ row["quantity"] }}</td>
-    <td class="right">{{ "{:,}".format(row["unit_price"] or 0) }}</td>
-    <td class="right">{{ "{:,}".format(row["amount"] or 0) }}</td>
-  </tr>
-  {% endfor %}
-</tbody>
+    {% for row in purchases %}
+    <tr>
+      <td>
+        <a href="{{ url_for('edit_purchase', purchase_id=row['id']) }}">
+          {{ row["id"] }}
+        </a>
+      </td>
+      <td>{{ row["delivery_date"] }}</td>
+      <td>{{ row["supplier_name"] or "" }}</td>
+      <td>{{ row["item_name"] or "" }}</td>
+      <td class="right">{{ row["quantity"] }}</td>
+      <td class="right">{{ "{:,}".format(row["unit_price"] or 0) }}</td>
+      <td class="right">{{ "{:,}".format(row["amount"] or 0) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
 </table>
 {% else %}
 <p>該当する取引がありません。</p>
@@ -269,6 +291,7 @@
 {% else %}
 <p>店舗を選択すると、登録済みの取引が表示されます。</p>
 {% endif %}
+
 <script>
   // 全角数字 → 半角数字
   function toHalfWidth(str) {
@@ -285,9 +308,7 @@
     const price          = row.querySelector(".col-price");
     const amt            = row.querySelector(".col-amount");
 
-    // ===============================
     // 仕入先変更 → 品目リスト読込
-    // ===============================
     supplierSelect.addEventListener("change", function () {
       const supplierId = this.value;
 
@@ -319,14 +340,11 @@
         .catch(err => console.error("品目取得エラー:", err));
     });
 
-    // ===============================
-    // 品目変更 → unit を数量に「毎回」反映
-    // ===============================
+    // 品目変更 → unit を数量に反映
     itemSelect.addEventListener("change", function () {
       const opt = this.options[this.selectedIndex];
 
       if (!opt) {
-        // 品目未選択になった場合はクリア
         qty.value = "";
         amt.textContent = "";
         updateTotal();
@@ -335,23 +353,18 @@
 
       let u = opt.dataset.unit;
 
-      // unit が null/undefined の場合はクリア
       if (u == null || u === "") {
         qty.value = "";
       } else {
-        // 文字列として扱い、全角→半角＆数字だけに整形
         u = String(u);
         u = toHalfWidth(u).replace(/[^\d]/g, "");
         qty.value = u;
       }
 
-      // 金額再計算
       qty.dispatchEvent(new Event("input"));
     });
 
-    // ===============================
     // 数量入力
-    // ===============================
     qty.addEventListener("input", function () {
       calc();
     });
@@ -363,9 +376,7 @@
       calc();
     });
 
-    // ===============================
     // 単価入力：全角→半角＋3桁区切り
-    // ===============================
     price.addEventListener("input", function () {
       let raw = price.value;
 
@@ -390,9 +401,7 @@
       calc();
     });
 
-    // ===============================
     // 金額計算（数量 × 単価）
-    // ===============================
     function calc() {
       const q = parseInt(toHalfWidth(qty.value || "0"), 10) || 0;
       const p = parseInt(toHalfWidth(price.value || "0").replace(/,/g, ""), 10) || 0;
@@ -403,9 +412,7 @@
     }
   });
 
-  // ===============================
   // 全行合計
-  // ===============================
   function updateTotal() {
     let sum = 0;
 
@@ -422,9 +429,7 @@
     }
   }
 
-  // ===============================
   // 店舗選択 → 一覧フィルタ再読込
-  // ===============================
   const headerStoreSelect = document.getElementById("store_id");
   if (headerStoreSelect) {
     headerStoreSelect.addEventListener("change", function () {
@@ -438,9 +443,7 @@
     });
   }
 
-  // ===============================
   // 一覧テーブル ソート（矢印付き）
-  // ===============================
   document.querySelectorAll(".list-table th.sortable").forEach(function (th) {
     let asc = true;
     const table = th.closest("table");
@@ -479,6 +482,8 @@
       asc = !asc;
     });
   });
-</script>    
+</script>
+```
+
   </body>
 </html>
