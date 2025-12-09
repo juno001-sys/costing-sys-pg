@@ -172,7 +172,6 @@ def log_purchase(db, purchase_row, action, changed_by=None):
 def index():
     return render_template("home.html")
 
-
 # ----------------------------------------
 # 取引入力（納品書）
 # /purchases/new
@@ -190,6 +189,7 @@ def new_purchase():
     suppliers = db.execute(
         "SELECT id, name FROM suppliers ORDER BY code"
     ).fetchall()
+
     # -----------------------------------------
     # NameError 対策：常に変数を初期化しておく
     # -----------------------------------------
@@ -249,13 +249,14 @@ def new_purchase():
                 # ここでは「その行だけスキップ」
                 continue
 
-            # INSERT
+            # INSERT（★RETURNING id を追加）
             cur = db.execute(
                 """
                 INSERT INTO purchases
                   (store_id, supplier_id, item_id,
                    delivery_date, quantity, unit_price, amount, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                RETURNING id
                 """,
                 (
                     store_id,
@@ -268,7 +269,10 @@ def new_purchase():
                     datetime.now().isoformat(timespec="seconds"),
                 ),
             )
-            new_id = cur.lastrowid
+
+            # ★ Postgres / SQLite 共通で id を安全に取得
+            row = cur.fetchone()
+            new_id = row["id"]
 
             # ログ用に新レコードを読み直し
             new_row = db.execute(
