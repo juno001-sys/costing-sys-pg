@@ -23,6 +23,12 @@ from flask import (
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "kurajika-dev"
 app.config["JSON_AS_ASCII"] = False
+APP_VERSION = os.getenv("RAILWAY_GIT_COMMIT_SHA", "dev")[:7]
+
+@app.before_request
+def inject_version():
+    g.app_version = APP_VERSION
+
 
 # ----------------------------------------
 # パス設定（SQLite 用）
