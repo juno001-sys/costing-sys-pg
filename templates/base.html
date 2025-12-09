@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Kurajika CMS{% endblock %}</title>
+
+    <style>
+        /* --- 共通デザインここに書けば全ページ反映 --- */
+        body {
+            font-family: "Hiragino Sans", sans-serif;
+            margin: 0;
+            padding: 0 20px 40px;
+            background: #f9f9f9;
+        }
+
+        header {
+            background: #003366;
+            color: white;
+            padding: 10px 20px;
+            margin: 0 -20px 20px;
+        }
+
+        .env-banner {
+            background: {% if config.ENV == "production" %} #0066cc {% else %} #cc8800 {% endif %};
+            padding: 5px 10px;
+            color: white;
+            font-size: 14px;
+        }
+
+        .version {
+            font-size: 12px;
+            color: #ddd;
+            float: right;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 12px;
+            color: #777;
+        }
+    </style>
+
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+
+<header>
+    <strong>Kurajika CMS</strong>
+    <span class="version">v {{ g.app_version }}</span>
+</header>
+
+<div class="env-banner">
+    {% if config.ENV == "production" %}
+        本番環境
+    {% else %}
+        テスト環境
+    {% endif %}
+</div>
+
+{% block content %}
+<!-- 各ページがここにコンテンツを挿入 -->
+{% endblock %}
+
+<footer>
+    &copy; 2025 Kurajika Inc.
+</footer>
+
+</body>
+</html>
