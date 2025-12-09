@@ -2,6 +2,7 @@ import os
 import sqlite3
 import psycopg2
 import urllib.parse
+import json
 from datetime import datetime, date, timedelta
 from pathlib import Path
 
@@ -22,6 +23,12 @@ from flask import (
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "kurajika-dev"
 app.config["JSON_AS_ASCII"] = False
+APP_VERSION = os.getenv("RAILWAY_GIT_COMMIT_SHA", "dev")[:7]
+
+@app.before_request
+def inject_version():
+    g.app_version = APP_VERSION
+
 
 # ----------------------------------------
 # パス設定（SQLite 用）
@@ -107,31 +114,65 @@ def _row_to_dict(row):
     return {k: row[k] for k in row.keys()}
 
 
-def log_purchase_change(db, purchase_id, action, old_row=None, new_row=None, changed_by=None):
-    """
-    purchases の変更を purchase_logs に記録する。
-    action: 'INSERT', 'UPDATE', 'DELETE' など
-    old_row / new_row は sqlite3.Row または dict または None
-    changed_by は将来用（今は None でOK）
-    """
-    if old_row is not None and not isinstance(old_row, dict):
-        old_row = _row_to_dict(old_row)
-    if new_row is not None and not isinstance(new_row, dict):
-        new_row = _row_to_dict(new_row)
+def log_purchase_change(db, purchase_id, action, old_row, new_row, changed_by=None):
+    """purchases の変更履歴を purchase_logs に記録する"""
+
+    def row_to_dict(row):
+        if row is None:
+            return None
+        # すでに dict ならそのまま
+        if isinstance(row, dict):
+            data = row
+        else:
+            # sqlite3.Row / psycopg Row → dict に変換
+            try:
+                data = dict(row)
+            except TypeError:
+                # 最後の保険
+                return {"_raw": str(row)}
+
+        # date / datetime など JSON できないものを文字列にしておく
+        def convert(v):
+            if isinstance(v, datetime):
+                return v.isoformat(timespec="seconds")
+            # Postgres の date 型など
+            try:
+                from datetime import date
+                if isinstance(v, date):
+                    return v.isoformat()
+            except Exception:
+                pass
+            return v
+
+        return {k: convert(v) for k, v in data.items()}
+
+    old_data_dict = row_to_dict(old_row)
+    new_data_dict = row_to_dict(new_row)
+
+    old_data_json = (
+        json.dumps(old_data_dict, ensure_ascii=False)
+        if old_data_dict is not None
+        else None
+    )
+    new_data_json = (
+        json.dumps(new_data_dict, ensure_ascii=False)
+        if new_data_dict is not None
+        else None
+    )
 
     db.execute(
         """
         INSERT INTO purchase_logs
-            (purchase_id, action, changed_at, changed_by, old_values, new_values)
+          (purchase_id, action, old_data, new_data, changed_by, changed_at)
         VALUES (?, ?, ?, ?, ?, ?)
         """,
         (
             purchase_id,
             action,
-            datetime.now().isoformat(timespec="seconds"),
+            old_data_json,
+            new_data_json,
             changed_by,
-            json.dumps(old_row, ensure_ascii=False) if old_row is not None else None,
-            json.dumps(new_row, ensure_ascii=False) if new_row is not None else None,
+            datetime.now().isoformat(timespec="seconds"),
         ),
     )
 
@@ -172,7 +213,6 @@ def log_purchase(db, purchase_row, action, changed_by=None):
 def index():
     return render_template("home.html")
 
-
 # ----------------------------------------
 # 取引入力（納品書）
 # /purchases/new
@@ -190,6 +230,7 @@ def new_purchase():
     suppliers = db.execute(
         "SELECT id, name FROM suppliers ORDER BY code"
     ).fetchall()
+
     # -----------------------------------------
     # NameError 対策：常に変数を初期化しておく
     # -----------------------------------------
@@ -249,13 +290,14 @@ def new_purchase():
                 # ここでは「その行だけスキップ」
                 continue
 
-            # INSERT
+            # INSERT（★RETURNING id を追加）
             cur = db.execute(
                 """
                 INSERT INTO purchases
                   (store_id, supplier_id, item_id,
                    delivery_date, quantity, unit_price, amount, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                RETURNING id
                 """,
                 (
                     store_id,
@@ -268,7 +310,10 @@ def new_purchase():
                     datetime.now().isoformat(timespec="seconds"),
                 ),
             )
-            new_id = cur.lastrowid
+
+            # ★ Postgres / SQLite 共通で id を安全に取得
+            row = cur.fetchone()
+            new_id = row["id"]
 
             # ログ用に新レコードを読み直し
             new_row = db.execute(
