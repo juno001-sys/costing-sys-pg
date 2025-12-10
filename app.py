@@ -25,6 +25,10 @@ app.config["SECRET_KEY"] = "kurajika-dev"
 app.config["JSON_AS_ASCII"] = False
 APP_VERSION = os.getenv("RAILWAY_GIT_COMMIT_SHA", "dev")[:7]
 
+@app.context_processor
+def inject_env():
+    return dict(env=os.environ.get("ENV", "dev"))
+    
 @app.before_request
 def inject_version():
     g.app_version = APP_VERSION
