@@ -272,7 +272,11 @@ def init_purchase_views(app, get_db, log_purchase_change):
 # 取引編集・削除（ソフトデリート対応）
 # /purchases/<id>/edit
 # ----------------------------------------
-@app.route("/purchases/<int:purchase_id>/edit", methods=["GET", "POST"])
+@purchase_bp.route(
+    "/purchases/<int:purchase_id>/edit",
+    methods=["GET", "POST"],
+    endpoint="edit_purchase",        # ★ url_for('edit_purchase') を壊さない
+)
 def edit_purchase(purchase_id):
     db = get_db()
 
