@@ -5,6 +5,9 @@
     <title>{% block title %}TEST Dev{% endblock %}</title>
 
     <style>
+      /* ============================
+         全体レイアウト
+      ============================ */
       body {
         font-family: system-ui;
         margin: 40px;
@@ -13,11 +16,20 @@
         margin-bottom: 24px;
       }
 
+      /* 環境別の背景色（dev / main） */
+      body.dev {
+        background: #f5fff5;  /* 開発用：うっすらグリーン */
+      }
+      body.main {
+        background: #ffffff;  /* 本番用：白 */
+      }
+
       /* ============================
          横タブメニュー（7タブ）
-      ============================= */
+      ============================ */
       .nav-tabs {
         display: flex;
+        flex-wrap: wrap;
         gap: 18px;
         list-style: none;
         padding: 0;
@@ -42,15 +54,13 @@
         background: #f0f0f0;
       }
 
-      /* 選択中タブ */
+      /* 選択中タブ：ヘッダーと同系色 */
       .nav-tabs a.active {
-        background: #f0f4ff;
-  color: #000;                /* 黒字のほうが見やすい */
-  border-bottom: 2px solid #ddd;
-  font-weight: 700;
+        background: #f0f4ff;          /* ヘッダー行と同じ系統の薄い青 */
+        border-bottom: 2px solid #fff;
       }
 
-      /* flash メッセージ */
+      /* flash メッセージ用 */
       .flash {
         background: #ffeebb;
         border: 1px solid #e0c97f;
@@ -64,7 +74,9 @@
       ============================ */
       table {
         border-collapse: collapse;
-        width: 100%;
+        /* 幅を 100% 固定にせず、内容に合わせる */
+        width: auto;
+        max-width: 100%;   /* 画面をはみ出しにくくするセーフティ */
         margin-top: 20px;
       }
 
@@ -72,7 +84,13 @@
       table td {
         padding: 6px 10px;
         border: 1px solid #ddd;
-        text-align: left;
+        text-align: left;  /* デフォルトは左寄せ */
+      }
+
+      /* 数値用クラスは右寄せ */
+      table th.num,
+      table td.num {
+        text-align: right;
       }
 
       /* ヘッダー行 */
@@ -90,23 +108,23 @@
         background: #f7f7f7;
       }
 
-      /* 行 hover */
+      /* 行ホバー */
       table tbody tr:hover {
         background: #e8f2ff;
       }
 
-      /* 合計行 */
+      /* 合計行（tfoot または class="total-row" に対応） */
       table tfoot tr,
       .total-row {
-        background: #fff8d5;
+        background: #fff8d5; /* 薄い黄色 */
         font-weight: bold;
         border-top: 2px solid #e0cd99;
       }
 
-      /* 売上原価（COGS）専用ハイライト */
+      /* 売上原価行の強調（cost_report 用） */
       .cogs-row td {
-        background: #fff3bf !important;
-        font-weight: bold;
+        background: #fff3c4; /* もう少し強い黄色 */
+        font-weight: 700;
       }
 
       /* ============================
@@ -116,13 +134,18 @@
         margin-top: 20px;
       }
 
-      /* usage_table はストライプ無効（自前で管理） */
+      /* usage_table ではストライプ無効にして自前で色付け */
       table.monthly-table.usage-table tbody tr:nth-child(odd),
       table.monthly-table.usage-table tbody tr:nth-child(even) {
         background: #ffffff;
       }
 
-      /* 左端列 & 指標列 */
+      /* 左端：品目、2列目：指標 */
+      table.monthly-table.usage-table th,
+      table.monthly-table.usage-table td {
+        text-align: right;
+        white-space: nowrap;
+      }
       table.monthly-table.usage-table th:first-child,
       table.monthly-table.usage-table td:first-child {
         text-align: left;
@@ -132,45 +155,20 @@
         padding-left: 12px;
       }
 
-      /* 数字の右寄せ */
-      table.monthly-table.usage-table td.num {
-        text-align: right;
-      }
-
-      /* 指標ごと色分け */
+      /* 指標ごとの色付け */
       table.monthly-table.usage-table .row-metric-pur td {
-        background: #ffffff;
+        /* 当月仕入数：白のまま（基準） */
       }
       table.monthly-table.usage-table .row-metric-use td {
-        background: #fff8e8;
+        background: #fff8e8;  /* 利用数（差引）をうっすら強調 */
         font-weight: 600;
       }
       table.monthly-table.usage-table .row-metric-stock td {
-        background: #fafafa;
+        background: #fafafa;  /* 棚卸（次月繰越） */
       }
 
-     
-{% if env == "dev" %}
-  body {
-    background: #fffaf0;   /* テスト環境：クリーム色 */
-  }
-  h1::before {
-    content: "[DEV]";
-    color: red;
-    margin-right: 10px;
-  }
-{% else %}
-  body {
-    background: #ffffff;   /* 本番環境：白 */
-  }
-{% endif %}
-      /* 数字セルは必ず右寄せ */
-      table td.num {
-        text-align: right !important;
-      }
-
-            /* 数値入力欄を右寄せ */
-      input.num {
+      /* 数字は右寄せ */
+      table.monthly-table.usage-table td.num {
         text-align: right;
       }
     </style>
@@ -178,7 +176,7 @@
     {% block head_extra %}{% endblock %}
   </head>
 
-  <body>
+  <body class="{% if 'dev' in g.app_version %}dev{% else %}main{% endif %}">
     <h1>TEST test tst 倉島事業開発 CMS PostGres Dev Env</h1>
 
     {% with messages = get_flashed_messages() %}
@@ -192,49 +190,62 @@
     {% endwith %}
 
     <!-- ============================
-         横タブメニュー（共通ナビ）
+         横タブメニュー（全リンク）
     ============================= -->
     <nav>
       <ul class="nav-tabs">
-        <li><a href="{{ url_for('new_purchase') }}"
-               class="{% if request.endpoint == 'new_purchase' %}active{% endif %}">
-            仕入れ入力</a></li>
+        <li>
+          <a href="{{ url_for('new_purchase') }}"
+             class="{% if request.endpoint == 'new_purchase' %}active{% endif %}">
+            仕入れ入力
+          </a>
+        </li>
 
-        <li><a href="{{ url_for('inventory_count') }}"
-               class="{% if request.endpoint == 'inventory_count' %}active{% endif %}">
-            棚卸し入力</a></li>
+        <li>
+          <a href="{{ url_for('inventory_count') }}"
+             class="{% if request.endpoint == 'inventory_count' %}active{% endif %}">
+            棚卸し入力
+          </a>
+        </li>
 
-        <li><a href="{{ url_for('purchase_report') }}"
-               class="{% if request.endpoint == 'purchase_report' %}active{% endif %}">
-            仕入れ照会</a></li>
+        <li>
+          <a href="{{ url_for('purchase_report') }}"
+             class="{% if request.endpoint == 'purchase_report' %}active{% endif %}">
+            仕入れ照会
+          </a>
+        </li>
 
-        <li><a href="{{ url_for('usage_report') }}"
-               class="{% if request.endpoint == 'usage_report' %}active{% endif %}">
-            月次利用量照会</a></li>
+        <li>
+          <a href="{{ url_for('usage_report') }}"
+             class="{% if request.endpoint == 'usage_report' %}active{% endif %}">
+            月次利用量照会
+          </a>
+        </li>
 
-        <li><a href="{{ url_for('cost_report') }}"
-               class="{% if request.endpoint == 'cost_report' %}active{% endif %}">
-            売上原価月次推移</a></li>
+        <li>
+          <a href="{{ url_for('cost_report') }}"
+             class="{% if request.endpoint == 'cost_report' %}active{% endif %}">
+            売上原価月次推移
+          </a>
+        </li>
 
-        <li><a href="{{ url_for('suppliers_master') }}"
-               class="{% if request.endpoint == 'suppliers_master' %}active{% endif %}">
-            仕入先マスタ</a></li>
+        <li>
+          <a href="{{ url_for('suppliers_master') }}"
+             class="{% if request.endpoint == 'suppliers_master' %}active{% endif %}">
+            仕入先マスタ
+          </a>
+        </li>
 
-        <li><a href="{{ url_for('items_master') }}"
-               class="{% if request.endpoint == 'items_master' %}active{% endif %}">
-            品目マスタ</a></li>
+        <li>
+          <a href="{{ url_for('items_master') }}"
+             class="{% if request.endpoint == 'items_master' %}active{% endif %}">
+            品目マスタ
+          </a>
+        </li>
       </ul>
     </nav>
 
     {% block content %}{% endblock %}
     {% block body_extra %}{% endblock %}
   </body>
-  <script>
-document.addEventListener("click", function(e) {
-  if (e.target.classList.contains("delete-row")) {
-    const tr = e.target.closest("tr");
-    tr.remove();
-  }
-});
-</script>
 </html>
