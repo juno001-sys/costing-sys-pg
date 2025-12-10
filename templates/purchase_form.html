@@ -1,485 +1,171 @@
-<!DOCTYPE html>
+{% extends "base.html" %}
 
-<html lang="ja">
-  <head>
-    <meta charset="utf-8" />
-    <title>取引データ入力（納品書）</title>
-    <style>
-      body {
-        font-family: system-ui, sans-serif;
-        margin: 20px;
-      }
-      label {
-        display: inline-block;
-        width: 90px;
-      }
-      table {
-        border-collapse: collapse;
-        width: 100%;
-        margin-top: 10px;
-        font-size: 13px;
-      }
-      th,
-      td {
-        border: 1px solid #ccc;
-        padding: 3px 4px;
-      }
-      th {
-        background: #f5f5f5;
-      }
-      input[type="number"] {
-        width: 80px;
-        text-align: right;
-      }
-      input[type="date"] {
-        width: 140px;
-      }
-      input[readonly] {
-        background: #f7f7f7;
-      }
-      select,
-      input[type="text"],
-      input[type="date"] {
-        padding: 2px 4px;
-        font-size: 13px;
-      }
-      .flash {
-        color: darkred;
-        margin-bottom: 10px;
-      }
-      .right {
-        text-align: right;
-      }
+{% block title %}仕入れ（納品書）入力{% endblock %}
 
-  /* 検索フォーム用レイアウト */
-  .search-box {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px 16px;
-    font-size: 12px;
-  }
-  .search-group {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .search-label {
-    white-space: nowrap;
-  }
-  .search-box input[type="date"],
-  .search-box input[type="text"] {
-    padding: 2px 4px;
-    font-size: 12px;
-  }
+{% block content %}
+  <h2>仕入れ（納品書）入力</h2>
 
-  /* 登録済み取引テーブル：1行おきに背景色 */
-  table.list-table tbody tr:nth-child(odd) {
-    background-color: #f9f9f9;  /* 1,3,5,... 行目 */
-  }
-  table.list-table tbody tr:nth-child(even) {
-    background-color: #ffffff;  /* 2,4,6,... 行目 */
-  }
-</style>
-
-  </head>
-  <body>
-    <h1>取引データ入力（納品書）</h1>
-
-<p>
-  <a href="{{ url_for('index') }}">ホーム</a> |
-  <a href="{{ url_for('suppliers_master') }}">仕入先マスタ</a> |
-  <a href="{{ url_for('items_master') }}">品目マスタ</a>
-</p>
-<hr />
-
-{% with messages = get_flashed_messages() %}
-{% if messages %}
-<div class="flash">
-  {% for msg in messages %}
-  <div>{{ msg }}</div>
-  {% endfor %}
-</div>
-{% endif %}
-{% endwith %}
-
-<form method="post" action="{{ url_for('new_purchase') }}">
-  <fieldset>
-    <legend>ヘッダ</legend>
-
-    <p>
-      <label for="store_id">店舗</label>
-      <select name="store_id" id="store_id" required>
-        <option value="">--選択--</option>
-        {% for s in stores %}
-        <option value="{{ s['id'] }}"
-          {% if selected_store_id and s['id'] == selected_store_id %}selected{% endif %}>
-          {{ s['name'] }}
+  <!-- 店舗選択フォーム -->
+  <form method="get" action="{{ url_for('new_purchase') }}">
+    <label>店舗：</label>
+    <select name="store_id" onchange="this.form.submit()">
+      <option value="">（全店舗）</option>
+      {% for s in stores %}
+        <option value="{{ s.id }}" {% if selected_store_id == s.id %}selected{% endif %}>
+          {{ s.name }}
         </option>
-        {% endfor %}
-      </select>
-    </p>
-  </fieldset>
+      {% endfor %}
+    </select>
+    <noscript><button type="submit">切替</button></noscript>
+  </form>
 
-  <fieldset>
-    <legend>明細（納品書入力）</legend>
+  <hr>
 
-    <table>
+  <!-- 新規登録フォーム（最大5行） -->
+  <form method="post" action="{{ url_for('new_purchase', store_id=selected_store_id) }}">
+    <table border="1" cellpadding="4" cellspacing="0">
       <thead>
         <tr>
-          <th style="width: 130px;">納品日</th>
-          <th style="width: 180px;">仕入先</th>
+          <th>行</th>
+          <th>納品日</th>
+          <th>仕入先</th>
           <th>品目</th>
-          <th style="width: 90px;">数量</th>
-          <th style="width: 100px;">単価</th>
-          <th style="width: 110px;">金額</th>
+          <th>数量</th>
+          <th>単価</th>
         </tr>
       </thead>
       <tbody>
         {% for i in range(1, 6) %}
-        <tr class="detail-row">
-          <!-- 納品日 -->
+        <tr>
+          <td>{{ i }}</td>
           <td>
-            <input
-              type="date"
-              name="detail_date_{{ i }}"
-              value="{{ request.form.get('detail_date_' ~ i, '') }}"
-            />
+            <input type="date" name="detail_date_{{ i }}">
           </td>
-
-          <!-- 仕入先 -->
           <td>
-            <select name="supplier_id_{{ i }}" class="col-supplier">
-              <option value="">--選択--</option>
-              {% for sup in suppliers %}
-              <option value="{{ sup.id }}">
-                {{ sup.name }}
-              </option>
+            <select name="supplier_id_{{ i }}">
+              <option value="">（選択してください）</option>
+              {% for s in suppliers %}
+                <option value="{{ s.id }}">{{ s.name }}</option>
               {% endfor %}
             </select>
           </td>
-
-          <!-- 品目 -->
           <td>
-            <select name="item_id_{{ i }}" class="col-item">
-              <option value="">--選択--</option>
-              <!-- 仕入先選択時に JS で差し替え -->
+            <!-- JS で supplier 選択時に品目プルダウンを埋める前提 -->
+            <select name="item_id_{{ i }}" class="item-select" data-row="{{ i }}">
+              <option value="">（仕入先を選択してください）</option>
             </select>
           </td>
-
-          <!-- 数量 -->
           <td>
-            <input
-              type="text"
-              name="quantity_{{ i }}"
-              class="col-qty right"
-              value="{{ request.form.get('quantity_' ~ i, '') }}"
-            />
+            <input type="text" name="quantity_{{ i }}" size="6">
           </td>
-
-          <!-- 単価 -->
           <td>
-            <input
-              type="text"
-              name="unit_price_{{ i }}"
-              class="col-price right"
-              value="{{ request.form.get('unit_price_' ~ i, '') }}"
-            />
-          </td>
-
-          <!-- 金額（読み取り専用） -->
-          <td class="right">
-            <span class="col-amount"></span>
+            <input type="text" name="unit_price_{{ i }}" size="8">
           </td>
         </tr>
         {% endfor %}
       </tbody>
-      <tfoot>
-        <tr>
-          <th colspan="5" class="right">合計</th>
-          <th class="right">
-            <span id="grand-total"></span>
-          </th>
-        </tr>
-      </tfoot>
     </table>
-  </fieldset>
 
-  <p style="margin-top: 10px">
-    <button type="submit">登録する</button>
-  </p>
-</form>
+    <p style="margin-top: 12px;">
+      <button type="submit">登録する</button>
+    </p>
+  </form>
 
-<hr />
+  <hr>
 
-<div style="display:flex; align-items:baseline; gap:12px;">
-  <h2 style="margin:0;">登録済みの取引</h2>
-  <h6 style="margin:0; font-weight:normal; color:#555;">
-    店舗を選択 → 条件で絞り込み ／ 見出しクリックで並べ替え
-  </h6>
-</div>
+  <!-- 検索フォーム（直近50件） -->
+  <h3>直近取引一覧（最新50件）</h3>
 
-{% if selected_store_id %}
-
-<form method="get"
-      action="{{ url_for('new_purchase') }}"
-      style="margin:6px 0 10px 0; padding:6px 8px; border:1px solid #ccc; border-radius:4px;">
-  <input type="hidden" name="store_id" value="{{ selected_store_id }}">
-
-  <div class="search-box">
-    <div class="search-group">
-      <span class="search-label">期間：</span>
-      <input type="date" name="from_date" value="{{ from_date or '' }}">
-      <span>〜</span>
+  <form method="get" action="{{ url_for('new_purchase') }}">
+    <input type="hidden" name="store_id" value="{{ selected_store_id or '' }}">
+    <div>
+      <label>期間：</label>
+      <input type="date" name="from_date" value="{{ from_date or '' }}"> 〜
       <input type="date" name="to_date" value="{{ to_date or '' }}">
     </div>
-
-    <div class="search-group">
-      <span class="search-label">キーワード：</span>
-      <input type="text"
-             name="q"
-             value="{{ search_q or '' }}"
-             placeholder="品目名・仕入先名・コードなど"
-             style="width: 220px;">
+    <div style="margin-top: 4px;">
+      <label>キーワード：</label>
+      <input type="text" name="q" value="{{ search_q or '' }}" size="20">
     </div>
-
-    <div class="search-group">
+    <div style="margin-top: 8px;">
       <button type="submit">検索</button>
-      <button type="submit" name="clear" value="1">条件クリア</button>
+      <a href="{{ url_for('new_purchase', store_id=selected_store_id, clear=1) }}">
+        条件クリア
+      </a>
     </div>
-  </div>
-</form>
+  </form>
 
-{% if purchases %}
-<table class="list-table">
-  <thead>
-    <tr>
-      <th class="sortable" data-type="number" data-label="ID">ID</th>
-      <th class="sortable" data-type="string" data-label="納品日">納品日</th>
-      <th class="sortable" data-type="string" data-label="仕入先">仕入先</th>
-      <th class="sortable" data-type="string" data-label="品目">品目</th>
-      <th class="right sortable" data-type="number" data-label="数量">数量</th>
-      <th class="right sortable" data-type="number" data-label="単価">単価</th>
-      <th class="right sortable" data-type="number" data-label="金額">金額</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for row in purchases %}
-    <tr>
-      <td>
-        <a href="{{ url_for('edit_purchase', purchase_id=row['id']) }}">
-          {{ row["id"] }}
-        </a>
-      </td>
-      <td>{{ row["delivery_date"] }}</td>
-      <td>{{ row["supplier_name"] or "" }}</td>
-      <td>{{ row["item_name"] or "" }}</td>
-      <td class="right">{{ row["quantity"] }}</td>
-      <td class="right">{{ "{:,}".format(row["unit_price"] or 0) }}</td>
-      <td class="right">{{ "{:,}".format(row["amount"] or 0) }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-{% else %}
-<p>該当する取引がありません。</p>
-{% endif %}
+  <table border="1" cellpadding="4" cellspacing="0" style="margin-top: 12px;">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>納品日</th>
+        <th>仕入先</th>
+        <th>品目</th>
+        <th>数量</th>
+        <th>単価</th>
+        <th>金額</th>
+        <th>編集</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in purchases %}
+        <tr>
+          <td>{{ p.id }}</td>
+          <td>{{ p.delivery_date }}</td>
+          <td>{{ p.supplier_name }}</td>
+          <td>{{ p.item_name }}</td>
+          <td style="text-align:right;">{{ "{:,}".format(p.quantity) }}</td>
+          <td style="text-align:right;">{{ "{:,}".format(p.unit_price) }}</td>
+          <td style="text-align:right;">{{ "{:,}".format(p.amount) }}</td>
+          <td>
+            <a href="{{ url_for('edit_purchase', purchase_id=p.id) }}">編集</a>
+          </td>
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="8">該当する取引がありません。</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 
-{% else %}
-<p>店舗を選択すると、登録済みの取引が表示されます。</p>
-{% endif %}
+{% endblock %}
 
+{% block body_extra %}
 <script>
-  // 全角数字 → 半角数字
-  function toHalfWidth(str) {
-    return (str || "").replace(/[０-９]/g, ch =>
-      String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)
-    );
-  }
+  // 仕入先ごと品目一覧 API を使ってセレクトを埋める簡易JS
+  document.addEventListener("change", function (e) {
+    const target = e.target;
+    if (target.name && target.name.startsWith("supplier_id_")) {
+      const row = target.name.split("_").pop();
+      const supplierId = target.value;
+      const itemSelect = document.querySelector('select[name="item_id_' + row + '"]');
+      if (!itemSelect) return;
 
-  // ==== 明細行ごとに初期化 ====
-  document.querySelectorAll(".detail-row").forEach(function (row) {
-    const supplierSelect = row.querySelector(".col-supplier");
-    const itemSelect     = row.querySelector(".col-item");
-    const qty            = row.querySelector(".col-qty");
-    const price          = row.querySelector(".col-price");
-    const amt            = row.querySelector(".col-amount");
+      itemSelect.innerHTML = '<option value="">読み込み中...</option>';
 
-    // 仕入先変更 → 品目リスト読込
-    supplierSelect.addEventListener("change", function () {
-      const supplierId = this.value;
+      if (!supplierId) {
+        itemSelect.innerHTML = '<option value="">（仕入先を選択してください）</option>';
+        return;
+      }
 
-      // 品目プルダウン初期化
-      itemSelect.innerHTML = "";
-      const opt0 = document.createElement("option");
-      opt0.value = "";
-      opt0.textContent = "--選択--";
-      itemSelect.appendChild(opt0);
-
-      // 数量・金額もクリア
-      qty.value = "";
-      amt.textContent = "";
-
-      if (!supplierId) return;
-
-      fetch(`/api/items/by_supplier/${supplierId}`)
+      fetch("/api/items/by_supplier/" + supplierId)
         .then(res => res.json())
-        .then(items => {
-          items.forEach(it => {
-            const opt = document.createElement("option");
-            opt.value = it.id;
-            opt.textContent = it.name;
-            // unit（ケース入数など）を data-unit に保持
-            opt.dataset.unit = it.unit;
-            itemSelect.appendChild(opt);
+        .then(data => {
+          let options = '<option value="">（選択してください）</option>';
+          data.forEach(function (item) {
+            const unit = item.unit ? ' / ' + item.unit : '';
+            options += '<option value="' + item.id + '">' +
+                        item.code + ' ' + item.name + unit +
+                       '</option>';
           });
+          itemSelect.innerHTML = options;
         })
-        .catch(err => console.error("品目取得エラー:", err));
-    });
-
-    // 品目変更 → unit を数量に反映
-    itemSelect.addEventListener("change", function () {
-      const opt = this.options[this.selectedIndex];
-
-      if (!opt) {
-        qty.value = "";
-        amt.textContent = "";
-        updateTotal();
-        return;
-      }
-
-      let u = opt.dataset.unit;
-
-      if (u == null || u === "") {
-        qty.value = "";
-      } else {
-        u = String(u);
-        u = toHalfWidth(u).replace(/[^\d]/g, "");
-        qty.value = u;
-      }
-
-      qty.dispatchEvent(new Event("input"));
-    });
-
-    // 数量入力
-    qty.addEventListener("input", function () {
-      calc();
-    });
-
-    qty.addEventListener("blur", function () {
-      let raw = qty.value;
-      raw = toHalfWidth(raw).replace(/[^\d]/g, "");
-      qty.value = raw;
-      calc();
-    });
-
-    // 単価入力：全角→半角＋3桁区切り
-    price.addEventListener("input", function () {
-      let raw = price.value;
-
-      raw = toHalfWidth(raw);
-      raw = raw.replace(/,/g, "");
-      raw = raw.replace(/[^\d]/g, "");
-
-      if (!raw) {
-        price.value = "";
-        calc();
-        return;
-      }
-
-      const num = parseInt(raw, 10);
-      if (isNaN(num)) {
-        price.value = "";
-        calc();
-        return;
-      }
-
-      price.value = num.toLocaleString();
-      calc();
-    });
-
-    // 金額計算（数量 × 単価）
-    function calc() {
-      const q = parseInt(toHalfWidth(qty.value || "0"), 10) || 0;
-      const p = parseInt(toHalfWidth(price.value || "0").replace(/,/g, ""), 10) || 0;
-      const a = q * p;
-
-      amt.textContent = a ? a.toLocaleString() : "";
-      updateTotal();
+        .catch(() => {
+          itemSelect.innerHTML = '<option value="">読み込み失敗</option>';
+        });
     }
-  });
-
-  // 全行合計
-  function updateTotal() {
-    let sum = 0;
-
-    document.querySelectorAll(".col-amount").forEach(span => {
-      const raw = (span.textContent || "").replace(/,/g, "");
-      if (!raw) return;
-      const v = parseInt(raw, 10);
-      if (!isNaN(v)) sum += v;
-    });
-
-    const totalElem = document.getElementById("grand-total");
-    if (totalElem) {
-      totalElem.textContent = sum ? sum.toLocaleString() : "";
-    }
-  }
-
-  // 店舗選択 → 一覧フィルタ再読込
-  const headerStoreSelect = document.getElementById("store_id");
-  if (headerStoreSelect) {
-    headerStoreSelect.addEventListener("change", function () {
-      const storeId = this.value;
-      const url = new URL(window.location.href);
-
-      if (storeId) url.searchParams.set("store_id", storeId);
-      else url.searchParams.delete("store_id");
-
-      window.location.href = url.toString();
-    });
-  }
-
-  // 一覧テーブル ソート（矢印付き）
-  document.querySelectorAll(".list-table th.sortable").forEach(function (th) {
-    let asc = true;
-    const table = th.closest("table");
-    const index = Array.prototype.indexOf.call(th.parentNode.children, th);
-    const type = th.dataset.type;
-
-    th.style.cursor = "pointer";
-
-    th.addEventListener("click", function () {
-      const tbody = table.querySelector("tbody");
-      const rows = Array.from(tbody.querySelectorAll("tr"));
-
-      rows.sort((a, b) => {
-        let av = a.children[index].textContent.trim();
-        let bv = b.children[index].textContent.trim();
-
-        if (type === "number") {
-          av = parseFloat(av.replace(/,/g, "")) || 0;
-          bv = parseFloat(bv.replace(/,/g, "")) || 0;
-        }
-
-        if (av < bv) return asc ? -1 : 1;
-        if (av > bv) return asc ? 1 : -1;
-        return 0;
-      });
-
-      rows.forEach(r => tbody.appendChild(r));
-
-      // 全ヘッダの矢印リセット
-      document.querySelectorAll(".list-table th.sortable").forEach(other => {
-        other.textContent = other.dataset.label;
-      });
-
-      // クリック列にだけ矢印
-      th.textContent = th.dataset.label + (asc ? " ▲" : " ▼");
-      asc = !asc;
-    });
   });
 </script>
-
-  </body>
-</html>
+{% endblock %}
