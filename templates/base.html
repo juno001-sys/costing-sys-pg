@@ -51,31 +51,48 @@
         margin: 20px 0;
         border-radius: 6px;
       }
-
-      /* ============================
-   テーブルの交互行ストライプ
+/* ============================
+   テーブル共通デザイン
 ============================ */
 table {
   border-collapse: collapse;
   width: 100%;
+  margin-top: 20px;
 }
 
+/* セル */
 table th, table td {
   padding: 6px 10px;
   border: 1px solid #ddd;
+  text-align: left;
 }
 
-table tr:nth-child(even) {
+/* ヘッダー行 */
+table thead tr {
+  background: #f0f4ff;      /* 薄い青 */
+  font-weight: bold;
+  border-bottom: 2px solid #b8c6e6;
+}
+
+/* 交互行ストライプ */
+table tbody tr:nth-child(odd) {
+  background: #ffffff;
+}
+table tbody tr:nth-child(even) {
   background: #f7f7f7;
 }
 
-table tr:nth-child(odd) {
-  background: #ffffff;
+/* 行ホバー */
+table tbody tr:hover {
+  background: #e8f2ff;
 }
 
-/* 行ホバー時のハイライト */
-table tr:hover {
-  background: #e8f2ff;
+/* 合計行（tfoot または class="total-row" に対応） */
+table tfoot tr,
+.total-row {
+  background: #fff8d5;      /* 薄い黄色 */
+  font-weight: bold;
+  border-top: 2px solid #e0cd99;
 }
     </style>
 
