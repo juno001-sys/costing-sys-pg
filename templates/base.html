@@ -164,7 +164,10 @@
     background: #ffffff;   /* 本番環境：白 */
   }
 {% endif %}
-
+      /* 数字セルは必ず右寄せ */
+      table td.num {
+        text-align: right !important;
+      }
     </style>
 
     {% block head_extra %}{% endblock %}
