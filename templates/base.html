@@ -51,74 +51,116 @@
         margin: 20px 0;
         border-radius: 6px;
       }
-/* ============================
-   テーブル共通デザイン
-============================ */
-table {
-  border-collapse: collapse;
-  width: 100%;
-  margin-top: 20px;
-}
+    /* ============================
+    テーブル共通デザイン
+    ============================ */
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 20px;
+      }
 
-/* セル */
-table th, table td {
-  padding: 6px 10px;
-  border: 1px solid #ddd;
-  text-align: left;
-}
+      /* セル */
+      table th,
+      table td {
+        padding: 6px 10px;
+        border: 1px solid #ddd;
+        text-align: left;
+      }
 
-/* ヘッダー行 */
-table thead tr {
-  background: #f0f4ff;      /* 薄い青 */
-  font-weight: bold;
-  border-bottom: 2px solid #b8c6e6;
-}
+      /* ヘッダー行 */
+      table thead tr {
+        background: #f0f4ff; /* 薄い青 */
+        font-weight: bold;
+        border-bottom: 2px solid #b8c6e6;
+      }
 
-/* 交互行ストライプ */
-table tbody tr:nth-child(odd) {
-  background: #ffffff;
-}
-table tbody tr:nth-child(even) {
-  background: #f7f7f7;
-}
+      /* 交互行ストライプ */
+      table tbody tr:nth-child(odd) {
+        background: #ffffff;
+      }
+      table tbody tr:nth-child(even) {
+        background: #f7f7f7;
+      }
 
-/* 行ホバー */
-table tbody tr:hover {
-  background: #e8f2ff;
-}
+      /* 行ホバー */
+      table tbody tr:hover {
+        background: #e8f2ff;
+      }
 
-/* 合計行（tfoot または class="total-row" に対応） */
-table tfoot tr,
-.total-row {
-  background: #fff8d5;      /* 薄い黄色 */
-  font-weight: bold;
-  border-top: 2px solid #e0cd99;
-}
+      /* 合計行（tfoot または class="total-row" に対応） */
+      table tfoot tr,
+      .total-row {
+        background: #fff8d5; /* 薄い黄色 */
+        font-weight: bold;
+        border-top: 2px solid #e0cd99;
+      }
     </style>
 
     {% block head_extra %}{% endblock %}
   </head>
 
   <body>
-
     <h1>TEST test tst 倉島事業開発 CMS PostGres Dev Env</h1>
 
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        <div class="flash">
-          {% for msg in messages %}
-            <div>{{ msg }}</div>
-          {% endfor %}
-        </div>
-      {% endif %}
-    {% endwith %}
+    {% with messages = get_flashed_messages() %} {% if messages %}
+    <div class="flash">
+      {% for msg in messages %}
+      <div>{{ msg }}</div>
+      {% endfor %}
+    </div>
+    {% endif %} {% endwith %}
+/* ============================
+   月次利用量（usage_report）専用
+============================ */
+table.monthly-table.usage-table {
+  margin-top: 20px;
+}
 
+/* usage_table ではストライプ無効にして自前で色付け */
+table.monthly-table.usage-table tbody tr:nth-child(odd),
+table.monthly-table.usage-table tbody tr:nth-child(even) {
+  background: #ffffff;
+}
+
+/* 左端：品目、2列目：指標 */
+table.monthly-table.usage-table th,
+table.monthly-table.usage-table td {
+  text-align: right;
+  white-space: nowrap;
+}
+table.monthly-table.usage-table th:first-child,
+table.monthly-table.usage-table td:first-child {
+  text-align: left;
+}
+table.monthly-table.usage-table td.metric-label {
+  text-align: left;
+  padding-left: 12px;
+}
+
+/* 指標ごとの色付け */
+table.monthly-table.usage-table .row-metric-pur td {
+  /* 当月仕入数：白のまま（基準） */
+}
+
+table.monthly-table.usage-table .row-metric-use td {
+  background: #fff8e8;  /* 利用数（差引）をうっすら強調 */
+  font-weight: 600;
+}
+
+table.monthly-table.usage-table .row-metric-stock td {
+  background: #fafafa;  /* 棚卸（次月繰越） */
+}
+
+/* 数字は右寄せ */
+table.monthly-table.usage-table td.num {
+  text-align: right;
+}
     <!-- ============================
          横タブメニュー（全リンク）
     ============================= -->
     <nav>
       <ul class="nav-tabs">
-
         <li><a href="{{ url_for('new_purchase') }}">仕入れ入力</a></li>
 
         <li><a href="{{ url_for('inventory_count') }}">棚卸し入力</a></li>
@@ -132,13 +174,9 @@ table tfoot tr,
         <li><a href="{{ url_for('suppliers_master') }}">仕入先マスタ</a></li>
 
         <li><a href="{{ url_for('items_master') }}">品目マスタ</a></li>
-
       </ul>
     </nav>
 
-    {% block content %}
-    {% endblock %}
-
-    {% block body_extra %}{% endblock %}
+    {% block content %} {% endblock %} {% block body_extra %}{% endblock %}
   </body>
 </html>
