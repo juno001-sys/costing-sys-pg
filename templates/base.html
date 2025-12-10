@@ -14,18 +14,37 @@
       h1 {
         margin-bottom: 24px;
       }
-      h2 {
-        margin-top: 28px;
-      }
-      nav ul {
+
+      /* ============================
+         横タブメニュー
+      ============================= */
+      .nav-tabs {
+        display: flex;
+        gap: 28px;
         list-style: none;
-        padding-left: 0;
-      }
-      nav li {
-        margin: 6px 0;
+        padding: 0;
+        margin: 0 0 30px 0;
+        border-bottom: 2px solid #ddd;
       }
 
-      /* flash メッセージ用 */
+      .nav-tabs li {
+        margin: 0;
+      }
+
+      .nav-tabs a {
+        display: inline-block;
+        padding: 8px 14px;
+        text-decoration: none;
+        color: #333;
+        font-weight: 600;
+        border-radius: 6px 6px 0 0;
+      }
+
+      .nav-tabs a:hover {
+        background: #f0f0f0;
+      }
+
+      /* フラッシュメッセージ */
       .flash {
         background: #ffeebb;
         border: 1px solid #e0c97f;
@@ -54,33 +73,18 @@
       {% endif %}
     {% endwith %}
 
-    <!-- 共通メニュー（全ページ共通） -->
+    <!-- ============================
+         横タブメニュー（カテゴリ別）
+    ============================= -->
     <nav>
-      <h2>入力メニュー</h2>
-      <ul>
-        <li><a href="{{ url_for('new_purchase') }}">仕入れ（納品書）入力</a></li>
-        <li><a href="{{ url_for('inventory_count') }}">棚卸し入力</a></li>
-      </ul>
+      <ul class="nav-tabs">
 
-      <section>
-        <h2>照会・レポート</h2>
-        <ul>
-          <li>
-            <a href="{{ url_for('purchase_report') }}">仕入れ照会（月次・仕入先別）</a>
-          </li>
-          <li>
-            <a href="{{ url_for('usage_report') }}">月次利用量（仕入＋棚卸ベース）</a>
-          </li>
-          <li>
-            <a href="{{ url_for('cost_report') }}">売上原価 月次推移</a>
-          </li>
-        </ul>
-      </section>
+        <li><a href="{{ url_for('new_purchase') }}">入力</a></li>
 
-      <h2>マスタ管理</h2>
-      <ul>
-        <li><a href="{{ url_for('suppliers_master') }}">仕入先マスタ</a></li>
-        <li><a href="{{ url_for('items_master') }}">品目マスタ</a></li>
+        <li><a href="{{ url_for('purchase_report') }}">レポート</a></li>
+
+        <li><a href="{{ url_for('suppliers_master') }}">マスタ</a></li>
+
       </ul>
     </nav>
 
