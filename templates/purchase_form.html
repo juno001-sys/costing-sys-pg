@@ -44,14 +44,15 @@
   <!-- 明細テーブル -->
   <input type="hidden" id="row_count" name="row_count" value="8">
 
-  <table class="monthly-table" id="items-table">
+  <table class="monthly-table" id="items-table" style="width:80%;">
     <thead>
       <tr>
         <th style="width:40px;">No.</th>
-        <th>品目</th>
+        <th style="width:220px;">品目</th>
         <th style="width:90px;">数量</th>
         <th style="width:110px;">単価</th>
         <th style="width:120px;">金額</th>
+        <th style="width:60px;">操作</th>
       </tr>
     </thead>
     <tbody id="item-rows">
@@ -61,22 +62,32 @@
         <td>{{ i }}</td>
 
         <td>
-          <select name="item_id_{{ i }}" class="item-select" data-selected="">
+          <select name="item_id_{{ i }}" class="item-select" data-selected=""
+                  style="width:200px;">
             <option value="">（品目を選択）</option>
           </select>
         </td>
 
         <td>
-          <input type="text" name="quantity_{{ i }}" class="num qty-input" style="width:80px;">
+          <input type="text" name="quantity_{{ i }}"
+                 class="num qty-input"
+                 style="width:80px; text-align:right;">
         </td>
 
         <td>
-          <input type="text" name="unit_price_{{ i }}" class="num price-input" style="width:100px;">
+          <input type="text" name="unit_price_{{ i }}"
+                 class="num price-input"
+                 style="width:100px; text-align:right;">
         </td>
 
         <td>
-          <input type="text" name="amount_display_{{ i }}" class="num amount-display"
-                 style="width:120px;" readonly>
+          <input type="text" name="amount_display_{{ i }}"
+                 class="num amount-display"
+                 style="width:120px; text-align:right;" readonly>
+        </td>
+
+        <td>
+          <button type="button" class="delete-row">✕</button>
         </td>
       </tr>
       {% endfor %}
@@ -95,7 +106,6 @@
 </form>
 
 <hr style="margin:32px 0;">
-
 
 <!-- ============================
      直近50件（既存）
@@ -163,10 +173,9 @@
 
 {% endblock %}
 
-
 {% block body_extra %}
 <script>
-document.addEventListener("DOMContentLoaded", function(){
+document.addEventListener("DOMContentLoaded", function () {
 
   /* ------------------------------
      仕入先変更 → 品目リスト再取得
@@ -174,7 +183,9 @@ document.addEventListener("DOMContentLoaded", function(){
   function loadItems(supplierId) {
     const selects = document.querySelectorAll(".item-select");
     if (!supplierId) {
-      selects.forEach(sel => sel.innerHTML = '<option value="">（品目を選択）</option>');
+      selects.forEach(sel => {
+        sel.innerHTML = '<option value="">（品目を選択）</option>';
+      });
       return;
     }
     fetch(`/api/items/by_supplier/${supplierId}`)
@@ -205,22 +216,46 @@ document.addEventListener("DOMContentLoaded", function(){
     const price = document.querySelectorAll(".price-input");
     const amt = document.querySelectorAll(".amount-display");
     for (let i = 0; i < qty.length; i++) {
-      const q = parseInt(qty[i].value.replace(/,/g, "") || 0);
-      const p = parseInt(price[i].value.replace(/,/g, "") || 0);
+      const q = parseInt((qty[i].value || "0").replace(/,/g, ""), 10) || 0;
+      const p = parseInt((price[i].value || "0").replace(/,/g, ""), 10) || 0;
       const a = q * p;
       amt[i].value = a ? a.toLocaleString("ja-JP") : "";
     }
   }
   document.addEventListener("input", recalcAmounts);
 
+  /* ------------------------------
+     行削除ボタン（内容クリア＋非表示）
+  ------------------------------ */
+  document.addEventListener("click", function (e) {
+    if (!e.target.classList.contains("delete-row")) return;
+
+    const tr = e.target.closest("tr");
+    if (!tr) return;
+
+    tr.querySelectorAll("select, input").forEach(el => {
+      if (el.name && (
+        el.name.startsWith("item_id_") ||
+        el.name.startsWith("quantity_") ||
+        el.name.startsWith("unit_price_") ||
+        el.name.startsWith("amount_display_")
+      )) {
+        el.value = "";
+      }
+    });
+
+    tr.style.display = "none";
+    recalcAmounts();
+  });
 
   /* ------------------------------
      ＋行を追加（最大 30 行）
   ------------------------------ */
   const addBtn = document.getElementById("add-row-btn");
   const tbody = document.getElementById("item-rows");
+
   addBtn.addEventListener("click", () => {
-    let count = parseInt(document.getElementById("row_count").value);
+    let count = parseInt(document.getElementById("row_count").value, 10);
     if (count >= 30) {
       alert("これ以上追加できません（上限30行）");
       return;
@@ -232,16 +267,29 @@ document.addEventListener("DOMContentLoaded", function(){
     tr.innerHTML = `
       <td>${count}</td>
       <td>
-        <select name="item_id_${count}" class="item-select">
+        <select name="item_id_${count}" class="item-select" style="width:200px;">
           <option value="">（品目を選択）</option>
         </select>
       </td>
-      <td><input type="text" class="num qty-input" name="quantity_${count}" style="width:80px;"></td>
-      <td><input type="text" class="num price-input" name="unit_price_${count}" style="width:100px;"></td>
-      <td><input type="text" class="num amount-display" name="amount_display_${count}" style="width:120px;" readonly></td>
+      <td>
+        <input type="text" class="num qty-input"
+               name="quantity_${count}" style="width:80px; text-align:right;">
+      </td>
+      <td>
+        <input type="text" class="num price-input"
+               name="unit_price_${count}" style="width:100px; text-align:right;">
+      </td>
+      <td>
+        <input type="text" class="num amount-display"
+               name="amount_display_${count}" style="width:120px; text-align:right;" readonly>
+      </td>
+      <td>
+        <button type="button" class="delete-row">✕</button>
+      </td>
     `;
     tbody.appendChild(tr);
 
+    // 新しい行にも現在選択中の仕入先の品目を反映
     loadItems(supplierSelect.value);
   });
 
