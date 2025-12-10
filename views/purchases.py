@@ -1,4 +1,4 @@
-# views/purchase.py
+# views/purchases.py
 
 from datetime import datetime
 
@@ -12,9 +12,14 @@ from flask import (
 )
 
 
-def init_app(app, get_db, log_purchase_change):
+def init_purchase_views(app, get_db, log_purchase_change):
     """
-    app.py から呼び出して、仕入れ系のルートをまとめて登録する。
+    app.py 側から呼び出してルートを登録する初期化関数。
+
+        from views.purchases import init_purchase_views
+        init_purchase_views(app, get_db, log_purchase_change)
+
+    という形で使います。
     """
 
     # ----------------------------------------
@@ -35,11 +40,9 @@ def init_app(app, get_db, log_purchase_change):
             "SELECT id, name FROM suppliers ORDER BY code"
         ).fetchall()
 
-        # -----------------------------------------
         # NameError 対策：常に変数を初期化しておく
-        # -----------------------------------------
         purchases = []
-        results_count = 0
+        results_count = 0  # いまは未使用だが念のため残しておく
 
         # ----------------------------------------------------
         # POST: 登録（新規 INSERT）処理
