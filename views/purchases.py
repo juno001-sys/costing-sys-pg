@@ -22,8 +22,8 @@ def init_purchase_views(app, get_db, log_purchase_change):
     という形で使います。
     """
 
-        # ----------------------------------------
-    # 取引入力（納品書単位）
+    # ----------------------------------------
+    # 取引入力（納品書）
     # /purchases/new
     # ----------------------------------------
     @app.route("/purchases/new", methods=["GET", "POST"])
@@ -41,43 +41,46 @@ def init_purchase_views(app, get_db, log_purchase_change):
         ).fetchall()
 
         # ----------------------------------------------------
-        # POST: 納品書（1仕入先＋1日付）で複数行 INSERT
+        # POST: 登録（新規 INSERT）処理
+        #   ヘッダー：store_id, supplier_id, delivery_date
+        #   明細   ：item_id_i, quantity_i, unit_price_i (i=1..row_count)
         # ----------------------------------------------------
         if request.method == "POST":
             store_id = request.form.get("store_id") or None
-            supplier_id = request.form.get("supplier_id") or ""
+            header_supplier_id = request.form.get("supplier_id") or None
             delivery_date = request.form.get("delivery_date") or ""
 
+            # 必須チェック（ブラウザ側でも required だが念のため）
+            if not store_id or not header_supplier_id or not delivery_date:
+                flash("店舗・仕入先・納品日は必須です。")
+                return redirect(url_for("new_purchase", store_id=store_id or ""))
+
+            # 行数（＋行追加ボタンで増える）
+            try:
+                row_count = int(request.form.get("row_count") or 0)
+            except ValueError:
+                row_count = 0
+
             def to_int(val: str) -> int:
-                """カンマ・全角混じりでも int にする保険関数"""
+                """カンマ入り・全角混じりでも、とにかく int にする保険関数"""
                 if not val:
                     return 0
                 s = str(val)
+                # 全角数字 → 半角
                 s = "".join(
                     chr(ord(c) - 0xFEE0) if "０" <= c <= "９" else c
                     for c in s
                 )
+                # カンマ除去
                 s = s.replace(",", "")
                 try:
                     return int(s)
                 except ValueError:
                     return 0
 
-            # 必須チェック（伝票ヘッダー）
-            if not store_id:
-                flash("店舗を選択してください。")
-                return redirect(url_for("new_purchase"))
-            if not supplier_id:
-                flash("仕入先を選択してください。")
-                return redirect(url_for("new_purchase", store_id=store_id))
-            if not delivery_date:
-                flash("納品日を入力してください。")
-                return redirect(url_for("new_purchase", store_id=store_id))
-
             any_inserted = False
 
-            # 明細 1〜5 行（必要なら後で 10 行などに増やせる）
-            for i in range(1, 6):
+            for i in range(1, row_count + 1):
                 item_id = request.form.get(f"item_id_{i}") or ""
                 qty_raw = request.form.get(f"quantity_{i}") or ""
                 unit_price_raw = request.form.get(f"unit_price_{i}") or ""
@@ -87,18 +90,15 @@ def init_purchase_views(app, get_db, log_purchase_change):
                 amount_val = qty_val * unit_price_val
 
                 # 完全に空行ならスキップ
-                if (
-                    not item_id
-                    and qty_val == 0
-                    and unit_price_val == 0
-                ):
+                if not item_id and qty_val == 0 and unit_price_val == 0:
                     continue
 
-                # 品目がない行はスキップ（ヘッダは既にチェック済み）
+                # 最低限の必須：品目
                 if not item_id:
+                    # その行だけスキップ
                     continue
 
-                # INSERT（伝票共通の store_id / supplier_id / delivery_date を使用）
+                # INSERT（★RETURNING id）
                 cur = db.execute(
                     """
                     INSERT INTO purchases
@@ -109,7 +109,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
                     """,
                     (
                         store_id,
-                        supplier_id,
+                        header_supplier_id,
                         item_id,
                         delivery_date,
                         qty_val,
@@ -122,11 +122,13 @@ def init_purchase_views(app, get_db, log_purchase_change):
                 row = cur.fetchone()
                 new_id = row["id"]
 
+                # ログ用に新レコードを読み直し
                 new_row = db.execute(
                     "SELECT * FROM purchases WHERE id = ?",
                     (new_id,),
                 ).fetchone()
 
+                # CREATE ログを記録
                 log_purchase_change(
                     db,
                     purchase_id=new_id,
@@ -142,9 +144,10 @@ def init_purchase_views(app, get_db, log_purchase_change):
                 db.commit()
                 flash("取引を登録しました。")
             else:
-                flash("登録対象の明細行がありません。")
+                flash("登録対象の行がありません。")
 
-            return redirect(url_for("new_purchase", store_id=store_id))
+            # ヘッダーで選んだ店舗を維持して再表示
+            return redirect(url_for("new_purchase", store_id=store_id or ""))
 
         # ----------------------------------------------------
         # GET: 画面表示（フォーム + 検索付き直近50件）
@@ -159,6 +162,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
             else:
                 return redirect(url_for("new_purchase"))
 
+        # 検索条件
         from_date = request.args.get("from_date") or ""
         to_date = request.args.get("to_date") or ""
         search_q = (request.args.get("q") or "").strip()
@@ -216,9 +220,9 @@ def init_purchase_views(app, get_db, log_purchase_change):
             from_date=from_date,
             to_date=to_date,
             search_q=search_q,
-            active_tab="purchase",
         )
-        
+
+    
     # ----------------------------------------
     # API: 仕入先に紐づく品目一覧を返す
     # /api/items/by_supplier/<supplier_id>
