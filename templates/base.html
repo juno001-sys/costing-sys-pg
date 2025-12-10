@@ -99,7 +99,17 @@
         font-weight: bold;
         border-bottom: 2px solid #b8c6e6;
       }
+/* TH は常に左寄せ */
+table th {
+  text-align: left !important;
+}
 
+/* 数字項目は右寄せ */
+table td.num,
+input.num,
+.amount-display {
+  text-align: right !important;
+}
       /* 交互行ストライプ */
       table tbody tr:nth-child(odd) {
         background: #ffffff;
