@@ -252,32 +252,26 @@ document.addEventListener("DOMContentLoaded", function(){
      数量 × 単価 → 金額 ＋ 伝票合計
   ----------------------------------- */
   function recalcAmounts() {
-    const rows = document.querySelectorAll("#item-rows tr");
-    let total = 0;
+  const rows = document.querySelectorAll("#item-rows tr");
+  let total = 0;
 
-    rows.forEach(tr => {
-      const qty   = tr.querySelector(".qty-input");
-      const price = tr.querySelector(".price-input");
-      const amountField = tr.querySelector(".amount-display");
+  rows.forEach(tr => {
+    const qty = tr.querySelector(".qty-input");
+    const price = tr.querySelector(".price-input");
+    const amt = tr.querySelector(".amount-display");
 
-      const q = parseInt((qty?.value || "0").replace(/,/g, "")) || 0;
-      const p = parseInt((price?.value || "0").replace(/,/g, "")) || 0;
-      const a = q * p;
+    const q = parseFloat((qty?.value || "0").replace(/,/g, "")) || 0;
+    const p = parseFloat((price?.value || "0").replace(/,/g, "")) || 0;
+    const a = q * p;
 
-      if (amountField) {
-        amountField.value = a ? a.toLocaleString("ja-JP") : "";
-      }
+    if (amt) amt.value = a ? a.toLocaleString("ja-JP") : "";
 
-      total += a;
-    });
+    total += a;
+  });
 
-    const totalCell = document.getElementById("total-amount-cell");
-    if (totalCell) {
-      totalCell.textContent = total ? total.toLocaleString("ja-JP") : "";
-    }
-  }
-  document.addEventListener("input", recalcAmounts);
-
+  const totalCell = document.getElementById("total-amount-cell");
+  if (totalCell) totalCell.textContent = total ? total.toLocaleString("ja-JP") : "";
+}
 
   /* ------------------------------
      行削除 ＆ No.再採番
