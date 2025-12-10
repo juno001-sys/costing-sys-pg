@@ -267,13 +267,6 @@ def init_purchase_views(app, get_db, log_purchase_change):
             ]
         )
 
-def init_purchase_views(app, get_db, log_purchase_change):
-    """
-    app.py 側から呼び出してルートを登録する初期化関数。
-    """
-
-    ...  # new_purchase と api_items_by_supplier の定義がすでにこの中にあるはず
-
     # ----------------------------------------
     # 取引編集・削除（ソフトデリート対応）
     # /purchases/<id>/edit
