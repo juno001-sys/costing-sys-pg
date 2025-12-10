@@ -2,13 +2,33 @@
 
 {% block title %}仕入れ（納品書）入力{% endblock %}
 
+{% block head_extra %}
+<style>
+  /* 金額欄は「表示専用」っぽく */
+  .amount-display {
+    border: none;
+    background: transparent;
+    text-align: right;
+    width: 120px;
+    padding-right: 4px;
+  }
+  .amount-display:focus {
+    outline: none;
+  }
+  /* 合計セル */
+  #total-amount-cell {
+    font-weight: bold;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 
 <h2>仕入れ（納品書）入力</h2>
 
 <form method="post" id="purchase-form">
 
-  <!-- ===== 伝票ヘッダー ===== -->
+  <!-- 伝票ヘッダー -->
   <div style="margin-bottom: 12px;">
     <label>
       店舗：
@@ -41,7 +61,7 @@
     </label>
   </div>
 
-  <!-- ===== 明細テーブル ===== -->
+  <!-- 明細テーブル -->
   <input type="hidden" id="row_count" name="row_count" value="8">
 
   <table id="items-table" class="monthly-table">
@@ -62,25 +82,35 @@
         <td class="row-no">{{ i }}</td>
 
         <td>
-          <select name="item_id_{{ i }}" class="item-select" data-selected="">
+          <select name="item_id_{{ i }}"
+                  class="item-select nav-input"
+                  data-col="0">
             <option value="">（品目を選択）</option>
           </select>
         </td>
 
         <td>
-          <input type="text" name="quantity_{{ i }}"
-                 class="num qty-input nav-input" data-col="1" style="width:80px;">
+          <input type="text"
+                 name="quantity_{{ i }}"
+                 class="num qty-input nav-input"
+                 data-col="1"
+                 style="width:80px;">
         </td>
 
         <td>
-          <input type="text" name="unit_price_{{ i }}"
-                 class="num price-input nav-input" data-col="2" style="width:100px;">
+          <input type="text"
+                 name="unit_price_{{ i }}"
+                 class="num price-input nav-input"
+                 data-col="2"
+                 style="width:100px;">
         </td>
 
         <td>
-          <input type="text" name="amount_display_{{ i }}"
-                 class="num amount-display" data-col="3"
-                 style="width:120px;" readonly>
+          <input type="text"
+                 name="amount_display_{{ i }}"
+                 class="amount-display"
+                 readonly
+                 tabindex="-1">
         </td>
 
         <td>
@@ -89,9 +119,20 @@
       </tr>
       {% endfor %}
     </tbody>
+
+    <!-- 合計行 -->
+    <tfoot>
+      <tr class="total-row">
+        <td colspan="4" style="text-align:right;">合計</td>
+        <td id="total-amount-cell" class="num"></td>
+        <td></td>
+      </tr>
+    </tfoot>
   </table>
 
-  <button type="button" id="add-row-btn" style="margin-top:12px;">＋ 行を追加</button>
+  <button type="button" id="add-row-btn" style="margin-top:12px;">
+    ＋ 行を追加
+  </button>
 
   <div style="margin-top:16px;">
     <button type="submit">登録</button>
@@ -102,7 +143,9 @@
 <hr style="margin:32px 0;">
 
 
-<!-- ====== 直近50件の検索と一覧（既存） ====== -->
+<!-- ============================
+     直近50件（既存）
+============================ -->
 <h2>直近 50 件</h2>
 
 <form method="get" style="margin-bottom: 12px;">
@@ -111,7 +154,8 @@
     <select name="store_id">
       <option value="">（全店舗）</option>
       {% for s in stores %}
-        <option value="{{ s.id }}" {% if selected_store_id == s.id %}selected{% endif %}>
+        <option value="{{ s.id }}"
+                {% if selected_store_id == s.id %}selected{% endif %}>
           {{ s.name }}
         </option>
       {% endfor %}
@@ -120,7 +164,8 @@
 
   <label style="margin-right: 12px;">
     期間：
-    <input type="date" name="from_date" value="{{ from_date or '' }}"> 〜
+    <input type="date" name="from_date" value="{{ from_date or '' }}">
+    〜
     <input type="date" name="to_date" value="{{ to_date or '' }}">
   </label>
 
@@ -130,12 +175,10 @@
   </label>
 
   <button type="submit">検索</button>
-
   <a href="{{ url_for('new_purchase', clear='1', store_id=selected_store_id) }}">
     条件クリア
   </a>
 </form>
-
 
 <table class="monthly-table">
   <thead>
@@ -171,30 +214,30 @@
 <script>
 document.addEventListener("DOMContentLoaded", function(){
 
-  /* -------------------------------------------------------
-     仕入先変更 → 品目一覧取得
-  ------------------------------------------------------- */
+  /* ------------------------------
+     仕入先変更 → 品目リスト再取得
+  ------------------------------ */
   function loadItems(supplierId) {
     const selects = document.querySelectorAll(".item-select");
 
     if (!supplierId) {
-      selects.forEach(sel => sel.innerHTML =
-        '<option value="">（品目を選択）</option>');
+      selects.forEach(sel => {
+        sel.innerHTML = '<option value="">（品目を選択）</option>';
+      });
       return;
     }
 
     fetch(`/api/items/by_supplier/${supplierId}`)
-      .then(r => r.json())
+      .then(resp => resp.json())
       .then(data => {
         selects.forEach(sel => {
-          const cur = sel.getAttribute("data-selected") || "";
+          const current = sel.getAttribute("data-selected") || "";
           sel.innerHTML = '<option value="">（品目を選択）</option>';
-
           data.forEach(item => {
             const opt = document.createElement("option");
             opt.value = item.id;
             opt.textContent = `${item.code || ""} ${item.name}`;
-            if (cur && cur == item.id) opt.selected = true;
+            if (current && current == item.id) opt.selected = true;
             sel.appendChild(opt);
           });
         });
@@ -205,108 +248,143 @@ document.addEventListener("DOMContentLoaded", function(){
   supplierSelect.addEventListener("change", () => loadItems(supplierSelect.value));
 
 
-  /* -------------------------------------------------------
-     数量 × 単価 → 金額
-  ------------------------------------------------------- */
+  /* -----------------------------------
+     数量 × 単価 → 金額 ＋ 伝票合計
+  ----------------------------------- */
   function recalcAmounts() {
     const rows = document.querySelectorAll("#item-rows tr");
+    let total = 0;
 
     rows.forEach(tr => {
-      const qty = tr.querySelector(".qty-input");
+      const qty   = tr.querySelector(".qty-input");
       const price = tr.querySelector(".price-input");
-      const amount = tr.querySelector(".amount-display");
+      const amountField = tr.querySelector(".amount-display");
 
-      const q = parseInt((qty?.value || "0").replace(/,/g,"")) || 0;
-      const p = parseInt((price?.value || "0").replace(/,/g,"")) || 0;
-
+      const q = parseInt((qty?.value || "0").replace(/,/g, "")) || 0;
+      const p = parseInt((price?.value || "0").replace(/,/g, "")) || 0;
       const a = q * p;
-      amount.value = a ? a.toLocaleString("ja-JP") : "";
+
+      if (amountField) {
+        amountField.value = a ? a.toLocaleString("ja-JP") : "";
+      }
+
+      total += a;
     });
+
+    const totalCell = document.getElementById("total-amount-cell");
+    if (totalCell) {
+      totalCell.textContent = total ? total.toLocaleString("ja-JP") : "";
+    }
   }
   document.addEventListener("input", recalcAmounts);
 
 
-  /* -------------------------------------------------------
+  /* ------------------------------
      行削除 ＆ No.再採番
-  ------------------------------------------------------- */
+  ------------------------------ */
   function renumberRows() {
     const rows = document.querySelectorAll("#item-rows tr");
     let idx = 1;
     rows.forEach(tr => {
-      tr.querySelector(".row-no").textContent = idx;
+      const noCell = tr.querySelector(".row-no");
+      if (noCell) noCell.textContent = idx;
       idx++;
     });
     document.getElementById("row_count").value = rows.length;
+    recalcAmounts();
   }
 
   document.addEventListener("click", function(e){
     if (e.target.classList.contains("delete-row")) {
       const tr = e.target.closest("tr");
-      tr.remove();
-      renumberRows();
+      if (tr) {
+        tr.remove();
+        renumberRows();
+      }
     }
   });
 
 
-  /* -------------------------------------------------------
-     行追加
-  ------------------------------------------------------- */
-  document.getElementById("add-row-btn").addEventListener("click", () => {
-    const tbody = document.getElementById("item-rows");
-    let count = tbody.querySelectorAll("tr").length + 1;
+  /* ------------------------------
+     行追加（最大 30 行）
+  ------------------------------ */
+  const addBtn = document.getElementById("add-row-btn");
+  const tbody = document.getElementById("item-rows");
 
-    if (count > 30) {
+  addBtn.addEventListener("click", () => {
+    const currentRows = tbody.querySelectorAll("tr").length;
+    if (currentRows >= 30) {
       alert("これ以上追加できません（上限30行）");
       return;
     }
+    const count = currentRows + 1;
+    document.getElementById("row_count").value = count;
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td class="row-no">${count}</td>
-
       <td>
-        <select name="item_id_${count}" class="item-select">
+        <select name="item_id_${count}"
+                class="item-select nav-input"
+                data-col="0">
           <option value="">（品目を選択）</option>
         </select>
       </td>
-
-      <td><input type="text" class="num qty-input nav-input" data-col="1"
-                 name="quantity_${count}" style="width:80px;"></td>
-
-      <td><input type="text" class="num price-input nav-input" data-col="2"
-                 name="unit_price_${count}" style="width:100px;"></td>
-
-      <td><input type="text" class="num amount-display" data-col="3"
-                 name="amount_display_${count}" style="width:120px;" readonly></td>
-
-      <td><button type="button" class="delete-row">✖</button></td>
+      <td>
+        <input type="text"
+               class="num qty-input nav-input"
+               data-col="1"
+               name="quantity_${count}"
+               style="width:80px;">
+      </td>
+      <td>
+        <input type="text"
+               class="num price-input nav-input"
+               data-col="2"
+               name="unit_price_${count}"
+               style="width:100px;">
+      </td>
+      <td>
+        <input type="text"
+               class="amount-display"
+               name="amount_display_${count}"
+               readonly
+               tabindex="-1">
+      </td>
+      <td>
+        <button type="button" class="delete-row">✖</button>
+      </td>
     `;
     tbody.appendChild(tr);
 
-    // 選択中仕入先の品目リストを反映
+    // 追加行にも仕入先の品目リストを適用
     loadItems(supplierSelect.value);
-
-    renumberRows();
   });
 
 
-  /* -------------------------------------------------------
-     矢印キー＆Enterで移動（nav-input のみ）
-  ------------------------------------------------------- */
-  const navInputs = () => Array.from(document.querySelectorAll(".nav-input"));
+  /* ------------------------------
+     矢印キー & Enter で移動
+     - nav-input が対象
+     - SELECT は ↑↓ で選択変更を優先
+  ------------------------------ */
+  function navInputs() {
+    return Array.from(document.querySelectorAll(".nav-input"));
+  }
 
   document.addEventListener("keydown", function(e){
     const inputs = navInputs();
     const active = document.activeElement;
-
     if (!inputs.includes(active)) return;
 
-    const rows = document.querySelectorAll("#item-rows tr");
-    const rowIndex = Array.from(rows).indexOf(active.closest("tr"));
+    const isSelect = (active.tagName === "SELECT");
+    const rows = Array.from(document.querySelectorAll("#item-rows tr"));
+    const row = active.closest("tr");
+    const rowIndex = rows.indexOf(row);
     const col = parseInt(active.getAttribute("data-col"), 10);
 
     const idx = inputs.indexOf(active);
 
+    // Enter / → : 次セルへ
     if (e.key === "Enter" || e.key === "ArrowRight") {
       e.preventDefault();
       const next = inputs[idx + 1];
@@ -314,6 +392,7 @@ document.addEventListener("DOMContentLoaded", function(){
       return;
     }
 
+    // ← : 前セルへ
     if (e.key === "ArrowLeft") {
       e.preventDefault();
       const prev = inputs[idx - 1];
@@ -321,26 +400,36 @@ document.addEventListener("DOMContentLoaded", function(){
       return;
     }
 
+    // SELECT の ↑↓ はデフォルト（選択移動）を優先
+    if (isSelect && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+      return;
+    }
+
+    // ↓ : 下の行の同じ列へ
     if (e.key === "ArrowDown") {
       e.preventDefault();
       const targetRow = rows[rowIndex + 1];
       if (!targetRow) return;
       const target = targetRow.querySelector(`.nav-input[data-col="${col}"]`);
       if (target) target.focus();
+      return;
     }
 
+    // ↑ : 上の行の同じ列へ
     if (e.key === "ArrowUp") {
       e.preventDefault();
       const targetRow = rows[rowIndex - 1];
       if (!targetRow) return;
       const target = targetRow.querySelector(`.nav-input[data-col="${col}"]`);
       if (target) target.focus();
+      return;
     }
   });
 
 
-  /* 初期品目ロード */
+  /* 初期ロード：選択中仕入先の品目リスト＆合計計算 */
   loadItems(supplierSelect.value);
+  recalcAmounts();
 
 });
 </script>
