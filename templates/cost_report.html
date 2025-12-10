@@ -5,48 +5,88 @@
 {% block content %}
   <h2>売上原価 月次推移</h2>
 
-  <form method="get">
-    <label>店舗：</label>
-    <select name="store_id" onchange="this.form.submit()">
-      <option value="">（全店舗）</option>
-      {% for s in stores %}
-        <option value="{{ s.id }}" {% if selected_store_id == s.id %}selected{% endif %}>
-          {{ s.name }}
-        </option>
-      {% endfor %}
-    </select>
-    <noscript><button type="submit">表示</button></noscript>
+  <form method="get" style="margin-bottom: 16px;">
+    <label>
+      店舗：
+      <select name="store_id">
+        <option value="">（全店舗）</option>
+        {% for s in stores %}
+          <option value="{{ s.id }}"
+                  {% if selected_store_id == s.id %}selected{% endif %}>
+            {{ s.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </label>
+    <button type="submit">表示</button>
   </form>
 
-  <table border="1" cellpadding="4" cellspacing="0" style="margin-top: 12px;">
+  <table class="monthly-table">
     <thead>
       <tr>
-        <th>年月</th>
-        <th>期首棚卸</th>
-        <th>当月仕入</th>
-        <th>期末棚卸</th>
-        <th>売上原価</th>
+        <th>区分</th>
+        {% for ym in month_keys %}
+          <th>{{ ym }}</th>
+        {% endfor %}
+        <th>合計</th>
       </tr>
     </thead>
     <tbody>
-      {% for ym in month_keys %}
-        <tr>
-          <td>{{ ym }}</td>
-          <td style="text-align:right;">{{ "{:,}".format(beg_inv_by_month[ym]) }}</td>
-          <td style="text-align:right;">{{ "{:,}".format(purchases_by_month[ym]) }}</td>
-          <td style="text-align:right;">{{ "{:,}".format(end_inv_by_month[ym]) }}</td>
-          <td style="text-align:right;">{{ "{:,}".format(cogs_by_month[ym]) }}</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-    <tfoot>
+      {# 期首繰越 #}
       <tr>
-        <th>合計</th>
-        <th style="text-align:right;">{{ "{:,}".format(beg_inv_total) }}</th>
-        <th style="text-align:right;">{{ "{:,}".format(purchases_total) }}</th>
-        <th style="text-align:right;">{{ "{:,}".format(end_inv_total) }}</th>
-        <th style="text-align:right;">{{ "{:,}".format(cogs_total) }}</th>
+        <td>期首繰越</td>
+        {% for ym in month_keys %}
+          {% set v = beg_inv_by_month[ym] %}
+          <td>
+            {{ "{:,}".format(v|round|int) if v else "" }}
+          </td>
+        {% endfor %}
+        <td>
+          {{ "{:,}".format(beg_inv_total|round|int) if beg_inv_total else "" }}
+        </td>
       </tr>
-    </tfoot>
+
+      {# 仕入額 #}
+      <tr>
+        <td>仕入額</td>
+        {% for ym in month_keys %}
+          {% set v = purchases_by_month[ym] %}
+          <td>
+            {{ "{:,}".format(v|round|int) if v else "" }}
+          </td>
+        {% endfor %}
+        <td>
+          {{ "{:,}".format(purchases_total|round|int) if purchases_total else "" }}
+        </td>
+      </tr>
+
+      {# 売上原価（強調行） #}
+      <tr class="row-cogs">
+        <td>売上原価</td>
+        {% for ym in month_keys %}
+          {% set v = cogs_by_month[ym] %}
+          <td>
+            {{ "{:,}".format(v|round|int) if v else "" }}
+          </td>
+        {% endfor %}
+        <td>
+          {{ "{:,}".format(cogs_total|round|int) if cogs_total else "" }}
+        </td>
+      </tr>
+
+      {# 月末棚卸し #}
+      <tr>
+        <td>月末棚卸し</td>
+        {% for ym in month_keys %}
+          {% set v = end_inv_by_month[ym] %}
+          <td>
+            {{ "{:,}".format(v|round|int) if v else "" }}
+          </td>
+        {% endfor %}
+        <td>
+          {{ "{:,}".format(end_inv_total|round|int) if end_inv_total else "" }}
+        </td>
+      </tr>
+    </tbody>
   </table>
 {% endblock %}
