@@ -38,7 +38,7 @@
           </td>
           {% for ym in month_keys %}
             <td style="text-align:right;">
-              {{ "{:,}".format(r.values.get(ym, 0)) }}
+              {{ "{:,}".format( r["values"].get(ym, 0)) }}
             </td>
           {% endfor %}
           <td style="text-align:right;">
