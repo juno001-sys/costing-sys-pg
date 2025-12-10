@@ -1,71 +1,93 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <title>{% block title %}Kurajika CMS{% endblock %}</title>
+  <head>
+    <meta charset="UTF-8" />
+
+    <!-- タイトル（各ページで差し替え可能） -->
+    <title>{% block title %}TEST Dev{% endblock %}</title>
 
     <style>
-        /* --- 共通デザインここに書けば全ページ反映 --- */
-        body {
-            font-family: "Hiragino Sans", sans-serif;
-            margin: 0;
-            padding: 0 20px 40px;
-            background: #f9f9f9;
-        }
+      body {
+        font-family: system-ui;
+        margin: 40px;
+      }
+      h1 {
+        margin-bottom: 24px;
+      }
+      h2 {
+        margin-top: 28px;
+      }
+      nav ul {
+        list-style: none;
+        padding-left: 0;
+      }
+      nav li {
+        margin: 6px 0;
+      }
 
-        header {
-            background: #003366;
-            color: white;
-            padding: 10px 20px;
-            margin: 0 -20px 20px;
-        }
-
-        .env-banner {
-            background: {% if config.ENV == "production" %} #0066cc {% else %} #cc8800 {% endif %};
-            padding: 5px 10px;
-            color: white;
-            font-size: 14px;
-        }
-
-        .version {
-            font-size: 12px;
-            color: #ddd;
-            float: right;
-        }
-
-        footer {
-            text-align: center;
-            margin-top: 40px;
-            font-size: 12px;
-            color: #777;
-        }
+      /* flash メッセージ用 */
+      .flash {
+        background: #ffeebb;
+        border: 1px solid #e0c97f;
+        padding: 10px 16px;
+        margin: 20px 0;
+        border-radius: 6px;
+      }
     </style>
 
-    {% block head %}{% endblock %}
-</head>
+    {% block head_extra %}{% endblock %}
+  </head>
 
-<body>
+  <body>
 
-<header>
-    <strong>Kurajika CMS</strong>
-    <span class="version">v {{ g.app_version }}</span>
-</header>
+    <!-- グローバルタイトル -->
+    <h1>TEST test tst 倉島事業開発 CMS PostGres Dev Env</h1>
 
-<div class="env-banner">
-    {% if config.ENV == "production" %}
-        本番環境
-    {% else %}
-        テスト環境
-    {% endif %}
-</div>
+    <!-- flash メッセージ -->
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="flash">
+          {% for msg in messages %}
+            <div>{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
 
-{% block content %}
-<!-- 各ページがここにコンテンツを挿入 -->
-{% endblock %}
+    <!-- 共通メニュー（全ページ共通） -->
+    <nav>
+      <h2>入力メニュー</h2>
+      <ul>
+        <li><a href="{{ url_for('new_purchase') }}">仕入れ（納品書）入力</a></li>
+        <li><a href="{{ url_for('inventory_count') }}">棚卸し入力</a></li>
+      </ul>
 
-<footer>
-    &copy; 2025 Kurajika Inc.
-</footer>
+      <section>
+        <h2>照会・レポート</h2>
+        <ul>
+          <li>
+            <a href="{{ url_for('purchase_report') }}">仕入れ照会（月次・仕入先別）</a>
+          </li>
+          <li>
+            <a href="{{ url_for('usage_report') }}">月次利用量（仕入＋棚卸ベース）</a>
+          </li>
+          <li>
+            <a href="{{ url_for('cost_report') }}">売上原価 月次推移</a>
+          </li>
+        </ul>
+      </section>
 
-</body>
+      <h2>マスタ管理</h2>
+      <ul>
+        <li><a href="{{ url_for('suppliers_master') }}">仕入先マスタ</a></li>
+        <li><a href="{{ url_for('items_master') }}">品目マスタ</a></li>
+      </ul>
+    </nav>
+
+    <!-- 各ページの内容 -->
+    {% block content %}
+    {% endblock %}
+
+    {% block body_extra %}{% endblock %}
+  </body>
 </html>
