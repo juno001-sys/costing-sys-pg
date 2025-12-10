@@ -3,169 +3,223 @@
 {% block title %}仕入れ（納品書）入力{% endblock %}
 
 {% block content %}
-  
 
-  <!-- 店舗選択フォーム -->
-  <form method="get" action="{{ url_for('new_purchase') }}">
-    <label>店舗：</label>
-    <select name="store_id" onchange="this.form.submit()">
+<h2>仕入れ（納品書）入力</h2>
+
+<form method="post" id="purchase-form">
+
+  <div style="margin-bottom: 12px;">
+    <label>
+      店舗：
+      <select name="store_id" required>
+        <option value="">（店舗を選択）</option>
+        {% for s in stores %}
+          <option value="{{ s.id }}"
+                  {% if selected_store_id == s.id %}selected{% endif %}>
+            {{ s.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+
+  <div style="margin-bottom: 12px;">
+    <label style="margin-right: 16px;">
+      仕入先：
+      <select name="supplier_id" id="supplier_id" required>
+        <option value="">（仕入先を選択）</option>
+        {% for sp in suppliers %}
+          <option value="{{ sp.id }}">{{ sp.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>
+      納品日：
+      <input type="date" name="delivery_date" required />
+    </label>
+  </div>
+
+  <table class="monthly-table">
+    <thead>
+      <tr>
+        <th style="width: 40px;">No.</th>
+        <th>品目</th>
+        <th style="width: 90px;">数量</th>
+        <th style="width: 120px;">単価</th>
+        <th style="width: 140px;">金額</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for i in range(1, 6) %}
+      <tr>
+        <td>{{ i }}</td>
+        <td>
+          <select name="item_id_{{ i }}" class="item-select" data-selected="">
+            <option value="">（品目を選択）</option>
+            {# 選択肢は JS で仕入先別にロード #}
+          </select>
+        </td>
+        <td>
+          <input type="text" name="quantity_{{ i }}" class="qty-input" style="width: 80px;" />
+        </td>
+        <td>
+          <input type="text" name="unit_price_{{ i }}" class="price-input" style="width: 110px;" />
+        </td>
+        <td>
+          <input type="text" name="amount_display_{{ i }}" class="amount-display num"
+                 style="width: 120px;" readonly />
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div style="margin-top: 12px;">
+    <button type="submit">登録</button>
+  </div>
+
+</form>
+
+<hr style="margin: 32px 0;">
+
+<h2>直近 50 件</h2>
+
+<form method="get" style="margin-bottom: 12px;">
+  <label style="margin-right: 12px;">
+    店舗：
+    <select name="store_id">
       <option value="">（全店舗）</option>
       {% for s in stores %}
-        <option value="{{ s.id }}" {% if selected_store_id == s.id %}selected{% endif %}>
+        <option value="{{ s.id }}"
+                {% if selected_store_id == s.id %}selected{% endif %}>
           {{ s.name }}
         </option>
       {% endfor %}
     </select>
-    <noscript><button type="submit">切替</button></noscript>
-  </form>
+  </label>
 
-  <hr>
+  <label style="margin-right: 12px;">
+    期間：
+    <input type="date" name="from_date" value="{{ from_date or '' }}">
+    〜
+    <input type="date" name="to_date" value="{{ to_date or '' }}">
+  </label>
 
-  <!-- 新規登録フォーム（最大5行） -->
-  <form method="post" action="{{ url_for('new_purchase', store_id=selected_store_id) }}">
-    <table border="1" cellpadding="4" cellspacing="0">
-      <thead>
-        <tr>
-          <th>行</th>
-          <th>納品日</th>
-          <th>仕入先</th>
-          <th>品目</th>
-          <th>数量</th>
-          <th>単価</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for i in range(1, 6) %}
-        <tr>
-          <td>{{ i }}</td>
-          <td>
-            <input type="date" name="detail_date_{{ i }}">
-          </td>
-          <td>
-            <select name="supplier_id_{{ i }}">
-              <option value="">（選択してください）</option>
-              {% for s in suppliers %}
-                <option value="{{ s.id }}">{{ s.name }}</option>
-              {% endfor %}
-            </select>
-          </td>
-          <td>
-            <!-- JS で supplier 選択時に品目プルダウンを埋める前提 -->
-            <select name="item_id_{{ i }}" class="item-select" data-row="{{ i }}">
-              <option value="">（仕入先を選択してください）</option>
-            </select>
-          </td>
-          <td>
-            <input type="text" name="quantity_{{ i }}" size="6">
-          </td>
-          <td>
-            <input type="text" name="unit_price_{{ i }}" size="8">
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <label style="margin-right: 12px;">
+    キーワード：
+    <input type="text" name="q" value="{{ search_q or '' }}" />
+  </label>
 
-    <p style="margin-top: 12px;">
-      <button type="submit">登録する</button>
-    </p>
-  </form>
+  <button type="submit">検索</button>
+  <a href="{{ url_for('new_purchase', clear='1', store_id=selected_store_id) }}">
+    条件クリア
+  </a>
+</form>
 
-  <hr>
-
-  <!-- 検索フォーム（直近50件） -->
-  <h3>直近取引一覧（最新50件）</h3>
-
-  <form method="get" action="{{ url_for('new_purchase') }}">
-    <input type="hidden" name="store_id" value="{{ selected_store_id or '' }}">
-    <div>
-      <label>期間：</label>
-      <input type="date" name="from_date" value="{{ from_date or '' }}"> 〜
-      <input type="date" name="to_date" value="{{ to_date or '' }}">
-    </div>
-    <div style="margin-top: 4px;">
-      <label>キーワード：</label>
-      <input type="text" name="q" value="{{ search_q or '' }}" size="20">
-    </div>
-    <div style="margin-top: 8px;">
-      <button type="submit">検索</button>
-      <a href="{{ url_for('new_purchase', store_id=selected_store_id, clear=1) }}">
-        条件クリア
-      </a>
-    </div>
-  </form>
-
-  <table border="1" cellpadding="4" cellspacing="0" style="margin-top: 12px;">
-    <thead>
+<table class="monthly-table">
+  <thead>
+    <tr>
+      <th>納品日</th>
+      <th>仕入先</th>
+      <th>品目</th>
+      <th class="num">数量</th>
+      <th class="num">単価</th>
+      <th class="num">金額</th>
+      <th>編集</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in purchases %}
       <tr>
-        <th>ID</th>
-        <th>納品日</th>
-        <th>仕入先</th>
-        <th>品目</th>
-        <th>数量</th>
-        <th>単価</th>
-        <th>金額</th>
-        <th>編集</th>
+        <td>{{ p.delivery_date }}</td>
+        <td>{{ p.supplier_name or "" }}</td>
+        <td>{{ p.item_name or "" }}</td>
+        <td class="num">{{ "{:,}".format(p.quantity) if p.quantity is not none else "" }}</td>
+        <td class="num">{{ "{:,}".format(p.unit_price) if p.unit_price is not none else "" }}</td>
+        <td class="num">{{ "{:,}".format(p.amount) if p.amount is not none else "" }}</td>
+        <td>
+          <a href="{{ url_for('edit_purchase', purchase_id=p.id) }}">編集</a>
+        </td>
       </tr>
-    </thead>
-    <tbody>
-      {% for p in purchases %}
-        <tr>
-          <td>{{ p.id }}</td>
-          <td>{{ p.delivery_date }}</td>
-          <td>{{ p.supplier_name }}</td>
-          <td>{{ p.item_name }}</td>
-          <td style="text-align:right;">{{ "{:,}".format(p.quantity) }}</td>
-          <td style="text-align:right;">{{ "{:,}".format(p.unit_price) }}</td>
-          <td style="text-align:right;">{{ "{:,}".format(p.amount) }}</td>
-          <td>
-            <a href="{{ url_for('edit_purchase', purchase_id=p.id) }}">編集</a>
-          </td>
-        </tr>
-      {% else %}
-        <tr>
-          <td colspan="8">該当する取引がありません。</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+    {% endfor %}
+  </tbody>
+</table>
 
 {% endblock %}
 
 {% block body_extra %}
 <script>
-  // 仕入先ごと品目一覧 API を使ってセレクトを埋める簡易JS
-  document.addEventListener("change", function (e) {
-    const target = e.target;
-    if (target.name && target.name.startsWith("supplier_id_")) {
-      const row = target.name.split("_").pop();
-      const supplierId = target.value;
-      const itemSelect = document.querySelector('select[name="item_id_' + row + '"]');
-      if (!itemSelect) return;
+document.addEventListener("DOMContentLoaded", function () {
+  const supplierSelect = document.getElementById("supplier_id");
+  const itemSelects = document.querySelectorAll(".item-select");
+  const qtyInputs = document.querySelectorAll(".qty-input");
+  const priceInputs = document.querySelectorAll(".price-input");
+  const amountDisplays = document.querySelectorAll(".amount-display");
 
-      itemSelect.innerHTML = '<option value="">読み込み中...</option>';
+  // 品目プルダウンをクリア
+  function clearItemOptions() {
+    itemSelects.forEach(sel => {
+      sel.innerHTML = '<option value="">（品目を選択）</option>';
+    });
+  }
 
-      if (!supplierId) {
-        itemSelect.innerHTML = '<option value="">（仕入先を選択してください）</option>';
-        return;
-      }
-
-      fetch("/api/items/by_supplier/" + supplierId)
-        .then(res => res.json())
-        .then(data => {
-          let options = '<option value="">（選択してください）</option>';
-          data.forEach(function (item) {
-            const unit = item.unit ? ' / ' + item.unit : '';
-            options += '<option value="' + item.id + '">' +
-                        item.code + ' ' + item.name + unit +
-                       '</option>';
-          });
-          itemSelect.innerHTML = options;
-        })
-        .catch(() => {
-          itemSelect.innerHTML = '<option value="">読み込み失敗</option>';
-        });
+  // 仕入先に紐づく品目一覧をロード
+  function loadItems(supplierId) {
+    if (!supplierId) {
+      clearItemOptions();
+      return;
     }
+    fetch(`/api/items/by_supplier/${supplierId}`)
+      .then(resp => resp.json())
+      .then(data => {
+        itemSelects.forEach(sel => {
+          const current = sel.getAttribute("data-selected") || "";
+          sel.innerHTML = '<option value="">（品目を選択）</option>';
+          data.forEach(item => {
+            const opt = document.createElement("option");
+            opt.value = item.id;
+            opt.textContent = (item.code ? item.code + " " : "") + item.name;
+            if (current && current === String(item.id)) {
+              opt.selected = true;
+            }
+            sel.appendChild(opt);
+          });
+        });
+      })
+      .catch(err => {
+        console.error("品目のロード中にエラー:", err);
+        clearItemOptions();
+      });
+  }
+
+  // 数量 × 単価 = 金額（ブラウザ上で簡易計算）
+  function recalcAmounts() {
+    for (let i = 0; i < qtyInputs.length; i++) {
+      const q = parseInt((qtyInputs[i].value || "0").replace(/,/g, ""), 10) || 0;
+      const p = parseInt((priceInputs[i].value || "0").replace(/,/g, ""), 10) || 0;
+      const a = q * p;
+      amountDisplays[i].value = a ? a.toLocaleString("ja-JP") : "";
+    }
+  }
+
+  if (supplierSelect) {
+    supplierSelect.addEventListener("change", function () {
+      loadItems(this.value);
+    });
+    if (supplierSelect.value) {
+      loadItems(supplierSelect.value);
+    } else {
+      clearItemOptions();
+    }
+  }
+
+  qtyInputs.forEach(inp => {
+    inp.addEventListener("input", recalcAmounts);
   });
+  priceInputs.forEach(inp => {
+    inp.addEventListener("input", recalcAmounts);
+  });
+});
 </script>
 {% endblock %}
