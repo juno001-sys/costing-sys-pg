@@ -87,7 +87,6 @@ def get_db():
     return g.pg
 
 
-from views.purchase import init_app as init_purchase_views
 # ----------------------------------------
 # 仕入れ系ビューの登録
 # ----------------------------------------
@@ -1921,6 +1920,12 @@ def cost_report():
         end_inv_total=end_inv_total,
         cogs_total=cogs_total,
     )
+
+
+# =========================
+# Blueprint / view 初期化
+# =========================
+from views.purchases import init_purchase_views
 
 # ----------------------------------------
 # メイン起動
