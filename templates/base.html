@@ -2,8 +2,6 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-
-    <!-- タイトル（各ページで差し替え可能） -->
     <title>{% block title %}TEST Dev{% endblock %}</title>
 
     <style>
@@ -16,11 +14,12 @@
       }
 
       /* ============================
-         横タブメニュー
+         横タブメニュー（7タブ）
       ============================= */
       .nav-tabs {
         display: flex;
-        gap: 28px;
+        flex-wrap: wrap;
+        gap: 18px;
         list-style: none;
         padding: 0;
         margin: 0 0 30px 0;
@@ -44,7 +43,7 @@
         background: #f0f0f0;
       }
 
-      /* フラッシュメッセージ */
+      /* flash メッセージ用 */
       .flash {
         background: #ffeebb;
         border: 1px solid #e0c97f;
@@ -59,10 +58,8 @@
 
   <body>
 
-    <!-- グローバルタイトル -->
     <h1>TEST test tst 倉島事業開発 CMS PostGres Dev Env</h1>
 
-    <!-- flash メッセージ -->
     {% with messages = get_flashed_messages() %}
       {% if messages %}
         <div class="flash">
@@ -74,21 +71,28 @@
     {% endwith %}
 
     <!-- ============================
-         横タブメニュー（カテゴリ別）
+         横タブメニュー（全リンク）
     ============================= -->
     <nav>
       <ul class="nav-tabs">
 
-        <li><a href="{{ url_for('new_purchase') }}">入力</a></li>
+        <li><a href="{{ url_for('new_purchase') }}">仕入れ入力</a></li>
 
-        <li><a href="{{ url_for('purchase_report') }}">レポート</a></li>
+        <li><a href="{{ url_for('inventory_count') }}">棚卸し入力</a></li>
 
-        <li><a href="{{ url_for('suppliers_master') }}">マスタ</a></li>
+        <li><a href="{{ url_for('purchase_report') }}">仕入れ照会</a></li>
+
+        <li><a href="{{ url_for('usage_report') }}">月次利用量照会</a></li>
+
+        <li><a href="{{ url_for('cost_report') }}">売上原価月次推移</a></li>
+
+        <li><a href="{{ url_for('suppliers_master') }}">仕入先マスタ</a></li>
+
+        <li><a href="{{ url_for('items_master') }}">品目マスタ</a></li>
 
       </ul>
     </nav>
 
-    <!-- 各ページの内容 -->
     {% block content %}
     {% endblock %}
 
