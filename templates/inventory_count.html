@@ -31,15 +31,17 @@
 </form>
 
 {# 最新棚卸し情報（あれば） #}
-{% if latest_date %}
+{% if latest_dates and latest_dates|length > 0 %}
   <p>
-    最新棚卸日：{{ latest_date }}
-    {% if latest_dates %}
-      （直近 {{ latest_dates|length }} 回の棚卸し履歴あり）
-    {% endif %}
+    最新棚卸日：
+    {{ latest_dates[0] }}
+    （直近 {{ latest_dates|length }} 回：
+      {% for d in latest_dates %}
+        {{ d }}{% if not loop.last %}、{% endif %}
+      {% endfor %}
+    ）
   </p>
 {% endif %}
-
 {# ============================
    ② 下部：棚卸し対象アイテム一覧（POSTで保存）
    ============================ #}
