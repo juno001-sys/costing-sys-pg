@@ -148,6 +148,23 @@
       table.monthly-table.usage-table .row-metric-stock td {
         background: #fafafa;
       }
+
+     
+{% if env == "dev" %}
+  body {
+    background: #fffaf0;   /* テスト環境：クリーム色 */
+  }
+  h1::before {
+    content: "[DEV]";
+    color: red;
+    margin-right: 10px;
+  }
+{% else %}
+  body {
+    background: #ffffff;   /* 本番環境：白 */
+  }
+{% endif %}
+
     </style>
 
     {% block head_extra %}{% endblock %}
