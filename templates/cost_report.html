@@ -61,19 +61,13 @@
       </tr>
 
       {# 売上原価（強調行） #}
-      <tr class="row-cogs">
-        <td>売上原価</td>
-        {% for ym in month_keys %}
-          {% set v = cogs_by_month[ym] %}
-          <td>
-            {{ "{:,}".format(v|round|int) if v else "" }}
-          </td>
-        {% endfor %}
-        <td>
-          {{ "{:,}".format(cogs_total|round|int) if cogs_total else "" }}
-        </td>
-      </tr>
-
+      <tr class="cogs-row">
+  <td>売上原価</td>
+  {% for ym in month_keys %}
+    <td class="num">{{ "{:,}".format(cogs_by_month[ym]) }}</td>
+  {% endfor %}
+  <td class="num">{{ "{:,}".format(cogs_total) }}</td>
+</tr>
       {# 月末棚卸し #}
       <tr>
         <td>月末棚卸し</td>
