@@ -95,6 +95,70 @@
         font-weight: bold;
         border-top: 2px solid #e0cd99;
       }
+      body {
+        font-family: system-ui;
+        margin: 40px;
+      }
+      h1 {
+        margin-bottom: 24px;
+      }
+
+      /* ここまでが既存の CSS ... */
+
+      /* 合計行（tfoot または class="total-row" に対応） */
+      table tfoot tr,
+      .total-row {
+        background: #fff8d5; /* 薄い黄色 */
+        font-weight: bold;
+        border-top: 2px solid #e0cd99;
+      }
+
+      /* ============================
+         月次利用量（usage_report）専用
+      ============================ */
+      table.monthly-table.usage-table {
+        margin-top: 20px;
+      }
+
+      /* usage_table ではストライプ無効にして自前で色付け */
+      table.monthly-table.usage-table tbody tr:nth-child(odd),
+      table.monthly-table.usage-table tbody tr:nth-child(even) {
+        background: #ffffff;
+      }
+
+      /* 左端：品目、2列目：指標 */
+      table.monthly-table.usage-table th,
+      table.monthly-table.usage-table td {
+        text-align: right;
+        white-space: nowrap;
+      }
+      table.monthly-table.usage-table th:first-child,
+      table.monthly-table.usage-table td:first-child {
+        text-align: left;
+      }
+      table.monthly-table.usage-table td.metric-label {
+        text-align: left;
+        padding-left: 12px;
+      }
+
+      /* 指標ごとの色付け */
+      table.monthly-table.usage-table .row-metric-pur td {
+        /* 当月仕入数：白のまま（基準） */
+      }
+
+      table.monthly-table.usage-table .row-metric-use td {
+        background: #fff8e8;  /* 利用数（差引）をうっすら強調 */
+        font-weight: 600;
+      }
+
+      table.monthly-table.usage-table .row-metric-stock td {
+        background: #fafafa;  /* 棚卸（次月繰越） */
+      }
+
+      /* 数字は右寄せ */
+      table.monthly-table.usage-table td.num {
+        text-align: right;
+      }
     </style>
 
     {% block head_extra %}{% endblock %}
@@ -110,52 +174,7 @@
       {% endfor %}
     </div>
     {% endif %} {% endwith %}
-/* ============================
-   月次利用量（usage_report）専用
-============================ */
-table.monthly-table.usage-table {
-  margin-top: 20px;
-}
 
-/* usage_table ではストライプ無効にして自前で色付け */
-table.monthly-table.usage-table tbody tr:nth-child(odd),
-table.monthly-table.usage-table tbody tr:nth-child(even) {
-  background: #ffffff;
-}
-
-/* 左端：品目、2列目：指標 */
-table.monthly-table.usage-table th,
-table.monthly-table.usage-table td {
-  text-align: right;
-  white-space: nowrap;
-}
-table.monthly-table.usage-table th:first-child,
-table.monthly-table.usage-table td:first-child {
-  text-align: left;
-}
-table.monthly-table.usage-table td.metric-label {
-  text-align: left;
-  padding-left: 12px;
-}
-
-/* 指標ごとの色付け */
-table.monthly-table.usage-table .row-metric-pur td {
-  /* 当月仕入数：白のまま（基準） */
-}
-
-table.monthly-table.usage-table .row-metric-use td {
-  background: #fff8e8;  /* 利用数（差引）をうっすら強調 */
-  font-weight: 600;
-}
-
-table.monthly-table.usage-table .row-metric-stock td {
-  background: #fafafa;  /* 棚卸（次月繰越） */
-}
-
-/* 数字は右寄せ */
-table.monthly-table.usage-table td.num {
-  text-align: right;
-}
     <!-- ============================
          横タブメニュー（全リンク）
     ============================= -->
