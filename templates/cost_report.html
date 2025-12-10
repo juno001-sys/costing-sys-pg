@@ -30,8 +30,10 @@
         <th>合計</th>
       </tr>
     </thead>
+
     <tbody>
-      {# 期首繰越 #}
+
+      <!-- 期首繰越 -->
       <tr>
         <td>期首繰越</td>
         {% for ym in month_keys %}
@@ -49,7 +51,7 @@
         </td>
       </tr>
 
-      {# 仕入額 #}
+      <!-- 仕入額 -->
       <tr>
         <td>仕入額</td>
         {% for ym in month_keys %}
@@ -67,7 +69,7 @@
         </td>
       </tr>
 
-      {# 売上原価（強調行） #}
+      <!-- 売上原価（強調行） -->
       <tr class="cogs-row">
         <td>売上原価</td>
         {% for ym in month_keys %}
@@ -85,7 +87,7 @@
         </td>
       </tr>
 
-      {# 月末棚卸し #}
+      <!-- 月末棚卸し -->
       <tr>
         <td>月末棚卸し</td>
         {% for ym in month_keys %}
@@ -102,6 +104,8 @@
           {% endif %}
         </td>
       </tr>
+
     </tbody>
+
   </table>
 {% endblock %}
