@@ -1,188 +1,52 @@
-<!DOCTYPE html>
-<html lang="ja">
-  <head>
-    <meta charset="utf-8" />
-    <title>売上原価 月次推移</title>
-    <style>
-      body {
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-          sans-serif;
-        margin: 20px;
-      }
-      h1 {
-        font-size: 22px;
-        margin-bottom: 8px;
-      }
-      a {
-        text-decoration: none;
-        color: #0366d6;
-      }
-      a:hover {
-        text-decoration: underline;
-      }
-      form {
-        margin-bottom: 16px;
-        padding: 8px 12px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-      }
-      label {
-        margin-right: 12px;
-      }
-      select {
-        padding: 2px 4px;
-        font-size: 13px;
-      }
-      table {
-        border-collapse: collapse;
-        width: 100%;
-        margin-top: 12px;
-        font-size: 13px;
-      }
-      th,
-      td {
-        border: 1px solid #ccc;
-        padding: 3px 4px;
-      }
-      th {
-        background: #f5f5f5;
-        white-space: nowrap;
-      }
-      td.right,
-      th.right {
-        text-align: right;
-      }
-      .row-header {
-        background: #fafafa;
-        font-weight: bold;
-        white-space: nowrap;
-      }
-      .row-cogs {
-        background: #fffde7;
-        font-weight: bold;
-      }
-      .total-col {
-        background: #eee;
-        font-weight: bold;
-      }
-    </style>
-  </head>
-  <body>
-    <h1>売上原価 月次推移</h1>
+{% extends "base.html" %}
 
-    <p>
-      <a href="{{ url_for('index') }}">← メニューへ戻る</a> |
-      <a href="{{ url_for('purchase_report') }}">仕入れ照会（月次）</a> |
-      <a href="{{ url_for('new_purchase') }}">仕入れ入力</a>
-    </p>
+{% block title %}売上原価 月次推移{% endblock %}
 
-    <!-- 店舗選択フォーム（GET） -->
-    <form method="get" action="{{ url_for('cost_report') }}">
-      <label>
-        店舗：
-        <select name="store_id">
-          <option value="">全店舗</option>
-          {% for s in stores %}
-          <option
-            value="{{ s['id'] }}"
-            {% if selected_store_id and s['id'] == selected_store_id %}selected{% endif %}
-          >
-            {{ s['name'] }}
-          </option>
-          {% endfor %}
-        </select>
-      </label>
+{% block content %}
+  <h2>売上原価 月次推移</h2>
 
-      <span style="margin-left:12px; font-size: 12px; color:#555;">
-        対象期間：直近13ヶ月（月次）
-      </span>
+  <form method="get">
+    <label>店舗：</label>
+    <select name="store_id" onchange="this.form.submit()">
+      <option value="">（全店舗）</option>
+      {% for s in stores %}
+        <option value="{{ s.id }}" {% if selected_store_id == s.id %}selected{% endif %}>
+          {{ s.name }}
+        </option>
+      {% endfor %}
+    </select>
+    <noscript><button type="submit">表示</button></noscript>
+  </form>
 
-      <button type="submit" style="margin-left: 12px;">再表示</button>
-    </form>
-
-    <table>
-      <thead>
+  <table border="1" cellpadding="4" cellspacing="0" style="margin-top: 12px;">
+    <thead>
+      <tr>
+        <th>年月</th>
+        <th>期首棚卸</th>
+        <th>当月仕入</th>
+        <th>期末棚卸</th>
+        <th>売上原価</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ym in month_keys %}
         <tr>
-          <th class="row-header">区分</th>
-          {% for ym in month_keys %}
-          <th class="right">{{ ym }}</th>
-          {% endfor %}
-          <th class="right total-col">合計</th>
+          <td>{{ ym }}</td>
+          <td style="text-align:right;">{{ "{:,}".format(beg_inv_by_month[ym]) }}</td>
+          <td style="text-align:right;">{{ "{:,}".format(purchases_by_month[ym]) }}</td>
+          <td style="text-align:right;">{{ "{:,}".format(end_inv_by_month[ym]) }}</td>
+          <td style="text-align:right;">{{ "{:,}".format(cogs_by_month[ym]) }}</td>
         </tr>
-      </thead>
-      <tbody>
-        <!-- 期首繰越 -->
-        <tr>
-          <td class="row-header">期首繰越</td>
-          {% for ym in month_keys %}
-          <td class="right">
-            {% set v = beg_inv_by_month.get(ym, 0) %}
-            {% if v %}
-              {{ "{:,}".format(v|round|int) }}
-            {% endif %}
-          </td>
-          {% endfor %}
-          <td class="right total-col">
-            {% if beg_total %}
-              {{ "{:,}".format(beg_total|round|int) }}
-            {% endif %}
-          </td>
-        </tr>
-
-        <!-- 仕入額 -->
-        <tr>
-          <td class="row-header">仕入額</td>
-          {% for ym in month_keys %}
-          <td class="right">
-            {% set v = purchases_by_month.get(ym, 0) %}
-            {% if v %}
-              {{ "{:,}".format(v|round|int) }}
-            {% endif %}
-          </td>
-          {% endfor %}
-          <td class="right total-col">
-            {% if pur_total %}
-              {{ "{:,}".format(pur_total|round|int) }}
-            {% endif %}
-          </td>
-        </tr>
-
-        <!-- 売上原価 -->
-        <tr class="row-cogs">
-          <td class="row-header">売上原価</td>
-          {% for ym in month_keys %}
-          <td class="right">
-            {% set v = cogs_by_month.get(ym, 0) %}
-            {% if v %}
-              {{ "{:,}".format(v|round|int) }}
-            {% endif %}
-          </td>
-          {% endfor %}
-          <td class="right total-col">
-            {% if cogs_total %}
-              {{ "{:,}".format(cogs_total|round|int) }}
-            {% endif %}
-          </td>
-        </tr>
-
-        <!-- 月末棚卸し -->
-        <tr>
-          <td class="row-header">月末棚卸し</td>
-          {% for ym in month_keys %}
-          <td class="right">
-            {% set v = end_inv_by_month.get(ym, 0) %}
-            {% if v %}
-              {{ "{:,}".format(v|round|int) }}
-            {% endif %}
-          </td>
-          {% endfor %}
-          <td class="right total-col">
-            {% if end_total %}
-              {{ "{:,}".format(end_total|round|int) }}
-            {% endif %}
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </body>
-</html>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <th>合計</th>
+        <th style="text-align:right;">{{ "{:,}".format(beg_inv_total) }}</th>
+        <th style="text-align:right;">{{ "{:,}".format(purchases_total) }}</th>
+        <th style="text-align:right;">{{ "{:,}".format(end_inv_total) }}</th>
+        <th style="text-align:right;">{{ "{:,}".format(cogs_total) }}</th>
+      </tr>
+    </tfoot>
+  </table>
+{% endblock %}
