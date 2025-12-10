@@ -885,11 +885,13 @@ def inventory_count():
 # Blueprint / view 初期化
 # =========================
 from views.purchases import init_purchase_views
+from views.reports import init_report_views  
 
-# ----------------------------------------
-# 仕入れ系ビューの登録
-# ----------------------------------------
+# 仕入れ系ビュー
 init_purchase_views(app, get_db, log_purchase_change)
+
+# レポート系ビュー
+init_report_views(app, get_db)
 
 # ----------------------------------------
 # メイン起動
