@@ -22,8 +22,8 @@ def init_purchase_views(app, get_db, log_purchase_change):
     という形で使います。
     """
 
-    # ----------------------------------------
-    # 取引入力（納品書）
+        # ----------------------------------------
+    # 取引入力（納品書単位）
     # /purchases/new
     # ----------------------------------------
     @app.route("/purchases/new", methods=["GET", "POST"])
@@ -40,64 +40,65 @@ def init_purchase_views(app, get_db, log_purchase_change):
             "SELECT id, name FROM suppliers ORDER BY code"
         ).fetchall()
 
-        # NameError 対策：常に変数を初期化しておく
-        purchases = []
-        results_count = 0  # いまは未使用だが念のため残しておく
-
         # ----------------------------------------------------
-        # POST: 登録（新規 INSERT）処理
+        # POST: 納品書（1仕入先＋1日付）で複数行 INSERT
         # ----------------------------------------------------
         if request.method == "POST":
             store_id = request.form.get("store_id") or None
+            supplier_id = request.form.get("supplier_id") or ""
+            delivery_date = request.form.get("delivery_date") or ""
 
             def to_int(val: str) -> int:
-                """カンマ入り・全角混じりでも、とにかく int にする保険関数"""
+                """カンマ・全角混じりでも int にする保険関数"""
                 if not val:
                     return 0
                 s = str(val)
-                # 全角数字 → 半角
                 s = "".join(
                     chr(ord(c) - 0xFEE0) if "０" <= c <= "９" else c
                     for c in s
                 )
-                # カンマ除去
                 s = s.replace(",", "")
                 try:
                     return int(s)
                 except ValueError:
                     return 0
 
+            # 必須チェック（伝票ヘッダー）
+            if not store_id:
+                flash("店舗を選択してください。")
+                return redirect(url_for("new_purchase"))
+            if not supplier_id:
+                flash("仕入先を選択してください。")
+                return redirect(url_for("new_purchase", store_id=store_id))
+            if not delivery_date:
+                flash("納品日を入力してください。")
+                return redirect(url_for("new_purchase", store_id=store_id))
+
             any_inserted = False
 
-            # 明細 1〜5 行をループ
+            # 明細 1〜5 行（必要なら後で 10 行などに増やせる）
             for i in range(1, 6):
-                delivery_date = request.form.get(f"detail_date_{i}") or ""
-                supplier_id = request.form.get(f"supplier_id_{i}") or ""
                 item_id = request.form.get(f"item_id_{i}") or ""
                 qty_raw = request.form.get(f"quantity_{i}") or ""
                 unit_price_raw = request.form.get(f"unit_price_{i}") or ""
 
-                # 数量・単価を整数に正規化
                 qty_val = to_int(qty_raw)
                 unit_price_val = to_int(unit_price_raw)
                 amount_val = qty_val * unit_price_val
 
                 # 完全に空行ならスキップ
                 if (
-                    not delivery_date
-                    and not supplier_id
-                    and not item_id
+                    not item_id
                     and qty_val == 0
                     and unit_price_val == 0
                 ):
                     continue
 
-                # 最低限の必須チェック
-                if not delivery_date or not item_id:
-                    # ここでは「その行だけスキップ」
+                # 品目がない行はスキップ（ヘッダは既にチェック済み）
+                if not item_id:
                     continue
 
-                # INSERT（★RETURNING id を追加）
+                # INSERT（伝票共通の store_id / supplier_id / delivery_date を使用）
                 cur = db.execute(
                     """
                     INSERT INTO purchases
@@ -108,8 +109,8 @@ def init_purchase_views(app, get_db, log_purchase_change):
                     """,
                     (
                         store_id,
-                        supplier_id or None,
-                        item_id or None,
+                        supplier_id,
+                        item_id,
                         delivery_date,
                         qty_val,
                         unit_price_val,
@@ -118,17 +119,14 @@ def init_purchase_views(app, get_db, log_purchase_change):
                     ),
                 )
 
-                # ★ Postgres / SQLite 共通で id を安全に取得
                 row = cur.fetchone()
                 new_id = row["id"]
 
-                # ログ用に新レコードを読み直し
                 new_row = db.execute(
                     "SELECT * FROM purchases WHERE id = ?",
                     (new_id,),
                 ).fetchone()
 
-                # CREATE ログを記録
                 log_purchase_change(
                     db,
                     purchase_id=new_id,
@@ -144,13 +142,9 @@ def init_purchase_views(app, get_db, log_purchase_change):
                 db.commit()
                 flash("取引を登録しました。")
             else:
-                flash("登録対象の行がありません。")
+                flash("登録対象の明細行がありません。")
 
-            # store_id をクエリに付けて一覧も同じ店舗で再表示
-            if store_id:
-                return redirect(url_for("new_purchase", store_id=store_id))
-            else:
-                return redirect(url_for("new_purchase"))
+            return redirect(url_for("new_purchase", store_id=store_id))
 
         # ----------------------------------------------------
         # GET: 画面表示（フォーム + 検索付き直近50件）
@@ -158,19 +152,17 @@ def init_purchase_views(app, get_db, log_purchase_change):
         store_id = request.args.get("store_id") or ""
         selected_store_id = int(store_id) if store_id else None
 
-        # ★ 条件クリアボタンが押されたとき
+        # 条件クリアボタン
         if request.args.get("clear") == "1":
             if store_id:
                 return redirect(url_for("new_purchase", store_id=store_id))
             else:
                 return redirect(url_for("new_purchase"))
 
-        # 検索条件（テンプレ側と名前を揃える）
         from_date = request.args.get("from_date") or ""
         to_date = request.args.get("to_date") or ""
         search_q = (request.args.get("q") or "").strip()
 
-        # フィルタ条件を組み立て
         where_clauses = ["p.is_deleted = 0"]
         params = []
 
@@ -224,8 +216,9 @@ def init_purchase_views(app, get_db, log_purchase_change):
             from_date=from_date,
             to_date=to_date,
             search_q=search_q,
+            active_tab="purchase",
         )
-
+        
     # ----------------------------------------
     # API: 仕入先に紐づく品目一覧を返す
     # /api/items/by_supplier/<supplier_id>
