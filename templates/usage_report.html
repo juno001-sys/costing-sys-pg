@@ -5,61 +5,79 @@
 {% block content %}
   <h2>月次利用量レポート（仕入＋棚卸ベース）</h2>
 
-  <form method="get">
-    <label>店舗：</label>
-    <select name="store_id" onchange="this.form.submit()">
-      <option value="">（全店舗）</option>
-      {% for s in stores %}
-        <option value="{{ s.id }}" {% if selected_store_id == s.id %}selected{% endif %}>
-          {{ s.name }}
-        </option>
-      {% endfor %}
-    </select>
-    <noscript><button type="submit">表示</button></noscript>
+  <form method="get" style="margin-bottom: 16px;">
+    <label>
+      店舗：
+      <select name="store_id">
+        <option value="">（全店舗）</option>
+        {% for s in stores %}
+          <option value="{{ s.id }}"
+                  {% if selected_store_id == s.id %}selected{% endif %}>
+            {{ s.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </label>
+    <button type="submit">表示</button>
   </form>
 
-  <table border="1" cellpadding="4" cellspacing="0" style="margin-top: 12px;">
+  <table class="monthly-table usage-table">
     <thead>
       <tr>
-        <th rowspan="2">コード</th>
-        <th rowspan="2">品目名</th>
+        <th>品目</th>
+        <th>指標</th>
         {% for ym in month_keys %}
-          <th colspan="4">{{ ym }}</th>
+          <th>{{ ym }}</th>
         {% endfor %}
-        <th colspan="3">合計</th>
-      </tr>
-      <tr>
-        {% for ym in month_keys %}
-          <th>期首</th>
-          <th>仕入</th>
-          <th>期末</th>
-          <th>利用</th>
-        {% endfor %}
-        <th>仕入</th>
-        <th>利用</th>
-        <th>期末</th>
+        <th>合計</th>
       </tr>
     </thead>
     <tbody>
-      {% for it in item_rows %}
-        <tr>
-          <td>{{ it.item_code }}</td>
-          <td>{{ it.item_name }}</td>
+      {% for item in item_rows %}
+
+        {# 1 行目：当月仕入数 #}
+        <tr class="row-metric-pur">
+          <td rowspan="3">{{ item.item_name }}</td>
+          <td class="metric-label">当月仕入数</td>
           {% for ym in month_keys %}
-            {% set d = it.per_month[ym] %}
-            <td style="text-align:right;">{{ d.begin_qty }}</td>
-            <td style="text-align:right;">{{ d.pur_qty }}</td>
-            <td style="text-align:right;">{{ d.end_qty }}</td>
-            <td style="text-align:right;">{{ d.used_qty }}</td>
+            {% set v = item.per_month[ym]["pur_qty"] %}
+            <td class="num">
+              {{ "{:,}".format(v) if v else "" }}
+            </td>
           {% endfor %}
-          <td style="text-align:right;">{{ it.total_pur }}</td>
-          <td style="text-align:right;">{{ it.total_used }}</td>
-          <td style="text-align:right;">{{ it.total_end }}</td>
+          <td class="num">
+            {{ "{:,}".format(item.total_pur) if item.total_pur else "" }}
+          </td>
         </tr>
-      {% else %}
-        <tr>
-          <td colspan="{{ 2 + month_keys|length * 4 + 3 }}">データがありません。</td>
+
+        {# 2 行目：利用数（差引） #}
+        <tr class="row-metric-use">
+          <td class="metric-label">利用数（差引）</td>
+          {% for ym in month_keys %}
+            {% set v = item.per_month[ym]["used_qty"] %}
+            <td class="num">
+              {{ "{:,}".format(v) if v else "" }}
+            </td>
+          {% endfor %}
+          <td class="num">
+            {{ "{:,}".format(item.total_used) if item.total_used else "" }}
+          </td>
         </tr>
+
+        {# 3 行目：棚卸数（次月繰越） #}
+        <tr class="row-metric-stock">
+          <td class="metric-label">棚卸数（次月繰越）</td>
+          {% for ym in month_keys %}
+            {% set v = item.per_month[ym]["end_qty"] %}
+            <td class="num">
+              {{ "{:,}".format(v) if v else "" }}
+            </td>
+          {% endfor %}
+          <td class="num">
+            {{ "{:,}".format(item.total_end) if item.total_end else "" }}
+          </td>
+        </tr>
+
       {% endfor %}
     </tbody>
   </table>
