@@ -6,27 +6,34 @@
 
     <style>
       /* ============================
-         全体レイアウト
+         全体レイアウト / 環境別背景色
       ============================ */
+
       body {
-        font-family: system-ui;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
         margin: 40px;
       }
+
+      /* dev / mail / prod で背景色変える */
+      body.env-dev {
+        background: #f5fff8; /* 開発用：うっすら緑 */
+      }
+      body.env-mail {
+        background: #fff8f0; /* メール／検証用：うっすらオレンジ */
+      }
+      body.env-prod {
+        background: #ffffff; /* 本番：白 */
+      }
+
       h1 {
         margin-bottom: 24px;
       }
 
-      /* 環境別の背景色（dev / main） */
-      body.dev {
-        background: #f5fff5;  /* 開発用：うっすらグリーン */
-      }
-      body.main {
-        background: #ffffff;  /* 本番用：白 */
-      }
-
       /* ============================
-         横タブメニュー（7タブ）
+         横タブメニュー
       ============================ */
+
       .nav-tabs {
         display: flex;
         flex-wrap: wrap;
@@ -54,13 +61,16 @@
         background: #f0f0f0;
       }
 
-      /* 選択中タブ：ヘッダーと同系色 */
+      /* アクティブタブ：ヘッダー行と同じ色に */
       .nav-tabs a.active {
-        background: #f0f4ff;          /* ヘッダー行と同じ系統の薄い青 */
-        border-bottom: 2px solid #fff;
+        background: #f0f4ff; /* ヘッダーと揃える */
+        border-bottom: 2px solid #f0f4ff;
       }
 
-      /* flash メッセージ用 */
+      /* ============================
+         flash メッセージ
+      ============================ */
+
       .flash {
         background: #ffeebb;
         border: 1px solid #e0c97f;
@@ -72,11 +82,11 @@
       /* ============================
          テーブル共通デザイン
       ============================ */
+
       table {
         border-collapse: collapse;
-        /* 幅を 100% 固定にせず、内容に合わせる */
-        width: auto;
-        max-width: 100%;   /* 画面をはみ出しにくくするセーフティ */
+        width: auto; /* データ幅に合わせる */
+        max-width: 100%;
         margin-top: 20px;
       }
 
@@ -84,13 +94,6 @@
       table td {
         padding: 6px 10px;
         border: 1px solid #ddd;
-        text-align: left;  /* デフォルトは左寄せ */
-      }
-
-      /* 数値用クラスは右寄せ */
-      table th.num,
-      table td.num {
-        text-align: right;
       }
 
       /* ヘッダー行 */
@@ -99,17 +102,12 @@
         font-weight: bold;
         border-bottom: 2px solid #b8c6e6;
       }
-/* TH は常に左寄せ */
-table th {
-  text-align: left !important;
-}
 
-/* 数字項目は右寄せ */
-table td.num,
-input.num,
-.amount-display {
-  text-align: right !important;
-}
+      /* TH は左寄せ */
+      table th {
+        text-align: left !important;
+      }
+
       /* 交互行ストライプ */
       table tbody tr:nth-child(odd) {
         background: #ffffff;
@@ -123,7 +121,7 @@ input.num,
         background: #e8f2ff;
       }
 
-      /* 合計行（tfoot または class="total-row" に対応） */
+      /* 合計行（tfoot または .total-row） */
       table tfoot tr,
       .total-row {
         background: #fff8d5; /* 薄い黄色 */
@@ -131,64 +129,89 @@ input.num,
         border-top: 2px solid #e0cd99;
       }
 
-      /* 売上原価行の強調（cost_report 用） */
-      .cogs-row td {
-        background: #fff3c4; /* もう少し強い黄色 */
-        font-weight: 700;
+      /* 数値を右寄せにする共通クラス */
+      table td.num,
+      input.num,
+      .qty-input,
+      .price-input,
+      .amount-display {
+        text-align: right !important;
       }
 
       /* ============================
          月次利用量（usage_report）専用
       ============================ */
+
       table.monthly-table.usage-table {
         margin-top: 20px;
       }
 
-      /* usage_table ではストライプ無効にして自前で色付け */
+      /* usage_table ではストライプはリセットして自前で塗る */
       table.monthly-table.usage-table tbody tr:nth-child(odd),
       table.monthly-table.usage-table tbody tr:nth-child(even) {
         background: #ffffff;
       }
 
-      /* 左端：品目、2列目：指標 */
       table.monthly-table.usage-table th,
       table.monthly-table.usage-table td {
-        text-align: right;
         white-space: nowrap;
       }
+
+      /* 左端：品目名、2列目：指標ラベルは左寄せ */
       table.monthly-table.usage-table th:first-child,
-      table.monthly-table.usage-table td:first-child {
-        text-align: left;
-      }
+      table.monthly-table.usage-table td:first-child,
       table.monthly-table.usage-table td.metric-label {
-        text-align: left;
-        padding-left: 12px;
+        text-align: left !important;
       }
 
-      /* 指標ごとの色付け */
+      /* 指標ごとに色替え */
       table.monthly-table.usage-table .row-metric-pur td {
-        /* 当月仕入数：白のまま（基準） */
+        /* 当月仕入：白のまま */
       }
+
       table.monthly-table.usage-table .row-metric-use td {
-        background: #fff8e8;  /* 利用数（差引）をうっすら強調 */
+        background: #fff8e8; /* 利用数（差引）を強調 */
         font-weight: 600;
       }
+
       table.monthly-table.usage-table .row-metric-stock td {
-        background: #fafafa;  /* 棚卸（次月繰越） */
+        background: #fafafa; /* 次月繰越 在庫 */
       }
 
-      /* 数字は右寄せ */
-      table.monthly-table.usage-table td.num {
-        text-align: right;
+      /* ============================
+         売上原価（cost_report）専用
+      ============================ */
+
+      /* 売上原価の行を少し強調 */
+      tr.cogs-row td {
+        background: #fff8d5;
+        font-weight: bold;
       }
+
+      tr.cogs-row td:first-child {
+        text-align: left !important;
+      }
+
     </style>
 
     {% block head_extra %}{% endblock %}
   </head>
 
-  <body class="{% if 'dev' in g.app_version %}dev{% else %}main{% endif %}">
+  {# APP_ENV に応じて body クラスを切り替え（app.py 側で APP_ENV を設定しておく想定） #}
+  <body
+    class="
+      {% if config.APP_ENV == 'prod' %}
+        env-prod
+      {% elif config.APP_ENV == 'mail' %}
+        env-mail
+      {% else %}
+        env-dev
+      {% endif %}
+    "
+  >
     <h1>TEST test tst 倉島事業開発 CMS PostGres Dev Env</h1>
 
+    {# flash メッセージ #}
     {% with messages = get_flashed_messages() %}
       {% if messages %}
         <div class="flash">
@@ -200,55 +223,69 @@ input.num,
     {% endwith %}
 
     <!-- ============================
-         横タブメニュー（全リンク）
-    ============================= -->
+         横タブメニュー（全画面共通）
+    ============================ -->
     <nav>
       <ul class="nav-tabs">
         <li>
-          <a href="{{ url_for('new_purchase') }}"
-             class="{% if request.endpoint == 'new_purchase' %}active{% endif %}">
+          <a
+            href="{{ url_for('new_purchase') }}"
+            class="{% if request.endpoint in ['new_purchase', 'edit_purchase'] %}active{% endif %}"
+          >
             仕入れ入力
           </a>
         </li>
 
         <li>
-          <a href="{{ url_for('inventory_count') }}"
-             class="{% if request.endpoint == 'inventory_count' %}active{% endif %}">
+          <a
+            href="{{ url_for('inventory_count') }}"
+            class="{% if request.endpoint == 'inventory_count' %}active{% endif %}"
+          >
             棚卸し入力
           </a>
         </li>
 
         <li>
-          <a href="{{ url_for('purchase_report') }}"
-             class="{% if request.endpoint == 'purchase_report' %}active{% endif %}">
+          <a
+            href="{{ url_for('purchase_report') }}"
+            class="{% if request.endpoint in ['purchase_report', 'purchase_report_supplier'] %}active{% endif %}"
+          >
             仕入れ照会
           </a>
         </li>
 
         <li>
-          <a href="{{ url_for('usage_report') }}"
-             class="{% if request.endpoint == 'usage_report' %}active{% endif %}">
+          <a
+            href="{{ url_for('usage_report') }}"
+            class="{% if request.endpoint == 'usage_report' %}active{% endif %}"
+          >
             月次利用量照会
           </a>
         </li>
 
         <li>
-          <a href="{{ url_for('cost_report') }}"
-             class="{% if request.endpoint == 'cost_report' %}active{% endif %}">
+          <a
+            href="{{ url_for('cost_report') }}"
+            class="{% if request.endpoint == 'cost_report' %}active{% endif %}"
+          >
             売上原価月次推移
           </a>
         </li>
 
         <li>
-          <a href="{{ url_for('suppliers_master') }}"
-             class="{% if request.endpoint == 'suppliers_master' %}active{% endif %}">
+          <a
+            href="{{ url_for('suppliers_master') }}"
+            class="{% if request.endpoint == 'suppliers_master' %}active{% endif %}"
+          >
             仕入先マスタ
           </a>
         </li>
 
         <li>
-          <a href="{{ url_for('items_master') }}"
-             class="{% if request.endpoint == 'items_master' %}active{% endif %}">
+          <a
+            href="{{ url_for('items_master') }}"
+            class="{% if request.endpoint in ['items_master', 'edit_item'] %}active{% endif %}"
+          >
             品目マスタ
           </a>
         </li>
