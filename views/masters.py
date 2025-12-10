@@ -1,0 +1,410 @@
+# views/masters.py
+
+import sqlite3
+from flask import (
+    render_template,
+    request,
+    redirect,
+    url_for,
+    flash,
+)
+
+
+def init_master_views(app, get_db):
+    """
+    マスタ系（suppliers/items など）のルートを登録する初期化関数。
+
+        from views.masters import init_master_views
+        init_master_views(app, get_db)
+
+    という形で app.py 側から呼び出します。
+    """
+
+    # ----------------------------------------
+    # 仕入先マスタ
+    # /suppliers
+    # ----------------------------------------
+    @app.route("/suppliers", methods=["GET", "POST"])
+    def suppliers_master():
+        db = get_db()
+
+        if request.method == "POST":
+            name = (request.form.get("name") or "").strip()
+            code = (request.form.get("code") or "").strip()
+            phone = (request.form.get("phone") or "").strip()
+            email = (request.form.get("email") or "").strip()
+            address = (request.form.get("address") or "").strip()
+
+            if not name:
+                flash("仕入先名は必須です。")
+            else:
+                try:
+                    db.execute(
+                        """
+                        INSERT INTO suppliers (code, name, phone, email, address)
+                        VALUES (?, ?, ?, ?, ?)
+                        """,
+                        (code if code else None, name, phone, email, address),
+                    )
+                    db.commit()
+                    flash("仕入先を登録しました。")
+                except sqlite3.OperationalError as e:
+                    flash(f"suppliers テーブルへの登録でエラーが発生しました: {e}")
+
+            return redirect(url_for("suppliers_master"))
+
+        # GET
+        suppliers = db.execute(
+            "SELECT id, code, name, phone, email, address FROM suppliers ORDER BY code, id"
+        ).fetchall()
+
+        return render_template(
+            "suppliers_master.html",
+            suppliers=suppliers,
+        )
+
+    # ----------------------------------------
+    # 仕入先編集・削除
+    # /suppliers/<id>/edit
+    # ----------------------------------------
+    @app.route("/suppliers/<int:supplier_id>/edit", methods=["GET", "POST"])
+    def edit_supplier(supplier_id):
+        db = get_db()
+
+        # 対象仕入先を取得
+        supplier = db.execute(
+            """
+            SELECT id, code, name, phone, email, address
+            FROM suppliers
+            WHERE id = ?
+            """,
+            (supplier_id,),
+        ).fetchone()
+
+        if supplier is None:
+            flash("指定された仕入先が見つかりません。")
+            return redirect(url_for("suppliers_master"))
+
+        if request.method == "POST":
+
+            # ----------------------
+            # 削除ボタン押下時
+            # ----------------------
+            if "delete" in request.form:
+                try:
+                    db.execute(
+                        "DELETE FROM suppliers WHERE id = ?",
+                        (supplier_id,),
+                    )
+                    db.commit()
+                    flash(f"仕入先（{supplier['name']}）を削除しました。")
+                except sqlite3.Error as e:
+                    db.rollback()
+                    flash(f"仕入先削除でエラーが発生しました: {e}")
+
+                return redirect(url_for("suppliers_master"))
+
+            # ----------------------
+            # 通常の更新処理
+            # ----------------------
+            code = (request.form.get("code") or "").strip()
+            name = (request.form.get("name") or "").strip()
+            phone = (request.form.get("phone") or "").strip()
+            email = (request.form.get("email") or "").strip()
+            address = (request.form.get("address") or "").strip()
+
+            if not name:
+                flash("仕入先名は必須です。")
+                return render_template(
+                    "suppliers_edit.html",
+                    supplier=supplier,
+                )
+
+            try:
+                db.execute(
+                    """
+                    UPDATE suppliers
+                    SET
+                      code    = ?,
+                      name    = ?,
+                      phone   = ?,
+                      email   = ?,
+                      address = ?
+                    WHERE id = ?
+                    """,
+                    (code if code else None, name, phone, email, address, supplier_id),
+                )
+                db.commit()
+                flash("仕入先を更新しました。")
+            except sqlite3.Error as e:
+                db.rollback()
+                flash(f"仕入先更新でエラーが発生しました: {e}")
+
+            return redirect(url_for("suppliers_master"))
+
+        # GET のとき：編集画面表示
+        return render_template(
+            "suppliers_edit.html",
+            supplier=supplier,
+        )
+
+    # ----------------------------------------
+    # 品目マスタ
+    # /items
+    # 仕入先ごとに SSIII（5桁）コード自動採番
+    # ----------------------------------------
+    @app.route("/items", methods=["GET", "POST"])
+    def items_master():
+        db = get_db()
+
+        # 仕入先一覧（プルダウン用）
+        suppliers = db.execute(
+            "SELECT id, name, code FROM suppliers ORDER BY code"
+        ).fetchall()
+
+        # 登録済み品目一覧
+        items = db.execute(
+            """
+            SELECT
+              i.id,
+              i.code,
+              i.name,
+              i.unit,
+              i.temp_zone,
+              i.is_internal,
+              s.name AS supplier_name
+            FROM items i
+            LEFT JOIN suppliers s ON i.supplier_id = s.id
+            ORDER BY i.code, i.name
+            """
+        ).fetchall()
+
+        # --------- 新規登録（POST） ----------
+        if request.method == "POST":
+            supplier_id = request.form.get("supplier_id")
+            name = (request.form.get("name") or "").strip()
+            unit = (request.form.get("unit") or "").strip()
+
+            # ★ 追加：温度帯と内製フラグ
+            temp_zone = (request.form.get("temp_zone") or "").strip() or None
+            is_internal = 1 if request.form.get("is_internal") == "1" else 0
+
+            # 必須チェック
+            if not supplier_id or not name:
+                flash("仕入先と品名は必須です。")
+                return render_template(
+                    "items_master.html",
+                    suppliers=suppliers,
+                    items=items,
+                )
+
+            # 仕入先コード2桁を取得（SS部分）
+            supplier = db.execute(
+                "SELECT code FROM suppliers WHERE id = ?",
+                (supplier_id,),
+            ).fetchone()
+
+            if supplier is None or supplier["code"] is None:
+                flash("仕入先コードが未設定です（仕入先マスタを確認してください）。")
+                return render_template(
+                    "items_master.html",
+                    suppliers=suppliers,
+                    items=items,
+                )
+
+            code2 = str(supplier["code"]).zfill(2)[:2]
+
+            # 既存コードの最大値（SSIII の III 部分）を取得
+            row = db.execute(
+                "SELECT MAX(code) AS max_code FROM items WHERE code LIKE ?",
+                (f"{code2}%",),
+            ).fetchone()
+
+            if row["max_code"]:
+                try:
+                    current_seq = int(str(row["max_code"])[2:])
+                except Exception:
+                    current_seq = 0
+            else:
+                current_seq = 0
+
+            next_seq = current_seq + 1
+            new_code = f"{code2}{next_seq:03d}"  # 5桁 SSIII
+
+            # unit（ケース入数）は整数 or NULL
+            try:
+                unit_val = int(unit) if unit else None
+            except ValueError:
+                unit_val = None
+
+            # INSERT（code / name / unit / supplier_id / temp_zone / is_internal）
+            try:
+                db.execute(
+                    """
+                    INSERT INTO items
+                        (code, name, unit, supplier_id, temp_zone, is_internal)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (new_code, name, unit_val, supplier_id, temp_zone, is_internal),
+                )
+                db.commit()
+                flash(f"品目を登録しました。（コード: {new_code}）")
+            except sqlite3.Error as e:
+                db.rollback()
+                flash(f"items テーブルへの登録でエラーが発生しました: {e}")
+
+            return redirect(url_for("items_master"))
+
+        # --------- GET：表示 ----------
+        return render_template(
+            "items_master.html",
+            suppliers=suppliers,
+            items=items,
+        )
+
+    # ----------------------------------------
+    # 品目編集
+    # /items/<id>/edit
+    # ----------------------------------------
+    @app.route("/items/<int:item_id>/edit", methods=["GET", "POST"])
+    def edit_item(item_id):
+        db = get_db()
+
+        # 仕入先一覧（プルダウン用）
+        suppliers = db.execute(
+            "SELECT id, name, code FROM suppliers ORDER BY code"
+        ).fetchall()
+
+        # 対象品目を取得
+        item = db.execute(
+            """
+            SELECT
+              i.id,
+              i.code,
+              i.name,
+              i.unit,
+              i.supplier_id,
+              i.temp_zone,
+              i.purchase_unit,
+              i.inventory_unit,
+              i.min_purchase_unit,
+              i.is_internal,
+              i.storage_cost
+            FROM items i
+            WHERE i.id = ?
+            """,
+            (item_id,),
+        ).fetchone()
+
+        if item is None:
+            flash("指定された品目が見つかりません。")
+            return redirect(url_for("items_master"))
+
+        if request.method == "POST":
+
+            # ==============================
+            # 削除ボタンが押された場合
+            # ==============================
+            if "delete" in request.form:
+                try:
+                    db.execute(
+                        "DELETE FROM items WHERE id = ?",
+                        (item_id,),
+                    )
+                    db.commit()
+                    flash(f"品目（コード: {item['code']}）を削除しました。")
+                except sqlite3.Error as e:
+                    db.rollback()
+                    flash(f"品目削除でエラーが発生しました: {e}")
+
+                return redirect(url_for("items_master"))
+
+            # ==============================
+            # 通常の更新処理
+            # ==============================
+            name = (request.form.get("name") or "").strip()
+            unit = (request.form.get("unit") or "").strip()
+            supplier_id = request.form.get("supplier_id") or None
+            temp_zone = (request.form.get("temp_zone") or "").strip() or None
+            storage_cost = (request.form.get("storage_cost") or "").strip()
+            # チェックボックス → 内製フラグ
+            is_internal = 1 if request.form.get("is_internal") == "1" else 0
+
+            # 整数系を安全に変換
+            def to_int_or_none(v):
+                v = (v or "").strip()
+                if not v:
+                    return None
+                try:
+                    return int(v)
+                except ValueError:
+                    return None
+
+            unit_val = to_int_or_none(unit)
+            purchase_unit = to_int_or_none(request.form.get("purchase_unit"))
+            inventory_unit = to_int_or_none(request.form.get("inventory_unit"))
+            min_purchase_unit = to_int_or_none(request.form.get("min_purchase_unit"))
+
+            # storage_cost は小数もあり得るので float
+            def to_float_or_none(v):
+                v = (v or "").strip()
+                if not v:
+                    return None
+                try:
+                    return float(v)
+                except ValueError:
+                    return None
+
+            storage_cost_val = to_float_or_none(storage_cost)
+
+            if not name:
+                flash("品目名は必須です。")
+                return render_template(
+                    "items_edit.html",
+                    item=item,
+                    suppliers=suppliers,
+                )
+
+            try:
+                db.execute(
+                    """
+                    UPDATE items
+                    SET
+                      name              = ?,
+                      unit              = ?,
+                      supplier_id       = ?,
+                      temp_zone         = ?,
+                      purchase_unit     = ?,
+                      inventory_unit    = ?,
+                      min_purchase_unit = ?,
+                      is_internal       = ?,
+                      storage_cost      = ?
+                    WHERE id = ?
+                    """,
+                    (
+                        name,
+                        unit_val,
+                        supplier_id,
+                        temp_zone,
+                        purchase_unit,
+                        inventory_unit,
+                        min_purchase_unit,
+                        is_internal,
+                        storage_cost_val,
+                        item_id,
+                    ),
+                )
+                db.commit()
+                flash("品目を更新しました。")
+            except sqlite3.Error as e:
+                db.rollback()
+                flash(f"品目更新でエラーが発生しました: {e}")
+
+            return redirect(url_for("items_master"))
+
+        # GET のとき：編集画面表示
+        return render_template(
+            "items_edit.html",
+            item=item,
+            suppliers=suppliers,
+        )
