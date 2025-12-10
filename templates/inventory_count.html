@@ -3,164 +3,184 @@
 {% block title %}棚卸し入力{% endblock %}
 
 {% block content %}
+
 <h2>棚卸し入力</h2>
 
-{# ============================
-   ① 上部：店舗・棚卸日を選んで「表示」（GET）
-   ============================ #}
-<form method="get" action="{{ url_for('inventory_count') }}" style="margin-bottom: 16px;">
-  <label>
+<!-- 店舗・日付選択（GET） -->
+<form method="get" style="margin-bottom: 12px;">
+  <label style="margin-right: 16px;">
+    棚卸日：
+    <input type="date" name="count_date" value="{{ count_date }}">
+  </label>
+
+  <label style="margin-right: 16px;">
     店舗：
     <select name="store_id">
-      <option value="">-- 店舗を選択 --</option>
+      <option value="">（店舗を選択）</option>
       {% for s in stores %}
         <option value="{{ s.id }}"
-          {% if selected_store_id == s.id %}selected{% endif %}>
+                {% if selected_store_id == s.id %}selected{% endif %}>
           {{ s.name }}
         </option>
       {% endfor %}
     </select>
   </label>
 
-  <label style="margin-left: 20px;">
-    棚卸日：
-    <input type="date" name="count_date" value="{{ count_date }}">
-  </label>
-
   <button type="submit">表示</button>
 </form>
 
-{# 最新棚卸し情報（あれば） #}
-{% if latest_dates and latest_dates|length > 0 %}
-  <p>
-    最新棚卸日：
-    {{ latest_dates[0] }}
-    （直近 {{ latest_dates|length }} 回：
+{% if selected_store_id %}
+  {% if latest_dates %}
+    <p>
+      直近棚卸し日：
       {% for d in latest_dates %}
-        {{ d }}{% if not loop.last %}、{% endif %}
+        <a href="{{ url_for('inventory_count',
+                            store_id=selected_store_id,
+                            count_date=d) }}">
+          {{ d }}
+        </a>{% if not loop.last %} / {% endif %}
       {% endfor %}
-    ）
-  </p>
+    </p>
+  {% endif %}
 {% endif %}
-{# ============================
-   ② 下部：棚卸し対象アイテム一覧（POSTで保存）
-   ============================ #}
-{% if items and items|length > 0 %}
 
-<form method="post" action="{{ url_for('inventory_count') }}">
-  {# POST 側で必要なパラメータを hidden で渡す #}
-  <input type="hidden" name="store_id" value="{{ selected_store_id or '' }}">
-  <input type="hidden" name="count_date" value="{{ count_date }}">
-  <input type="hidden" name="row_count" value="{{ items|length }}">
+{% if not selected_store_id %}
+  <p>店舗を選択して「表示」を押すと、棚卸し対象の品目が表示されます。</p>
+{% endif %}
 
-  <table>
-    <thead>
-      <tr>
-        <th>品目コード</th>
-        <th>品目名</th>
-        <th>システム在庫</th>
-        <th>評価単価</th>
-        <th>在庫金額</th>
-        <th>棚卸数量</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in items %}
-        {% set n = loop.index %}
-        <tr>
-          <td>{{ item.item_code }}</td>
-          <td>{{ item.item_name }}</td>
+{% if items %}
+  <!-- 棚卸し登録フォーム（POST） -->
+  <form method="post" id="inventory-form">
+    <input type="hidden" name="store_id" value="{{ selected_store_id }}">
+    <input type="hidden" name="count_date" value="{{ count_date }}">
+    <input type="hidden" name="row_count" id="row_count" value="{{ items|length }}">
 
-          <td style="text-align: right;">
-            {{ "{:,}".format(item.system_qty|default(0)) }}
-          </td>
-          <td style="text-align: right;">
-            {{ "{:,.2f}".format(item.unit_price|default(0)) }}
-          </td>
-          <td style="text-align: right;">
-            {{ "{:,}".format(item.stock_amount|default(0)|round(0)|int) }}
-          </td>
+    {% set ns = namespace(row_index=0) %}
 
-          <td style="text-align: right;">
-            {# app.py の POST が期待している名前に合わせる #}
-            <input
-              type="hidden"
-              name="item_id_{{ n }}"
-              value="{{ item.item_id }}"
-            >
-            <input
-              type="hidden"
-              name="system_qty_{{ n }}"
-              value="{{ item.system_qty }}"
-            >
-            <input
-              type="number"
-              name="count_qty_{{ n }}"
-              value="{{ item.counted_qty if item.counted_qty is not none else '' }}"
-              class="inventory-nav-input"
-              autocomplete="off"
-              style="width: 80px; text-align: right;"
-            >
-          </td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+    {% for zone in zones %}
+      {% set zone_items = grouped_items.get(zone, []) %}
+      {% if zone_items %}
+        <h3 style="margin-top:24px;">{{ zone }}</h3>
 
-  <div style="margin-top: 16px;">
-    <button type="submit">棚卸結果を保存</button>
-  </div>
-</form>
+        <table class="monthly-table">
+          <thead>
+            <tr>
+              <th>コード</th>
+              <th>品目名</th>
+              <th class="num">システム在庫</th>
+              <th class="num">単価</th>
+              <th class="num">在庫金額</th>
+              <th class="num">棚卸数（入力）</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for it in zone_items %}
+            {% set ns.row_index = ns.row_index + 1 %}
+            <tr>
+              <td>{{ it.item_code }}</td>
+              <td>{{ it.item_name }}</td>
+              <td class="num">
+                {{ "{:,}".format(it.system_qty) }}
+                <input type="hidden"
+                       name="item_id_{{ ns.row_index }}"
+                       value="{{ it.item_id }}">
+                <input type="hidden"
+                       name="system_qty_{{ ns.row_index }}"
+                       value="{{ it.system_qty }}">
+              </td>
+              <td class="num">
+                {{ "{:,.2f}".format(it.unit_price) if it.unit_price else "" }}
+              </td>
+              <td class="num">
+                {{ "{:,.0f}".format(it.stock_amount) if it.stock_amount else "" }}
+              </td>
+              <td class="num">
+                <input
+                  type="text"
+                  name="count_qty_{{ ns.row_index }}"
+                  value="{{ it.counted_qty if it.counted_qty is not none else '' }}"
+                  class="count-input"
+                  data-row="{{ ns.row_index }}"
+                  data-col="0"
+                  style="width:80px; text-align:right;"
+                >
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    {% endfor %}
 
-{% else %}
-  <p>店舗と棚卸日を選択して「表示」を押すと、棚卸し対象の品目が表示されます。</p>
+    <div style="margin-top:16px;">
+      <button type="submit">棚卸結果を保存</button>
+    </div>
+  </form>
 {% endif %}
 
 {% endblock %}
 
 {% block body_extra %}
 <script>
-  document.addEventListener("keydown", function (e) {
-    const target = e.target;
+document.addEventListener("DOMContentLoaded", function () {
+  const inputs = Array.from(document.querySelectorAll(".count-input"));
+  if (!inputs.length) return;
 
-    // 棚卸し数量用 input だけ対象にする
-    if (!target.classList.contains("inventory-nav-input")) return;
-
-    const inputs = Array.from(
-      document.querySelectorAll("input.inventory-nav-input")
+  // data-row, data-col から次の input を探すヘルパー
+  function findInput(row, col) {
+    return inputs.find(el =>
+      el.getAttribute("data-row") == row &&
+      el.getAttribute("data-col") == col
     );
-    const idx = inputs.indexOf(target);
-    if (idx < 0) return;
+  }
 
-    // Enter → 次の数量欄へ
-    if (e.key === "Enter") {
-      e.preventDefault();  // フォーム送信を止める
-      const next = inputs[idx + 1];
-      if (next) {
-        next.focus();
-        if (typeof next.select === "function") next.select();
-      }
-    }
+  inputs.forEach(input => {
+    input.addEventListener("keydown", function (e) {
+      const row = parseInt(this.getAttribute("data-row"), 10);
+      const col = parseInt(this.getAttribute("data-col"), 10);
 
-    // ↓キー → 次の数量欄へ
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      const next = inputs[idx + 1];
-      if (next) {
-        next.focus();
-        if (typeof next.select === "function") next.select();
+      // Enter = 次の入力欄へ
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const currentIndex = inputs.indexOf(this);
+        const next = inputs[currentIndex + 1];
+        if (next) next.focus();
       }
-    }
 
-    // ↑キー → 前の数量欄へ
-    if (e.key === "ArrowUp") {
-      e.preventDefault();
-      const prev = inputs[idx - 1];
-      if (prev) {
-        prev.focus();
-        if (typeof prev.select === "function") prev.select();
+      // ↓キー = 下の行へ
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        const next = findInput(row + 1, col);
+        if (next) next.focus();
       }
-    }
+
+      // ↑キー = 上の行へ
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        const prev = findInput(row - 1, col);
+        if (prev) prev.focus();
+      }
+
+      // →キー = 次の入力（今は同じ列しかないので Enter と同じ扱い）
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        const currentIndex = inputs.indexOf(this);
+        const next = inputs[currentIndex + 1];
+        if (next) next.focus();
+      }
+
+      // ←キー = 前の入力
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        const currentIndex = inputs.indexOf(this);
+        const prev = inputs[currentIndex - 1];
+        if (prev) prev.focus();
+      }
+    });
   });
+
+  // 最初の入力欄にフォーカス
+  inputs[0].focus();
+});
 </script>
 {% endblock %}
