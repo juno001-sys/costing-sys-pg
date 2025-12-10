@@ -51,6 +51,32 @@
         margin: 20px 0;
         border-radius: 6px;
       }
+
+      /* ============================
+   テーブルの交互行ストライプ
+============================ */
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+table th, table td {
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+}
+
+table tr:nth-child(even) {
+  background: #f7f7f7;
+}
+
+table tr:nth-child(odd) {
+  background: #ffffff;
+}
+
+/* 行ホバー時のハイライト */
+table tr:hover {
+  background: #e8f2ff;
+}
     </style>
 
     {% block head_extra %}{% endblock %}
