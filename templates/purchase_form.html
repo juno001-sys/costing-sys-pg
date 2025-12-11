@@ -29,9 +29,10 @@
 <form method="post" id="purchase-form">
 
   <!-- 伝票ヘッダー -->
+    <!-- 伝票ヘッダー -->
   <div style="margin-bottom: 12px;">
     <label>
-      店舗：
+      <span class="field-label">店舗：</span>
       <select name="store_id" required>
         <option value="">（店舗を選択）</option>
         {% for s in stores %}
@@ -46,7 +47,7 @@
 
   <div style="margin-bottom: 12px;">
     <label style="margin-right: 16px;">
-      仕入先：
+      <span class="field-label">仕入先：</span>
       <select name="supplier_id" id="supplier_id" required>
         <option value="">（仕入先を選択）</option>
         {% for sp in suppliers %}
@@ -56,11 +57,10 @@
     </label>
 
     <label>
-      納品日：
+      <span class="field-label">納品日：</span>
       <input type="date" name="delivery_date" required />
     </label>
   </div>
-
   <!-- 明細テーブル -->
   <input type="hidden" id="row_count" name="row_count" value="8">
 
