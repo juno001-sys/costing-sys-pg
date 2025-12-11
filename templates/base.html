@@ -193,11 +193,11 @@
       }
     </style>
 
-    <!-- ★ ここから共通JSヘルパー（全角→半角）を追加 ★ -->
+    <!-- ★ 共通JSヘルパー（全角→半角 & 数値パース）★ -->
     <script>
       window.KURAJIKA = window.KURAJIKA || {};
 
-      // 全角数字＋カンマなどを半角数字のみの文字列に正規化
+      // 全角数字＋カンマなどを半角数字だけの文字列に正規化
       window.KURAJIKA.toHalfWidthNum = function (str) {
         if (str == null) return "";
         let s = String(str);
@@ -216,7 +216,7 @@
         return s;
       };
 
-      // input 要素を受け取り、値を半角数字だけに正規化してから数値として返す
+      // input 要素の値を「半角数字のみ」に正規化してから、数値として返す
       window.KURAJIKA.parseNum = function (inputEl) {
         if (!inputEl) return 0;
         const raw = inputEl.value || "";
@@ -229,7 +229,25 @@
         const n = parseInt(normalized, 10);
         return isNaN(n) ? 0 : n;
       };
-    </script>
+
+      // 単に「この input を半角数字にクリーンアップ」するだけのヘルパー
+      window.KURAJIKA.normalizeNumInput = function (inputEl) {
+        if (!inputEl) return;
+        const raw = inputEl.value || "";
+        const normalized = window.KURAJIKA.toHalfWidthNum(raw);
+        if (raw !== normalized) {
+          inputEl.value = normalized;
+        }
+      };
+
+      // すべての数値用 input（class="num"）で、入力のたびに全角→半角変換
+      document.addEventListener("input", function (e) {
+        const el = e.target;
+        if (el.matches("input.num")) {
+          window.KURAJIKA.normalizeNumInput(el);
+        }
+      });
+        </script>
     <!-- ★ ここまで追加 ★ -->
 
     {% block head_extra %}{% endblock %}
