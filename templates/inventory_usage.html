@@ -30,22 +30,33 @@
         <th>合計利用</th>
       </tr>
     </thead>
-    <tbody>
-      {% for it in item_rows %}
-        <tr>
-          <td>{{ it.item_name }}</td>
-          {% for ym in month_keys %}
-            <td style="text-align:right;">{{ it.purchases.get(ym, 0) }}</td>
-            <td style="text-align:right;">{{ it.usage.get(ym, 0) }}</td>
-          {% endfor %}
-          <td style="text-align:right;">{{ it.total_purchases }}</td>
-          <td style="text-align:right;">{{ it.total_usage }}</td>
-        </tr>
-      {% else %}
-        <tr>
-          <td colspan="{{ 1 + month_keys|length * 2 + 2 }}">データがありません。</td>
-        </tr>
+<tbody>
+  {% for item in item_rows %}
+    <tr class="row-metric-pur item-start">
+      <td rowspan="3">{{ item.item_name }}</td>
+      <td class="metric-label">当月仕入数</td>
+      {% for ym in month_keys %}
+        <td class="num">{{ item.per_month[ym].pur_qty }}</td>
       {% endfor %}
-    </tbody>
+      <td class="num">{{ item.total_pur }}</td>
+    </tr>
+
+    <tr class="row-metric-use">
+      <td class="metric-label">利用数</td>
+      {% for ym in month_keys %}
+        <td class="num">{{ item.per_month[ym].used_qty }}</td>
+      {% endfor %}
+      <td class="num">{{ item.total_used }}</td>
+    </tr>
+
+    <tr class="row-metric-stock">
+      <td class="metric-label">月末在庫</td>
+      {% for ym in month_keys %}
+        <td class="num">{{ item.per_month[ym].end_qty }}</td>
+      {% endfor %}
+      <td class="num">{{ item.total_end }}</td>
+    </tr>
+  {% endfor %}
+</tbody>
   </table>
 {% endblock %}
