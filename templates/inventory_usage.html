@@ -18,45 +18,46 @@
     <noscript><button type="submit">表示</button></noscript>
   </form>
 
-  <table border="1" cellpadding="4" cellspacing="0" style="margin-top: 12px;">
-    <thead>
-      <tr>
-        <th>品目名</th>
+  <table class="monthly-table usage-table" style="margin-top: 12px;">
+  <thead>
+    <tr>
+      <th>品目名</th>
+      {% for ym in month_keys %}
+        <th>{{ ym }} 仕入</th>
+        <th>{{ ym }} 利用</th>
+      {% endfor %}
+      <th>合計仕入</th>
+      <th>合計利用</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    {% for item in item_rows %}
+      <tr class="row-metric-pur item-start">
+        <td rowspan="3">{{ item.item_name }}</td>
+        <td class="metric-label">当月仕入数</td>
         {% for ym in month_keys %}
-          <th>{{ ym }} 仕入</th>
-          <th>{{ ym }} 利用</th>
+          <td class="num">{{ item.per_month[ym].pur_qty }}</td>
         {% endfor %}
-        <th>合計仕入</th>
-        <th>合計利用</th>
+        <td class="num">{{ item.total_pur }}</td>
       </tr>
-    </thead>
-<tbody>
-  {% for item in item_rows %}
-    <tr class="row-metric-pur item-start">
-      <td rowspan="3">{{ item.item_name }}</td>
-      <td class="metric-label">当月仕入数</td>
-      {% for ym in month_keys %}
-        <td class="num">{{ item.per_month[ym].pur_qty }}</td>
-      {% endfor %}
-      <td class="num">{{ item.total_pur }}</td>
-    </tr>
 
-    <tr class="row-metric-use">
-      <td class="metric-label">利用数</td>
-      {% for ym in month_keys %}
-        <td class="num">{{ item.per_month[ym].used_qty }}</td>
-      {% endfor %}
-      <td class="num">{{ item.total_used }}</td>
-    </tr>
+      <tr class="row-metric-use">
+        <td class="metric-label">利用数</td>
+        {% for ym in month_keys %}
+          <td class="num">{{ item.per_month[ym].used_qty }}</td>
+        {% endfor %}
+        <td class="num">{{ item.total_used }}</td>
+      </tr>
 
-    <tr class="row-metric-stock">
-      <td class="metric-label">月末在庫</td>
-      {% for ym in month_keys %}
-        <td class="num">{{ item.per_month[ym].end_qty }}</td>
-      {% endfor %}
-      <td class="num">{{ item.total_end }}</td>
-    </tr>
-  {% endfor %}
-</tbody>
-  </table>
+      <tr class="row-metric-stock">
+        <td class="metric-label">月末在庫</td>
+        {% for ym in month_keys %}
+          <td class="num">{{ item.per_month[ym].end_qty }}</td>
+        {% endfor %}
+        <td class="num">{{ item.total_end }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
 {% endblock %}
