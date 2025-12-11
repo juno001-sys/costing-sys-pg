@@ -146,50 +146,47 @@
       /* ============================
          月次利用量（usage_report）専用
       ============================ */
-
+      
       table.monthly-table.usage-table {
         margin-top: 20px;
       }
-
+      
       /* usage_table ではストライプはリセットして自前で塗る */
       table.monthly-table.usage-table tbody tr:nth-child(odd),
       table.monthly-table.usage-table tbody tr:nth-child(even) {
         background: #ffffff;
       }
-
+      
       table.monthly-table.usage-table th,
       table.monthly-table.usage-table td {
         white-space: nowrap;
       }
-
+      
       /* 左端：品目名、2列目：指標ラベルは左寄せ */
       table.monthly-table.usage-table th:first-child,
       table.monthly-table.usage-table td:first-child,
       table.monthly-table.usage-table td.metric-label {
         text-align: left !important;
       }
-
+      
       /* 指標ごとに色替え */
       table.monthly-table.usage-table .row-metric-pur td {
         /* 当月仕入：白のまま */
       }
-
+      
       table.monthly-table.usage-table .row-metric-use td {
-        background: #fff8e8; /* 利用数（差引）を強調 */
+        background: #fff8e8;          /* 利用数（差引）を強調 */
         font-weight: 600;
       }
-
+      
       table.monthly-table.usage-table .row-metric-stock td {
-        background: #fafafa; /* 次月繰越 在庫 */
-      }
-   
-      /* 品目の先頭行に太線を引く */
-      table.monthly-table.usage-table tr.item-start td {
-        border-top-width: 2px;
-        border-top-style: solid;
-        border-top-color: #999;
+        background: #fafafa;          /* 次月繰越 在庫 */
       }
       
+      /* ★ 品目ごとの区切り線を「太線」にする（3行目＝在庫行の下） */
+      table.monthly-table.usage-table tr.row-metric-stock td {
+        border-bottom: 2px solid #999;
+      }      
       /* ============================
          売上原価（cost_report）専用
       ============================ */
