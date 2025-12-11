@@ -373,6 +373,28 @@ document.addEventListener("DOMContentLoaded", function () {
     recalcAll();
   });
 
+/* -----------------------------------
+   行削除 ＆ No.再採番
+----------------------------------- */
+function renumberRows() {
+  const rows = tbody.querySelectorAll("tr");
+  let n = 1;
+  rows.forEach(tr => {
+    const noCell = tr.querySelector(".row-no");
+    if (noCell) noCell.textContent = n;
+    n++;
+  });
+}
+
+tbody.addEventListener("click", function(e) {
+  if (e.target.classList.contains("delete-row")) {
+    const tr = e.target.closest("tr");
+    tr.remove();
+    renumberRows();
+    recalcAll();
+  }
+});
+  
   // 初期計算（画面表示直後の値があれば）
   recalcAll();
 });
