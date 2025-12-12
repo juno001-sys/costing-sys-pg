@@ -384,11 +384,8 @@ document.addEventListener("DOMContentLoaded", function () {
      Helpers
   =============================== */
   function getText(it) {
-    const code = it.code || "";
-    const name = it.name || "";
-    return `${code} ${name}`.trim();
-  }
-
+  return (it.name || "").trim();
+}
   function closeBox(box) {
     box.hidden = true;
     box.innerHTML = "";
