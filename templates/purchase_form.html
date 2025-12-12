@@ -29,22 +29,20 @@
 <form method="post" id="purchase-form">
 
   <!-- 伝票ヘッダー -->
-    <!-- 伝票ヘッダー -->
-  <div style="margin-bottom: 12px;">
-    <label>
-      <span class="field-label">店舗：</span>
-      <select name="store_id" required>
-        <option value="">（店舗を選択）</option>
-        {% for s in stores %}
-          <option value="{{ s.id }}"
-                  {% if selected_store_id == s.id %}selected{% endif %}>
-            {{ s.name }}
-          </option>
-        {% endfor %}
-      </select>
-    </label>
-  </div>
-
+    <div style="margin-bottom: 12px;">
+  <label style="margin-right: 16px;">
+    <span class="field-label">店舗：</span>
+    <select name="store_id" onchange="this.form.submit()">
+      <option value="">（店舗を選択）</option>
+      {% for st in stores %}
+        <option value="{{ st.id }}"
+          {% if selected_store_id == st.id %}selected{% endif %}>
+          {{ st.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </label>
+</div>
   <div style="margin-bottom: 12px;">
     <label style="margin-right: 16px;">
       <span class="field-label">仕入先：</span>
