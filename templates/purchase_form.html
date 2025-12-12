@@ -66,7 +66,7 @@
     position: absolute;
     left: 0;
     top: 28px;
-    width: 210px;
+    width: 100%;
     max-height: 240px;
     overflow-y: auto;
     border: 1px solid #ccc;
@@ -84,6 +84,11 @@
   .item-suggest-item.active {
     background: #e6f0ff;
   }  
+  .item-autocomplete {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 </style>
 {% endblock %}
 
@@ -131,7 +136,7 @@
     <thead>
       <tr>
         <th style="width:40px;">No.</th>
-        <th style="width:220px;">品目</th>
+        <th style="width:320px;">品目</th>
         <th class="num" style="width:90px;">数量</th>
         <th class="num" style="width:110px;">単価</th>
         <th class="num" style="width:120px;">金額</th>
@@ -706,9 +711,9 @@ if (addBtn && tbody) {
         <input type="text"
                class="item-autocomplete nav-input"
                data-col="0"
-               placeholder="品名・コード検索"
+               placeholder="品名検索"
                autocomplete="off"
-               style="width:210px;">
+               style="width:100%;">
         <input type="hidden"
                name="item_id_${newIndex}"
                class="item-id">
