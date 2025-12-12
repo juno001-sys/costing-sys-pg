@@ -392,5 +392,69 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 });
+  function openSuggestions(input) {
+  const wrap = input.closest(".item-cell");
+  const box  = wrap.querySelector(".item-suggestions");
+
+  if (!box || box.children.length === 0) return;
+
+  box.hidden = false;
+
+  // highlight first item
+  const first = box.querySelector(".suggest-item");
+  if (first) {
+    first.classList.add("active");
+  }
+}
+  tbody.addEventListener("keydown", function (e) {
+  const input = e.target;
+  if (!input.classList.contains("item-autocomplete")) return;
+
+  const cell = input.closest(".item-cell");
+  const box  = cell.querySelector(".item-suggestions");
+  const items = box ? Array.from(box.querySelectorAll(".suggest-item")) : [];
+
+  if (!box || items.length === 0) return;
+
+  let index = items.findIndex(el => el.classList.contains("active"));
+
+  /* ↓ open / move down */
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+
+    if (box.hidden) {
+      openSuggestions(input);
+      return;
+    }
+
+    items.forEach(el => el.classList.remove("active"));
+    index = Math.min(index + 1, items.length - 1);
+    items[index].classList.add("active");
+    items[index].scrollIntoView({ block: "nearest" });
+  }
+
+  /* ↑ move up */
+  if (e.key === "ArrowUp") {
+    e.preventDefault();
+    items.forEach(el => el.classList.remove("active"));
+    index = Math.max(index - 1, 0);
+    items[index].classList.add("active");
+    items[index].scrollIntoView({ block: "nearest" });
+  }
+
+  /* Enter = select */
+  if (e.key === "Enter") {
+    e.preventDefault();
+    if (index >= 0) {
+      items[index].click();   // reuse click handler
+    }
+  }
+
+  /* Esc = close */
+  if (e.key === "Escape") {
+    box.hidden = true;
+    items.forEach(el => el.classList.remove("active"));
+  }
+});
 </script>
 {% endblock %}
