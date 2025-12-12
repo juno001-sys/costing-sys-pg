@@ -534,14 +534,15 @@ def init_master_views(app, get_db):
         return render_template("stores_master.html", stores=stores)
 
 
-    # ----------------------------------------
-    # 店舗編集・無効化
+        # ----------------------------------------
+    # 店舗編集・無効化 ＋ 仕入れ先紐付け
     # /stores/<id>/edit
     # ----------------------------------------
     @app.route("/stores/<int:store_id>/edit", methods=["GET", "POST"])
     def edit_store(store_id):
         db = get_db()
 
+        # 店舗情報
         store = db.execute(
             """
             SELECT id, code, name, seats, opened_on, closed_on, is_active
@@ -555,9 +556,33 @@ def init_master_views(app, get_db):
             flash("指定された店舗が見つかりません。")
             return redirect(url_for("stores_master"))
 
+        # 仕入れ先（全体）※有効なものだけ
+        suppliers = db.execute(
+            """
+            SELECT id, code, name
+            FROM suppliers
+            WHERE is_active = 1
+            ORDER BY code
+            """
+        ).fetchall()
+
+        # この店舗に紐付いている仕入れ先ID一覧
+        linked_rows = db.execute(
+            """
+            SELECT supplier_id
+            FROM store_suppliers
+            WHERE store_id = ?
+              AND is_active = 1
+            """,
+            (store_id,),
+        ).fetchall()
+        linked_supplier_ids = {row["supplier_id"] for row in linked_rows}
+
         if request.method == "POST":
 
-            # 無効化ボタン
+            # --------------------------
+            # 無効化ボタン（delete）
+            # --------------------------
             if "delete" in request.form:
                 in_use = db.execute(
                     """
@@ -581,7 +606,9 @@ def init_master_views(app, get_db):
                 flash("店舗を無効化しました。")
                 return redirect(url_for("stores_master"))
 
-            # 更新処理
+            # --------------------------
+            # 通常の更新処理
+            # --------------------------
             code = (request.form.get("code") or "").strip()
             name = (request.form.get("name") or "").strip()
             seats_raw = (request.form.get("seats") or "").strip()
@@ -600,18 +627,67 @@ def init_master_views(app, get_db):
 
             if not name:
                 flash("店舗名は必須です。")
-            else:
+                return render_template(
+                    "stores_edit.html",
+                    store=store,
+                    suppliers=suppliers,
+                    linked_supplier_ids=linked_supplier_ids,
+                )
+
+            # ---- 店舗情報の更新 ----
+            db.execute(
+                """
+                UPDATE stores
+                SET code = ?, name = ?, seats = ?, opened_on = ?, closed_on = ?
+                WHERE id = ?
+                """,
+                (code or None, name, seats_val, opened_on or None, closed_on or None, store_id),
+            )
+
+            # ---- 仕入れ先紐付けの更新 ----
+            # フォームから選択された supplier_ids（複数）
+            form_supplier_ids = request.form.getlist("supplier_ids")
+            form_supplier_ids = {int(sid) for sid in form_supplier_ids}  # set化
+
+            current_ids = linked_supplier_ids  # 既存の有効な紐付け
+
+            # 追加すべきもの = 新しくチェックが入ったもの
+            to_add = form_supplier_ids - current_ids
+            # 削除すべきもの = もともと紐付いてたけどチェックが外されたもの
+            to_remove = current_ids - form_supplier_ids
+
+            # 追加（is_active を 1 に）
+            for sid in to_add:
                 db.execute(
                     """
-                    UPDATE stores
-                    SET code = ?, name = ?, seats = ?, opened_on = ?, closed_on = ?
-                    WHERE id = ?
+                    INSERT INTO store_suppliers (store_id, supplier_id, is_active)
+                    VALUES (?, ?, 1)
+                    ON CONFLICT (store_id, supplier_id)
+                    DO UPDATE SET is_active = 1
                     """,
-                    (code or None, name, seats_val, opened_on or None, closed_on or None, store_id),
+                    (store_id, sid),
                 )
-                db.commit()
-                flash("店舗を更新しました。")
+
+            # 削除（is_active を 0 に）
+            for sid in to_remove:
+                db.execute(
+                    """
+                    UPDATE store_suppliers
+                    SET is_active = 0
+                    WHERE store_id = ? AND supplier_id = ?
+                    """,
+                    (store_id, sid),
+                )
+
+            db.commit()
+            flash("店舗を更新しました。")
 
             return redirect(url_for("stores_master"))
 
-        return render_template("stores_edit.html", store=store)
+        # GET のとき：編集画面表示
+        return render_template(
+            "stores_edit.html",
+            store=store,
+            suppliers=suppliers,
+            linked_supplier_ids=linked_supplier_ids,
+        )
