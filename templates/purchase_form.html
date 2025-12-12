@@ -92,12 +92,12 @@
 <h2>仕入れ（納品書）入力</h2>
 
 <form method="post" id="purchase-form">
-
+<input type="hidden" id="focus_after_reload" name="focus_after_reload" value="">
   <!-- 伝票ヘッダー -->
     <div style="margin-bottom: 12px;">
   <label style="margin-right: 16px;">
     <span class="field-label">店舗：</span>
-    <select name="store_id" onchange="this.form.submit()">
+    <select name="store_id" id="store_id">
       <option value="">（店舗を選択）</option>
       {% for st in stores %}
         <option value="{{ st.id }}"
@@ -121,7 +121,7 @@
 
     <label>
       <span class="field-label">納品日：</span>
-      <input type="date" name="delivery_date" required />
+      <input type="date" name="delivery_date" id="delivery_date" required />
     </label>
   </div>
   <!-- 明細テーブル -->
@@ -286,6 +286,66 @@ document.addEventListener("DOMContentLoaded", function () {
 
   let baseItems = [];
 
+
+    const storeSelect = document.getElementById("store_id");
+  const dateInput   = document.getElementById("delivery_date");
+  const focusHidden = document.getElementById("focus_after_reload");
+
+  function focusFirstItemCell() {
+    const first = tbody.querySelector(".item-autocomplete");
+    if (first) first.focus();
+  }
+
+  // -------------------------------
+  // Restore focus after refresh
+  // -------------------------------
+  const nextFocus = sessionStorage.getItem("nextFocus");
+  if (nextFocus) {
+    sessionStorage.removeItem("nextFocus");
+
+    // wait a tick so DOM is fully ready
+    setTimeout(() => {
+      if (nextFocus === "supplier" && supplierSelect) supplierSelect.focus();
+      else if (nextFocus === "date" && dateInput) dateInput.focus();
+      else if (nextFocus === "firstItem") focusFirstItemCell();
+    }, 0);
+  }
+
+  // -------------------------------
+  // Enter key = move forward in header
+  // -------------------------------
+  function moveFocusByEnter(el, nextFn) {
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();  // stop form submit
+        nextFn();
+      }
+    });
+  }
+
+  // store -> supplier
+  if (storeSelect && supplierSelect) {
+    moveFocusByEnter(storeSelect, () => supplierSelect.focus());
+
+    // store change triggers refresh (and keeps focus on supplier after reload)
+    storeSelect.addEventListener("change", () => {
+      sessionStorage.setItem("nextFocus", "supplier");
+      // keep GET behavior by reloading with ?store_id=...
+      const url = new URL(window.location.href);
+      url.searchParams.set("store_id", storeSelect.value || "");
+      window.location.href = url.toString();
+    });
+  }
+
+  // supplier -> date
+  if (supplierSelect && dateInput) {
+    moveFocusByEnter(supplierSelect, () => dateInput.focus());
+  }
+
+  // date -> first item cell
+  if (dateInput) {
+    moveFocusByEnter(dateInput, () => focusFirstItemCell());
+  }
   /* ===============================
      Load items by supplier
   =============================== */
