@@ -539,4 +539,4 @@ def init_master_views(app, get_db):
     # ----------------------------------------
            
     @app.route("/stores/<int:store_id>/edit", methods=["GET", "POST"])
-    ｀
+    
