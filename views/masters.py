@@ -85,12 +85,35 @@ def init_master_views(app, get_db):
             flash("指定された仕入先が見つかりません。")
             return redirect(url_for("suppliers_master"))
 
-        if request.method == "POST":
+                if request.method == "POST":
 
             # ----------------------
             # 削除ボタン押下時
             # ----------------------
             if "delete" in request.form:
+
+                # 1) 利用中チェック
+                # purchases / items のどちらかで使われていたら削除禁止
+                in_pur = db.execute(
+                    "SELECT COUNT(*) AS cnt FROM purchases WHERE supplier_id = ? AND is_deleted = 0",
+                    (supplier_id,),
+                ).fetchone()
+                in_items = db.execute(
+                    "SELECT COUNT(*) AS cnt FROM items WHERE supplier_id = ?",
+                    (supplier_id,),
+                ).fetchone()
+
+                pur_cnt = in_pur["cnt"] or 0
+                item_cnt = in_items["cnt"] or 0
+
+                if pur_cnt > 0 or item_cnt > 0:
+                    flash(
+                        "この仕入先は取引または品目マスタで利用されているため削除できません。"
+                        "使用をやめる場合は、別の仕入先に切り替えたうえで停止などの運用にしてください。"
+                    )
+                    return redirect(url_for("suppliers_master"))
+
+                # 2) 利用されていなければ削除実行
                 try:
                     db.execute(
                         "DELETE FROM suppliers WHERE id = ?",
@@ -103,7 +126,7 @@ def init_master_views(app, get_db):
                     flash(f"仕入先削除でエラーが発生しました: {e}")
 
                 return redirect(url_for("suppliers_master"))
-
+                
             # ----------------------
             # 通常の更新処理
             # ----------------------
@@ -300,12 +323,35 @@ def init_master_views(app, get_db):
             flash("指定された品目が見つかりません。")
             return redirect(url_for("items_master"))
 
-        if request.method == "POST":
+                if request.method == "POST":
 
             # ==============================
             # 削除ボタンが押された場合
             # ==============================
             if "delete" in request.form:
+
+                # 1) 利用中チェック
+                # purchases / stock_counts で使われていたら削除禁止
+                in_pur = db.execute(
+                    "SELECT COUNT(*) AS cnt FROM purchases WHERE item_id = ?" AND is_deleted = 0",
+                    (item_id,),
+                ).fetchone()
+                in_stock = db.execute(
+                    "SELECT COUNT(*) AS cnt FROM stock_counts WHERE item_id = ?",
+                    (item_id,),
+                ).fetchone()
+
+                pur_cnt = in_pur["cnt"] or 0
+                stock_cnt = in_stock["cnt"] or 0
+
+                if pur_cnt > 0 or stock_cnt > 0:
+                    flash(
+                        "この品目は取引または棚卸で利用されているため削除できません。"
+                        "使用をやめる場合は、別の品目に切り替えたうえで停止などの運用にしてください。"
+                    )
+                    return redirect(url_for("items_master"))
+
+                # 2) 利用されていなければ削除実行
                 try:
                     db.execute(
                         "DELETE FROM items WHERE id = ?",
@@ -318,7 +364,7 @@ def init_master_views(app, get_db):
                     flash(f"品目削除でエラーが発生しました: {e}")
 
                 return redirect(url_for("items_master"))
-
+                
             # ==============================
             # 通常の更新処理
             # ==============================
