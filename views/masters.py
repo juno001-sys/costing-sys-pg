@@ -491,3 +491,111 @@ def init_master_views(app, get_db):
             item=item,
             suppliers=suppliers,
         )
+
+
+    # ----------------------------------------
+    # 店舗マスタ
+    # /stores
+    # ----------------------------------------
+    @app.route("/stores", methods=["GET", "POST"])
+    def stores_master():
+        db = get_db()
+    
+        if request.method == "POST":
+            code = (request.form.get("code") or "").strip()
+            name = (request.form.get("name") or "").strip()
+            seats = (request.form.get("seats") or "").strip()
+            opened_on = (request.form.get("opened_on") or "").strip()
+    
+            if not name:
+                flash("店舗名は必須です。")
+            else:
+                db.execute(
+                    """
+                    INSERT INTO stores (code, name, seats, opened_on)
+                    VALUES (?, ?, ?, ?)
+                    """,
+                    (code or None, name, seats or None, opened_on or None)
+                )
+                db.commit()
+                flash("店舗を登録しました。")
+    
+            return redirect(url_for("stores_master"))
+    
+        # GET
+        stores = db.execute(
+            """
+            SELECT id, code, name, seats, opened_on, closed_on, is_active
+            FROM stores
+            ORDER BY code, id
+            """
+        ).fetchall()
+    
+        return render_template("stores_master.html", stores=stores)
+
+    # ----------------------------------------
+    # 店舗編集・削除（実態は「無効化」）
+    # /stores/<id>/edit
+    # ----------------------------------------
+           
+    @app.route("/stores/<int:store_id>/edit", methods=["GET", "POST"])
+    def edit_store(store_id):
+        db = get_db()
+    
+        store = db.execute(
+            """
+            SELECT id, code, name, seats, opened_on, closed_on, is_active
+            FROM stores
+            WHERE id = ?
+            """,
+            (store_id,)
+        ).fetchone()
+    
+        if store is None:
+            flash("指定された店舗が見つかりません。")
+            return redirect(url_for("stores_master"))
+    
+        if request.method == "POST":
+    
+            # 無効化ボタン
+            if "delete" in request.form:
+                # 取引利用チェック
+                in_use = db.execute(
+                    "SELECT COUNT(*) AS cnt FROM purchases WHERE store_id = ? AND is_deleted = 0",
+                    (store_id,)
+                ).fetchone()["cnt"] or 0
+    
+                if in_use > 0:
+                    flash("この店舗は取引実績があるため無効化できません。")
+                    return redirect(url_for("stores_master"))
+    
+                db.execute("UPDATE stores SET is_active = 0 WHERE id = ?", (store_id,))
+                db.commit()
+                flash("店舗を無効化しました。")
+                return redirect(url_for("stores_master"))
+    
+            # 更新処理
+            code = (request.form.get("code") or "").strip()
+            name = (request.form.get("name") or "").strip()
+            seats = (request.form.get("seats") or "").strip()
+            opened_on = (request.form.get("opened_on") or "").strip()
+            closed_on = (request.form.get("closed_on") or "").strip()
+    
+            if not name:
+                flash("店舗名は必須です。")
+            else:
+                db.execute(
+                    """
+                    UPDATE stores
+                    SET code = ?, name = ?, seats = ?, opened_on = ?, closed_on = ?
+                    WHERE id = ?
+                    """,
+                    (code or None, name, seats or None, opened_on or None, closed_on or None, store_id)
+                )
+                db.commit()
+                flash("店舗を更新しました。")
+    
+            return redirect(url_for("stores_master"))
+    
+        return render_template("stores_edit.html", store=store)
+    
