@@ -14,7 +14,7 @@
 
   <label style="margin-right: 16px;">
     店舗：
-    <select name="store_id">
+    <select name="store_id" id="store_id">
       <option value="">（店舗を選択）</option>
       {% for s in stores %}
         <option value="{{ s.id }}"
@@ -122,10 +122,16 @@
 {% block body_extra %}
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+  const storeSelect = document.getElementById("store_id");
   const inputs = Array.from(document.querySelectorAll(".count-input"));
-  if (!inputs.length) return;
 
-  // data-row, data-col から次の input を探すヘルパー
+  // If no items yet, focus store selector
+  if (inputs.length === 0) {
+    if (storeSelect) storeSelect.focus();
+    return;
+  }
+
+  // --- Navigation for count inputs ---
   function findInput(row, col) {
     return inputs.find(el =>
       el.getAttribute("data-row") == row &&
@@ -138,62 +144,48 @@ document.addEventListener("DOMContentLoaded", function () {
       const row = parseInt(this.getAttribute("data-row"), 10);
       const col = parseInt(this.getAttribute("data-col"), 10);
 
-      // Enter = 次の入力欄へ
       if (e.key === "Enter") {
         e.preventDefault();
         const currentIndex = inputs.indexOf(this);
         const next = inputs[currentIndex + 1];
         if (next) next.focus();
+        return;
       }
 
-      // ↓キー = 下の行へ
       if (e.key === "ArrowDown") {
         e.preventDefault();
         const next = findInput(row + 1, col);
         if (next) next.focus();
+        return;
       }
 
-      // ↑キー = 上の行へ
       if (e.key === "ArrowUp") {
         e.preventDefault();
         const prev = findInput(row - 1, col);
         if (prev) prev.focus();
+        return;
       }
 
-      // →キー = 次の入力（今は同じ列しかないので Enter と同じ扱い）
       if (e.key === "ArrowRight") {
         e.preventDefault();
         const currentIndex = inputs.indexOf(this);
         const next = inputs[currentIndex + 1];
         if (next) next.focus();
+        return;
       }
 
-      // ←キー = 前の入力
       if (e.key === "ArrowLeft") {
         e.preventDefault();
         const currentIndex = inputs.indexOf(this);
         const prev = inputs[currentIndex - 1];
         if (prev) prev.focus();
+        return;
       }
     });
   });
 
-  // 最初の入力欄にフォーカス
+  // Items are shown → focus first input
   inputs[0].focus();
 });
-// -------------------------------
-// Default focus: Store selector
-// (only if nothing else already focused)
-// -------------------------------
-setTimeout(() => {
-  const active = document.activeElement;
-
-  // If focus is still on body or nothing meaningful, move to store
-  if (!active || active === document.body) {
-    const store = document.getElementById("store_id");
-    if (store) store.focus();
-  }
-}, 0);
-  
 </script>
 {% endblock %}
