@@ -48,9 +48,8 @@
   width: 100%;
   max-height: 220px;
   overflow-y: auto;
-  display: none;
 }
-
+.item-suggestions[hidden] { display: none; }
 .item-suggestions div {
   padding: 6px 8px;
   cursor: pointer;
@@ -501,10 +500,28 @@ document.addEventListener("DOMContentLoaded", function () {
      Click outside → close all
   =============================== */
   document.addEventListener("click", (e) => {
-    document.querySelectorAll(".item-suggestions").forEach((box) => {
-      if (!box.contains(e.target)) closeBox(box);
-    });
+  document.querySelectorAll(".item-cell").forEach((cell) => {
+    const box = cell.querySelector(".item-suggestions");
+    if (!box) return;
+
+    // close only when clicking OUTSIDE the cell (input + dropdown)
+    if (!cell.contains(e.target)) {
+      box.hidden = true;
+      box.innerHTML = "";
+    }
   });
+});
+  tbody.addEventListener("focusin", (e) => {
+  const input = e.target;
+  if (!input.classList.contains("item-autocomplete")) return;
+
+  const cell = input.closest(".item-cell");
+  const hidden = cell.querySelector(".item-id");
+  const box = cell.querySelector(".item-suggestions");
+  if (!hidden || !box) return;
+
+  // show top list when focused (optional UX)
+  buildSuggestions(input, hidden, box, true);
 });
 </script>
 {% endblock %}
