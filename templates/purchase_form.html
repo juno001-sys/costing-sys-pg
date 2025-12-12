@@ -327,7 +327,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   /* -----------------------------------
-     行番号・data-row 再採番
+     行番号 再採番
   ----------------------------------- */
   function renumberRows() {
     const rows = tbody.querySelectorAll("tr");
@@ -335,12 +335,6 @@ document.addEventListener("DOMContentLoaded", function () {
     rows.forEach((tr) => {
       const noCell = tr.querySelector(".row-no");
       if (noCell) noCell.textContent = n;
-
-      // nav-input に data-row を振り直し
-      tr.querySelectorAll(".nav-input").forEach((el) => {
-        el.dataset.row = String(n);
-      });
-
       n++;
     });
     rowCountInput.value = String(rows.length);
@@ -400,7 +394,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   /* -----------------------------------
-     行削除 ＆ No./data-row 再採番
+     行削除 ＆ No. 再採番
   ----------------------------------- */
   tbody.addEventListener("click", function(e) {
     if (e.target.classList.contains("delete-row")) {
@@ -413,29 +407,23 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-/* ======================================================
-   Excel-like Navigation WITHOUT data-row / data-col
-   ====================================================== */
-
-document.addEventListener("DOMContentLoaded", () => {
-  const tbody = document.getElementById("item-rows");
+  /* ======================================================
+     Excel-like Navigation WITHOUT data-row / data-col
+     ====================================================== */
 
   function getNavCells() {
-    // Build a 2D array: rows → cols → input/select elements
+    // rows → cols → .nav-input
     const rows = [...tbody.querySelectorAll("tr")];
-
-    return rows.map((tr) => {
-      return [...tr.querySelectorAll(".nav-input")];
-    });
+    return rows.map((tr) => [...tr.querySelectorAll(".nav-input")]);
   }
 
   tbody.addEventListener("keydown", (e) => {
     const el = e.target;
     if (!el.classList.contains("nav-input")) return;
 
-    const nav = getNavCells(); // always up-to-date
+    const nav = getNavCells(); // 最新の状態を毎回再構築
 
-    // Find current row/col
+    // 現在位置を特定
     let rowIndex = -1;
     let colIndex = -1;
 
@@ -444,17 +432,17 @@ document.addEventListener("DOMContentLoaded", () => {
         if (nav[r][c] === el) {
           rowIndex = r;
           colIndex = c;
+          break;
         }
       }
+      if (rowIndex >= 0) break;
     }
 
     if (rowIndex < 0 || colIndex < 0) return;
 
     const isSelect = el.tagName === "SELECT";
 
-    /* ============ Arrow Keys ============ */
-
-    // → right
+    // → 右
     if (e.key === "ArrowRight") {
       if (nav[rowIndex][colIndex + 1]) {
         nav[rowIndex][colIndex + 1].focus();
@@ -463,7 +451,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // ← left
+    // ← 左
     if (e.key === "ArrowLeft") {
       if (colIndex > 0 && nav[rowIndex][colIndex - 1]) {
         nav[rowIndex][colIndex - 1].focus();
@@ -472,7 +460,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // ↓ down (only for input, selects use ↑↓ natively)
+    // ↓ 下（input のときだけ。select は上下で候補移動したいので残す）
     if (!isSelect && e.key === "ArrowDown") {
       if (nav[rowIndex + 1] && nav[rowIndex + 1][colIndex]) {
         nav[rowIndex + 1][colIndex].focus();
@@ -481,7 +469,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // ↑ up (input only)
+    // ↑ 上（input のときだけ）
     if (!isSelect && e.key === "ArrowUp") {
       if (rowIndex > 0 && nav[rowIndex - 1][colIndex]) {
         nav[rowIndex - 1][colIndex].focus();
@@ -490,12 +478,11 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    /* ============ Enter Key ============ */
-
+    // Enter キー
     if (e.key === "Enter") {
       e.preventDefault();
 
-      // For select → commit choice → move RIGHT
+      // セレクトの場合：選択確定して右へ
       if (isSelect) {
         if (nav[rowIndex][colIndex + 1]) {
           nav[rowIndex][colIndex + 1].focus();
@@ -503,19 +490,20 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
-      // For input → move RIGHT
+      // input の場合：右へ
       if (nav[rowIndex][colIndex + 1]) {
         nav[rowIndex][colIndex + 1].focus();
         return;
       }
 
-      // End of row → go to next row, first column
+      // 行末なら次の行の最初のセルへ
       if (nav[rowIndex + 1] && nav[rowIndex + 1][0]) {
         nav[rowIndex + 1][0].focus();
       }
     }
   });
-});  // 初期化：行番号と data-row をセットしてから計算
+
+  // 初期計算
   renumberRows();
   recalcAll();
 });
