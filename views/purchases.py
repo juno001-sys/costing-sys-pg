@@ -30,15 +30,35 @@ def init_purchase_views(app, get_db, log_purchase_change):
     def new_purchase():
         db = get_db()
 
-        # 店舗一覧
+                # 店舗一覧（固定）
         stores = db.execute(
-            "SELECT id, name FROM stores ORDER BY code"
+            "SELECT id, name FROM stores WHERE is_active = 1 ORDER BY code"
         ).fetchall()
 
-        # 仕入先一覧
-        suppliers = db.execute(
-            "SELECT id, name FROM suppliers ORDER BY code"
-        ).fetchall()
+        # 店舗に応じて仕入先を絞る
+        if selected_store_id:
+            suppliers = db.execute(
+                """
+                SELECT s.id, s.name
+                FROM suppliers s
+                JOIN store_suppliers ss
+                  ON s.id = ss.supplier_id
+                 AND ss.store_id = ?
+                 AND ss.is_active = 1
+                WHERE s.is_active = 1
+                ORDER BY s.code
+                """,
+                (selected_store_id,),
+            ).fetchall()
+        else:
+            suppliers = db.execute(
+                """
+                SELECT id, name
+                FROM suppliers
+                WHERE is_active = 1
+                ORDER BY code
+                """
+            ).fetchall()
 
         # ----------------------------------------------------
         # POST: 登録（新規 INSERT）処理
