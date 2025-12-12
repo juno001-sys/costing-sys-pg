@@ -19,6 +19,22 @@
       </select>
     </label>
     <button type="submit">表示</button>
+    >
+
+    <!-- 仕入先プルダウン -->
+    <div class="search-group">
+      <span class="search-label">仕入先：</span>
+      <select name="supplier_id">
+        <option value="">（全仕入先）</option>
+        {% for s in suppliers %}
+          <option value="{{ s.id }}" {% if selected_supplier_id == s.id %}selected{% endif %}>
+            {{ s.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+
   </form>
 
   <table class="monthly-table usage-table">
