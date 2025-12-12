@@ -297,6 +297,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const resp = await fetch(`/api/items/by_supplier/${supplierId}`);
       const data = await resp.json();
       baseItems = Array.isArray(data) ? data : [];
+      // console.log("Loaded items:", baseItems.length);
     } catch (e) {
       baseItems = [];
       console.error("Failed to load items:", e);
@@ -305,16 +306,27 @@ document.addEventListener("DOMContentLoaded", function () {
 
   if (supplierSelect) {
     if (supplierSelect.value) loadItems(supplierSelect.value);
-    supplierSelect.addEventListener("change", (e) => loadItems(e.target.value));
+
+    supplierSelect.addEventListener("change", (e) => {
+      loadItems(e.target.value);
+
+      // Optional: clear current inputs when supplier changes
+      tbody.querySelectorAll(".item-autocomplete").forEach(inp => inp.value = "");
+      tbody.querySelectorAll(".item-id").forEach(h => h.value = "");
+      tbody.querySelectorAll(".item-suggestions").forEach(box => {
+        box.hidden = true;
+        box.innerHTML = "";
+      });
+    });
   }
 
   /* ===============================
      Helpers
   =============================== */
-  function getParts(it) {
+  function getText(it) {
     const code = it.code || "";
     const name = it.name || "";
-    return { code, name, text: `${code} ${name}`.trim() };
+    return `${code} ${name}`.trim();
   }
 
   function closeBox(box) {
@@ -334,11 +346,20 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  function getCellElements(input) {
+    const cell = input.closest(".item-cell");
+    if (!cell) return {};
+    return {
+      cell,
+      hidden: cell.querySelector(".item-id"),
+      box: cell.querySelector(".item-suggestions"),
+    };
+  }
+
   function buildSuggestions(input, hidden, box, forceOpen = false) {
     const q = (input.value || "").trim().toLowerCase();
     box.innerHTML = "";
 
-    // If forced open with ArrowDown, show top items even when query is empty
     const shouldShow = forceOpen || q.length > 0;
     if (!shouldShow || baseItems.length === 0) {
       closeBox(box);
@@ -347,8 +368,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const matched = baseItems
       .filter(it => {
-        const { text } = getParts(it);
-        return forceOpen ? true : text.toLowerCase().includes(q);
+        const text = getText(it).toLowerCase();
+        return forceOpen ? true : text.includes(q);
       })
       .slice(0, 30);
 
@@ -358,14 +379,12 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     matched.forEach((it) => {
-      const { text } = getParts(it);
       const div = document.createElement("div");
       div.className = "item-suggest-item";
-      div.textContent = text;
+      div.textContent = getText(it);
       div.dataset.id = it.id;
       div.dataset.unit = (it.unit ?? "").toString();
 
-      // mousedown (not click) to avoid blur closing before selection
       div.addEventListener("mousedown", (ev) => {
         ev.preventDefault();
         selectItem(input, hidden, box, it);
@@ -380,12 +399,10 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function selectItem(input, hidden, box, item) {
-    const { text } = getParts(item);
-    input.value = text;
+    input.value = getText(item);
     hidden.value = item.id;
     closeBox(box);
 
-    // auto set qty if empty
     const tr = input.closest("tr");
     const qty = tr ? tr.querySelector(".qty-input") : null;
     if (qty && !qty.value && item.unit != null && String(item.unit) !== "") {
@@ -394,18 +411,8 @@ document.addEventListener("DOMContentLoaded", function () {
     if (qty) qty.focus();
   }
 
-  function getCellElements(input) {
-    const cell = input.closest(".item-cell");
-    if (!cell) return {};
-    return {
-      cell,
-      hidden: cell.querySelector(".item-id"),
-      box: cell.querySelector(".item-suggestions"),
-    };
-  }
-
   /* ===============================
-     Input typing → filter suggestions
+     Typing → filter suggestions
   =============================== */
   tbody.addEventListener("input", (e) => {
     const input = e.target;
@@ -419,9 +426,20 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   /* ===============================
-     Focus + ArrowDown → open dropdown
-     Arrow keys navigate inside dropdown
-     Enter selects
+     Focus → open top list (optional)
+  =============================== */
+  tbody.addEventListener("focusin", (e) => {
+    const input = e.target;
+    if (!input.classList.contains("item-autocomplete")) return;
+
+    const { hidden, box } = getCellElements(input);
+    if (!hidden || !box) return;
+
+    buildSuggestions(input, hidden, box, true);
+  });
+
+  /* ===============================
+     Arrow/Enter inside dropdown
   =============================== */
   tbody.addEventListener("keydown", (e) => {
     const input = e.target;
@@ -430,12 +448,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const { hidden, box } = getCellElements(input);
     if (!hidden || !box) return;
 
-    const items = Array.from(box.querySelectorAll(".item-suggest-item"));
     const isOpen = !box.hidden;
 
-    // ↓ opens dropdown even if empty query
+    // ArrowDown: open or move
     if (e.key === "ArrowDown") {
-      // IMPORTANT: prevent Excel-nav handler from stealing arrows
       e.preventDefault();
       e.stopPropagation();
 
@@ -451,7 +467,7 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // ↑
+    // ArrowUp: move (only when open)
     if (e.key === "ArrowUp" && isOpen) {
       e.preventDefault();
       e.stopPropagation();
@@ -463,7 +479,7 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // Enter selects when open
+    // Enter selects (only when open)
     if (e.key === "Enter" && isOpen) {
       e.preventDefault();
       e.stopPropagation();
@@ -471,12 +487,12 @@ document.addEventListener("DOMContentLoaded", function () {
       const list = Array.from(box.querySelectorAll(".item-suggest-item"));
       const idx = list.findIndex(el => el.classList.contains("active"));
       if (idx >= 0) {
-        const id = list[idx].dataset.id;
-        const unit = list[idx].dataset.unit;
+        const id = list[idx].dataset.id || "";
+        const unit = list[idx].dataset.unit || "";
         const text = list[idx].textContent || "";
 
         input.value = text;
-        hidden.value = id || "";
+        hidden.value = id;
         closeBox(box);
 
         const tr = input.closest("tr");
@@ -487,7 +503,7 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // Esc closes
+    // Escape closes
     if (e.key === "Escape" && isOpen) {
       e.preventDefault();
       e.stopPropagation();
@@ -497,31 +513,15 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   /* ===============================
-     Click outside → close all
+     Click outside cell → close
   =============================== */
   document.addEventListener("click", (e) => {
-  document.querySelectorAll(".item-cell").forEach((cell) => {
-    const box = cell.querySelector(".item-suggestions");
-    if (!box) return;
-
-    // close only when clicking OUTSIDE the cell (input + dropdown)
-    if (!cell.contains(e.target)) {
-      box.hidden = true;
-      box.innerHTML = "";
-    }
+    document.querySelectorAll(".item-cell").forEach((cell) => {
+      const box = cell.querySelector(".item-suggestions");
+      if (!box) return;
+      if (!cell.contains(e.target)) closeBox(box);
+    });
   });
-});
-  tbody.addEventListener("focusin", (e) => {
-  const input = e.target;
-  if (!input.classList.contains("item-autocomplete")) return;
-
-  const cell = input.closest(".item-cell");
-  const hidden = cell.querySelector(".item-id");
-  const box = cell.querySelector(".item-suggestions");
-  if (!hidden || !box) return;
-
-  // show top list when focused (optional UX)
-  buildSuggestions(input, hidden, box, true);
 });
 </script>
 {% endblock %}
