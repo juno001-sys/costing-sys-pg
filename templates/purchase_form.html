@@ -523,5 +523,47 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 });
+/* ===============================
+   Auto calculation (qty × price)
+=============================== */
+function parseIntSafe(v) {
+  if (!v) return 0;
+  return parseInt(String(v).replace(/,/g, ""), 10) || 0;
+}
+
+function recalcRow(tr) {
+  const qty   = tr.querySelector(".qty-input");
+  const price = tr.querySelector(".price-input");
+  const amt   = tr.querySelector(".amount-display");
+  if (!qty || !price || !amt) return;
+
+  const total = parseIntSafe(qty.value) * parseIntSafe(price.value);
+  amt.value = total ? total.toLocaleString("ja-JP") : "";
+}
+
+function recalcAll() {
+  document.querySelectorAll("#item-rows tr").forEach(recalcRow);
+
+  const totalCell = document.getElementById("total_amount_display");
+  if (!totalCell) return;
+
+  let sum = 0;
+  document.querySelectorAll(".amount-display").forEach(el => {
+    sum += parseIntSafe(el.value);
+  });
+  totalCell.textContent = sum ? sum.toLocaleString("ja-JP") : "";
+}
+
+document.getElementById("item-rows").addEventListener("input", e => {
+  if (
+    e.target.classList.contains("qty-input") ||
+    e.target.classList.contains("price-input")
+  ) {
+    const tr = e.target.closest("tr");
+    if (tr) recalcRow(tr);
+    recalcAll();
+  }
+});
+
 </script>
 {% endblock %}
