@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}店舗編集{% endblock %}
+{% block content %}
+
+<h2>店舗編集</h2>
+
+<form method="post">
+  <label>コード：</label>
+  <input type="text" name="code" value="{{ store.code }}">
+
+  <label>店舗名：</label>
+  <input type="text" name="name" value="{{ store.name }}">
+
+  <label>座席：</label>
+  <input type="text" name="seats" value="{{ store.seats }}">
+
+  <label>開店日：</label>
+  <input type="date" name="opened_on" value="{{ store.opened_on }}">
+
+  <label>閉店日：</label>
+  <input type="date" name="closed_on" value="{{ store.closed_on }}">
+
+  <button type="submit">更新</button>
+
+  <button type="submit" name="delete" value="1"
+          onclick="return confirm('無効化しますか？')">
+    無効化
+  </button>
+</form>
+
+{% endblock %}
