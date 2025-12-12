@@ -577,17 +577,22 @@ if (calcTbody) {
 }
 
 // Initial calc (in case values already exist)
-calc_recalcAll();
+if (typeof recalcAll === "function") recalcAll();
 
 /* ===============================
-   Step 2: Delete row + renumber
+   Step 2 + 5: Delete / Add rows
 =============================== */
 
 const rowCountInput = document.getElementById("row_count");
+const addBtn = document.getElementById("add-row-btn");
 
-// call your existing recalcAll if it exists
+/** Call Step1's recalcAll safely (supports either name) */
 function safeRecalcAll() {
-  if (typeof recalcAll === "function") recalcAll();
+  if (typeof recalcAll === "function") {
+    recalcAll();
+  } else if (typeof calc_recalcAll === "function") {
+    calc_recalcAll();
+  }
 }
 
 function renumberRowsAndNames() {
@@ -595,11 +600,11 @@ function renumberRowsAndNames() {
   rows.forEach((tr, idx) => {
     const n = idx + 1;
 
-    // row no
+    // row number
     const noCell = tr.querySelector(".row-no");
     if (noCell) noCell.textContent = String(n);
 
-    // rename fields to keep POST loop consistent
+    // IMPORTANT: rename name=... to keep POST loop consistent
     const itemId = tr.querySelector("input.item-id");
     if (itemId) itemId.name = `item_id_${n}`;
 
@@ -616,6 +621,7 @@ function renumberRowsAndNames() {
   if (rowCountInput) rowCountInput.value = String(rows.length);
 }
 
+/* ---- Delete row (event delegation) ---- */
 tbody.addEventListener("click", (e) => {
   const btn = e.target.closest(".delete-row");
   if (!btn) return;
@@ -627,12 +633,8 @@ tbody.addEventListener("click", (e) => {
   renumberRowsAndNames();
   safeRecalcAll();
 });
-  /* ===============================
-   Step 5: Add row button
-=============================== */
 
-const addBtn = document.getElementById("add-row-btn");
-
+/* ---- Add row ---- */
 if (addBtn) {
   addBtn.addEventListener("click", () => {
     const currentRows = tbody.querySelectorAll("tr").length;
@@ -693,12 +695,18 @@ if (addBtn) {
 
     tbody.appendChild(tr);
 
-    // keep row_count correct + keep server POST loop consistent
+    // keep row_count + names consistent
     renumberRowsAndNames();
+
+    // IMPORTANT: new row should open dropdown based on existing supplier items
+    // (Step1/Step3 should handle this; at least recalc totals)
     safeRecalcAll();
   });
 }
 
+// run once at startup
+renumberRowsAndNames();
+safeRecalcAll();
   
 </script>
 {% endblock %}
