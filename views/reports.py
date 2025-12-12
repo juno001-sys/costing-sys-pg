@@ -301,275 +301,244 @@ def init_report_views(app, get_db):
     # 月次利用量レポート（Postgres/SQLite 両対応版）
     # /usage/report
     # ----------------------------------------
-    @app.route("/usage/report", methods=["GET"])
-    def usage_report():
-        db = get_db()
+@app.route("/usage/report", methods=["GET"])
+def usage_report():
+    db = get_db()
 
-        # 店舗一覧
-        stores = db.execute(
-            "SELECT id, name FROM stores ORDER BY code"
-        ).fetchall()
-        store_id = request.args.get("store_id") or ""
-    
-        # ★ 仕入先一覧（プルダウン用）
-        suppliers = db.execute(
-            "SELECT id, name FROM suppliers ORDER BY code"
-        ).fetchall()
-    
-        # クエリパラメータ
-        store_id = request.args.get("store_id") or ""
-        selected_store_id = int(store_id) if store_id else None
-    
-        # ★ 仕入先ID（クエリパラメータ）
-        supplier_id = request.args.get("supplier_id") or ""
-        selected_supplier_id = int(supplier_id) if supplier_id else None
-    
-        # 期間（すでにあればそのまま）
-        from_date = request.args.get("from_date") or ""
-        to_date = request.args.get("to_date") or ""
-    
-        # ここから下は元の usage_report のロジックを使いつつ、
-        # WHERE 句を組み立てているところに supplier_id 条件を足します
-        where = []
-        params = []
-    
-        if from_date:
-            where.append("p.delivery_date >= ?")
-            params.append(from_date)
-    
-        if to_date:
-            where.append("p.delivery_date <= ?")
-            params.append(to_date)
-    
-        if store_id:
-            where.append("p.store_id = ?")
-            params.append(store_id)
-    
-        # ★ 仕入先フィルタを追加
+    # 店舗一覧
+    stores = db.execute(
+        "SELECT id, name FROM stores ORDER BY code"
+    ).fetchall()
+
+    # 仕入先一覧（プルダウン用）
+    suppliers = db.execute(
+        "SELECT id, name FROM suppliers ORDER BY code"
+    ).fetchall()
+
+    # クエリパラメータ
+    store_id = request.args.get("store_id") or ""
+    selected_store_id = int(store_id) if store_id else None
+
+    supplier_id = request.args.get("supplier_id") or ""
+    selected_supplier_id = int(supplier_id) if supplier_id else None
+
+    # 直近13ヶ月
+    today = datetime.now().date()
+    year = today.year
+    month = today.month
+
+    month_keys = []
+    for _ in range(13):
+        month_keys.append(f"{year:04d}-{month:02d}")
+        month -= 1
+        if month == 0:
+            month = 12
+            year -= 1
+    month_keys = list(reversed(month_keys))
+
+    # 日付範囲（[start_date, end_date)）
+    start_ym = month_keys[0]
+    end_ym = month_keys[-1]
+
+    start_date = f"{start_ym}-01"
+    end_year = int(end_ym[:4])
+    end_month = int(end_ym[5:7])
+    if end_month == 12:
+        next_year = end_year + 1
+        next_month = 1
+    else:
+        next_year = end_year
+        next_month = end_month + 1
+    end_date = f"{next_year:04d}-{next_month:02d}-01"
+
+    # Postgres / SQLite 切り替え
+    is_postgres = (os.environ.get("DB_MODE") == "postgres")
+
+    # ----------------------------------------
+    # ① 月内仕入数量（仕入先フィルタ対応）
+    # ----------------------------------------
+    where_pur = [
+        "p.delivery_date >= %s" if is_postgres else "p.delivery_date >= ?",
+        "p.delivery_date < %s"  if is_postgres else "p.delivery_date < ?",
+        "p.is_deleted = 0",
+    ]
+    params_pur = [start_date, end_date]
+
+    if store_id:
+        where_pur.append("p.store_id = %s" if is_postgres else "p.store_id = ?")
+        params_pur.append(store_id)
+
+    if supplier_id:
+        where_pur.append("p.supplier_id = %s" if is_postgres else "p.supplier_id = ?")
+        params_pur.append(supplier_id)
+
+    where_pur_sql = " AND ".join(where_pur)
+
+    date_expr_p = "TO_CHAR(p.delivery_date, 'YYYY-MM')" if is_postgres else "strftime('%Y-%m', p.delivery_date)"
+
+    sql_pur = f"""
+        SELECT
+            p.item_id,
+            {date_expr_p} AS ym,
+            SUM(p.quantity) AS pur_qty
+        FROM purchases p
+        WHERE {where_pur_sql}
+        GROUP BY p.item_id, ym
+    """
+
+    rows_pur = db.execute(sql_pur, params_pur).fetchall()
+
+    pur_map = {}
+    for r in rows_pur:
+        iid = r["item_id"]
+        ym = r["ym"]
+        qty = int(r["pur_qty"] or 0)
+        pur_map.setdefault(iid, {})[ym] = qty
+
+    # ----------------------------------------
+    # ② 各月の最新棚卸数量（店舗のみフィルタ）
+    # ----------------------------------------
+    where_inv = [
+        "sc.count_date >= %s" if is_postgres else "sc.count_date >= ?",
+        "sc.count_date < %s"  if is_postgres else "sc.count_date < ?",
+    ]
+    params_inv = [start_date, end_date]
+
+    if store_id:
+        where_inv.append("sc.store_id = %s" if is_postgres else "sc.store_id = ?")
+        params_inv.append(store_id)
+
+    where_inv_sql = " AND ".join(where_inv)
+
+    date_expr_sc = "TO_CHAR(sc.count_date, 'YYYY-MM')" if is_postgres else "strftime('%Y-%m', sc.count_date)"
+
+    sql_inv = f"""
+        WITH last_counts AS (
+          SELECT
+            sc.store_id,
+            sc.item_id,
+            {date_expr_sc} AS ym,
+            MAX(sc.count_date) AS max_date
+          FROM stock_counts sc
+          WHERE {where_inv_sql}
+          GROUP BY sc.store_id, sc.item_id, ym
+        ),
+        month_end_inventory AS (
+          SELECT
+            lc.store_id,
+            lc.item_id,
+            lc.ym,
+            sc.counted_qty
+          FROM last_counts lc
+          JOIN stock_counts sc
+            ON sc.store_id  = lc.store_id
+           AND sc.item_id   = lc.item_id
+           AND sc.count_date = lc.max_date
+        )
+        SELECT item_id, ym, counted_qty
+        FROM month_end_inventory
+        ORDER BY item_id, ym
+    """
+
+    rows_inv = db.execute(sql_inv, params_inv).fetchall()
+
+    end_inv_map = {}
+    for r in rows_inv:
+        iid = r["item_id"]
+        ym = r["ym"]
+        qty = int(r["counted_qty"] or 0)
+        end_inv_map.setdefault(iid, {})[ym] = qty
+
+    # ----------------------------------------
+    # ③ アイテム情報（ここでも仕入先フィルタ）
+    # ----------------------------------------
+    item_ids = set(pur_map.keys()) | set(end_inv_map.keys())
+    if item_ids:
+        placeholders = ",".join(
+            ["%s" if is_postgres else "?"] * len(item_ids)
+        )
+        sql_items = f"""
+            SELECT id, code, name, supplier_id
+            FROM items
+            WHERE id IN ({placeholders})
+        """
+        params_items = list(item_ids)
+
         if supplier_id:
-            where.append("p.supplier_id = ?")
-            params.append(supplier_id)
-    
-        where_sql = ""
-        if where:
-            where_sql = "WHERE " + " AND ".join(where)
-    
-        sql = f"""
-            SELECT
-                i.id   AS item_id,
-                i.name AS item_name,
-                SUM(p.quantity) AS total_qty,
-                SUM(p.amount)   AS total_amount
-            FROM purchases p
-            JOIN items i ON i.id = p.item_id
-            {where_sql}
-            GROUP BY i.id, i.name
-            ORDER BY i.name
-        """
-        rows = db.execute(sql, params).fetchall()
-    
-        return render_template(
-            "usage_report.html",
-            stores=stores,
-            selected_store_id=selected_store_id,
-            suppliers=suppliers,                        # ★ 追加
-            selected_supplier_id=selected_supplier_id,  # ★ 追加
-            from_date=from_date,
-            to_date=to_date,
-            rows=rows,
-        )
-        # 直近13ヶ月
-        today = datetime.now().date()
-        year = today.year
-        month = today.month
+            sql_items += " AND supplier_id = %s" if is_postgres else " AND supplier_id = ?"
+            params_items.append(supplier_id)
 
-        month_keys = []
-        for _ in range(13):
-            month_keys.append(f"{year:04d}-{month:02d}")
-            month -= 1
-            if month == 0:
-                month = 12
-                year -= 1
-        month_keys = list(reversed(month_keys))
+        items = db.execute(sql_items, params_items).fetchall()
+    else:
+        items = []
 
-        # 日付範囲
-        start_ym = month_keys[0]
-        end_ym = month_keys[-1]
+    item_meta = {row["id"]: row for row in items}
 
-        start_date = f"{start_ym}-01"
-        end_year = int(end_ym[:4])
-        end_month = int(end_ym[5:7])
-        if end_month == 12:
-            next_year = end_year + 1
-            next_month = 1
-        else:
-            next_year = end_year
-            next_month = end_month + 1
-        end_date = f"{next_year:04d}-{next_month:02d}-01"
+    # ----------------------------------------
+    # ④ 期首・仕入・期末・利用量を計算
+    # ----------------------------------------
+    item_rows = []
 
-        is_postgres = (os.environ.get("DB_MODE") == "postgres")
+    for iid in sorted(item_ids):
+        meta = item_meta.get(iid)
+        if not meta:
+            # 仕入先フィルタで落ちたアイテムはスキップ
+            continue
 
-        # ① 月内仕入数量
-        where_pur = [
-            "p.delivery_date >= %s" if is_postgres else "p.delivery_date >= ?",
-            "p.delivery_date < %s"  if is_postgres else "p.delivery_date < ?",
-            "p.is_deleted = 0",
-        ]
-        params_pur = [start_date, end_date]
+        code = meta["code"]
+        name = meta["name"]
 
-        if store_id:
-            where_pur.append("p.store_id = %s" if is_postgres else "p.store_id = ?")
-            params_pur.append(store_id)
+        per_month = {}
+        total_pur = 0
+        total_used = 0
+        total_end = 0
 
-        where_pur_sql = " AND ".join(where_pur)
+        prev_end_qty = 0  # 前月の期末＝当月の期首
 
-        sql_pur = f"""
-            SELECT
-                p.item_id,
-                {"TO_CHAR(p.delivery_date, 'YYYY-MM')" if is_postgres else "strftime('%Y-%m', p.delivery_date)"} AS ym,
-                SUM(p.quantity) AS pur_qty
-            FROM purchases p
-            WHERE {where_pur_sql}
-            GROUP BY p.item_id, ym
-        """
+        for ym in month_keys:
+            pur = pur_map.get(iid, {}).get(ym, 0)
+            end_qty = end_inv_map.get(iid, {}).get(ym, 0)
 
-        rows_pur = db.execute(sql_pur, params_pur).fetchall()
+            begin_qty = prev_end_qty
+            used = begin_qty + pur - end_qty
 
-        pur_map = {}
-        for r in rows_pur:
-            iid = r["item_id"]
-            ym = r["ym"]
-            qty = int(r["pur_qty"] or 0)
-            pur_map.setdefault(iid, {})[ym] = qty
+            per_month[ym] = {
+                "begin_qty": begin_qty,
+                "pur_qty": pur,
+                "end_qty": end_qty,
+                "used_qty": used,
+            }
 
-        # ② 各月の最新棚卸数量
-        where_inv = [
-            "sc.count_date >= %s" if is_postgres else "sc.count_date >= ?",
-            "sc.count_date < %s"  if is_postgres else "sc.count_date < ?",
-        ]
-        params_inv = [start_date, end_date]
+            total_pur += pur
+            total_used += used
+            total_end = end_qty
 
-        if store_id:
-            where_inv.append("sc.store_id = %s" if is_postgres else "sc.store_id = ?")
-            params_inv.append(store_id)
+            prev_end_qty = end_qty
 
-        where_inv_sql = " AND ".join(where_inv)
-
-        sql_inv = f"""
-            WITH last_counts AS (
-              SELECT
-                sc.store_id,
-                sc.item_id,
-                {"TO_CHAR(sc.count_date, 'YYYY-MM')" if is_postgres else "strftime('%Y-%m', sc.count_date)"} AS ym,
-                MAX(sc.count_date) AS max_date
-              FROM stock_counts sc
-              WHERE {where_inv_sql}
-              GROUP BY sc.store_id, sc.item_id, ym
-            ),
-            month_end_inventory AS (
-              SELECT
-                lc.store_id,
-                lc.item_id,
-                lc.ym,
-                sc.counted_qty
-              FROM last_counts lc
-              JOIN stock_counts sc
-                ON sc.store_id  = lc.store_id
-               AND sc.item_id   = lc.item_id
-               AND sc.count_date = lc.max_date
-            )
-            SELECT item_id, ym, counted_qty
-            FROM month_end_inventory
-            ORDER BY item_id, ym
-        """
-
-        rows_inv = db.execute(sql_inv, params_inv).fetchall()
-
-        end_inv_map = {}
-        for r in rows_inv:
-            iid = r["item_id"]
-            ym = r["ym"]
-            qty = int(r["counted_qty"] or 0)
-            end_inv_map.setdefault(iid, {})[ym] = qty
-
-        # ③ アイテム情報
-        item_ids = set(pur_map.keys()) | set(end_inv_map.keys())
-        if item_ids:
-            placeholders = ",".join(
-                ["%s" if is_postgres else "?"] * len(item_ids)
-            )
-            sql_items = f"""
-                SELECT id, code, name
-                FROM items
-                WHERE id IN ({placeholders})
-                ORDER BY code
-            """
-            items = db.execute(sql_items, list(item_ids)).fetchall()
-        else:
-            items = []
-
-        item_meta = {row["id"]: row for row in items}
-
-        # ④ 期首・仕入・期末・利用量を計算
-        item_rows = []
-
-        for iid in sorted(item_ids):
-            meta = item_meta.get(iid)
-            if not meta:
-                continue
-
-            code = meta["code"]
-            name = meta["name"]
-
-            per_month = {}
-            total_pur = 0
-            total_used = 0
-            total_end = 0
-
-            prev_end_qty = 0  # 前月の期末＝当月の期首
-
-            for ym in month_keys:
-                pur = pur_map.get(iid, {}).get(ym, 0)
-                end_qty = end_inv_map.get(iid, {}).get(ym, 0)
-
-                begin_qty = prev_end_qty
-                used = begin_qty + pur - end_qty
-
-                per_month[ym] = {
-                    "begin_qty": begin_qty,
-                    "pur_qty": pur,
-                    "end_qty": end_qty,
-                    "used_qty": used,
-                }
-
-                total_pur += pur
-                total_used += used
-                total_end = end_qty
-
-                prev_end_qty = end_qty
-
-            item_rows.append(
-                {
-                    "item_id": iid,
-                    "item_code": code,
-                    "item_name": name,
-                    "per_month": per_month,
-                    "total_pur": total_pur,
-                    "total_used": total_used,
-                    "total_end": total_end,
-                }
-            )
-
-        selected_store_id = int(store_id) if store_id else None
-
-        return render_template(
-            "usage_report.html",
-            stores=stores,
-            selected_store_id=selected_store_id,
-            month_keys=month_keys,
-            item_rows=item_rows,
+        item_rows.append(
+            {
+                "item_id": iid,
+                "item_code": code,
+                "item_name": name,
+                "per_month": per_month,
+                "total_pur": total_pur,
+                "total_used": total_used,
+                "total_end": total_end,
+            }
         )
 
+    # 使用量順に並べたい場合はこれを有効化
+    item_rows.sort(key=lambda x: x["total_used"], reverse=True)
+
+    return render_template(
+        "usage_report.html",
+        stores=stores,
+        selected_store_id=selected_store_id,
+        suppliers=suppliers,
+        selected_supplier_id=selected_supplier_id,
+        month_keys=month_keys,
+        item_rows=item_rows,
+    )
     
     # ----------------------------------------
     # 売上原価 月次推移（棚卸しは最新棚卸しを FIFO 単価で評価）
