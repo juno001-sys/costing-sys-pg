@@ -524,46 +524,60 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 /* ===============================
-   Auto calculation (qty × price)
+   STEP 1: Auto calculation ONLY (safe / collision-proof)
 =============================== */
-function parseIntSafe(v) {
+const calcTbody = document.getElementById("item-rows");
+
+function calc_parseIntSafe(v) {
   if (!v) return 0;
   return parseInt(String(v).replace(/,/g, ""), 10) || 0;
 }
 
-function recalcRow(tr) {
+function calc_recalcRow(tr) {
   const qty   = tr.querySelector(".qty-input");
   const price = tr.querySelector(".price-input");
   const amt   = tr.querySelector(".amount-display");
   if (!qty || !price || !amt) return;
 
-  const total = parseIntSafe(qty.value) * parseIntSafe(price.value);
+  const total = calc_parseIntSafe(qty.value) * calc_parseIntSafe(price.value);
   amt.value = total ? total.toLocaleString("ja-JP") : "";
 }
 
-function recalcAll() {
-  document.querySelectorAll("#item-rows tr").forEach(recalcRow);
+function calc_recalcAll() {
+  if (!calcTbody) return;
+
+  calcTbody.querySelectorAll("tr").forEach(calc_recalcRow);
 
   const totalCell = document.getElementById("total_amount_display");
   if (!totalCell) return;
 
   let sum = 0;
   document.querySelectorAll(".amount-display").forEach(el => {
-    sum += parseIntSafe(el.value);
+    sum += calc_parseIntSafe(el.value);
   });
   totalCell.textContent = sum ? sum.toLocaleString("ja-JP") : "";
 }
 
-document.getElementById("item-rows").addEventListener("input", e => {
-  if (
-    e.target.classList.contains("qty-input") ||
-    e.target.classList.contains("price-input")
-  ) {
-    const tr = e.target.closest("tr");
-    if (tr) recalcRow(tr);
-    recalcAll();
-  }
-});
+// IMPORTANT: capture=true so other handlers won't block it
+if (calcTbody) {
+  calcTbody.addEventListener(
+    "input",
+    (e) => {
+      if (
+        e.target.classList.contains("qty-input") ||
+        e.target.classList.contains("price-input")
+      ) {
+        const tr = e.target.closest("tr");
+        if (tr) calc_recalcRow(tr);
+        calc_recalcAll();
+      }
+    },
+    true
+  );
+}
+
+// Initial calc (in case values already exist)
+calc_recalcAll();
 
 </script>
 {% endblock %}
