@@ -280,24 +280,50 @@
 
 {% block body_extra %}
 <script>
-<script>
 document.addEventListener("DOMContentLoaded", function () {
   const supplierSelect = document.getElementById("supplier_id");
   const tbody = document.getElementById("item-rows");
-  const rowCountInput = document.getElementById("row_count");
-  const addBtn = document.getElementById("add-row-btn");
 
   let baseItems = [];
 
   /* ===============================
-     Utils
+     Load items by supplier
   =============================== */
-  function parseIntSafe(v) {
-    if (!v) return 0;
-    return parseInt(String(v).replace(/,/g, ""), 10) || 0;
+  async function loadItems(supplierId) {
+    baseItems = [];
+    if (!supplierId) return;
+
+    try {
+      const resp = await fetch(`/api/items/by_supplier/${supplierId}`);
+      const data = await resp.json();
+      baseItems = Array.isArray(data) ? data : [];
+      // console.log("Loaded items:", baseItems.length);
+    } catch (e) {
+      baseItems = [];
+      console.error("Failed to load items:", e);
+    }
   }
 
-  function getItemText(it) {
+  if (supplierSelect) {
+    if (supplierSelect.value) loadItems(supplierSelect.value);
+
+    supplierSelect.addEventListener("change", (e) => {
+      loadItems(e.target.value);
+
+      // Optional: clear current inputs when supplier changes
+      tbody.querySelectorAll(".item-autocomplete").forEach(inp => inp.value = "");
+      tbody.querySelectorAll(".item-id").forEach(h => h.value = "");
+      tbody.querySelectorAll(".item-suggestions").forEach(box => {
+        box.hidden = true;
+        box.innerHTML = "";
+      });
+    });
+  }
+
+  /* ===============================
+     Helpers
+  =============================== */
+  function getText(it) {
     const code = it.code || "";
     const name = it.name || "";
     return `${code} ${name}`.trim();
@@ -312,11 +338,11 @@ document.addEventListener("DOMContentLoaded", function () {
     box.hidden = false;
   }
 
-  function setActive(list, index) {
-    list.forEach(el => el.classList.remove("active"));
-    if (list[index]) {
-      list[index].classList.add("active");
-      list[index].scrollIntoView({ block: "nearest" });
+  function setActive(items, index) {
+    items.forEach(el => el.classList.remove("active"));
+    if (items[index]) {
+      items[index].classList.add("active");
+      items[index].scrollIntoView({ block: "nearest" });
     }
   }
 
@@ -330,38 +356,6 @@ document.addEventListener("DOMContentLoaded", function () {
     };
   }
 
-  /* ===============================
-     Load items by supplier
-  =============================== */
-  async function loadItems(supplierId) {
-    baseItems = [];
-    if (!supplierId) return;
-
-    try {
-      const resp = await fetch(`/api/items/by_supplier/${supplierId}`);
-      const data = await resp.json();
-      baseItems = Array.isArray(data) ? data : [];
-    } catch (e) {
-      baseItems = [];
-      console.error("Failed to load items:", e);
-    }
-  }
-
-  if (supplierSelect) {
-    if (supplierSelect.value) loadItems(supplierSelect.value);
-    supplierSelect.addEventListener("change", (e) => {
-      loadItems(e.target.value);
-
-      // clear all item inputs/ids + close dropdowns
-      tbody.querySelectorAll(".item-autocomplete").forEach(inp => inp.value = "");
-      tbody.querySelectorAll(".item-id").forEach(h => h.value = "");
-      tbody.querySelectorAll(".item-suggestions").forEach(box => closeBox(box));
-    });
-  }
-
-  /* ===============================
-     Suggestions (build / select)
-  =============================== */
   function buildSuggestions(input, hidden, box, forceOpen = false) {
     const q = (input.value || "").trim().toLowerCase();
     box.innerHTML = "";
@@ -373,7 +367,10 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     const matched = baseItems
-      .filter(it => forceOpen ? true : getItemText(it).toLowerCase().includes(q))
+      .filter(it => {
+        const text = getText(it).toLowerCase();
+        return forceOpen ? true : text.includes(q);
+      })
       .slice(0, 30);
 
     if (matched.length === 0) {
@@ -384,11 +381,10 @@ document.addEventListener("DOMContentLoaded", function () {
     matched.forEach((it) => {
       const div = document.createElement("div");
       div.className = "item-suggest-item";
-      div.textContent = getItemText(it);
+      div.textContent = getText(it);
       div.dataset.id = it.id;
       div.dataset.unit = (it.unit ?? "").toString();
 
-      // mousedown to avoid blur closing
       div.addEventListener("mousedown", (ev) => {
         ev.preventDefault();
         selectItem(input, hidden, box, it);
@@ -398,288 +394,126 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     openBox(box);
-    const list = Array.from(box.querySelectorAll(".item-suggest-item"));
-    if (list.length > 0) setActive(list, 0);
+    const items = Array.from(box.querySelectorAll(".item-suggest-item"));
+    if (items.length > 0) setActive(items, 0);
   }
 
   function selectItem(input, hidden, box, item) {
-    input.value = getItemText(item);
+    input.value = getText(item);
     hidden.value = item.id;
     closeBox(box);
 
-    // auto-set qty if empty
     const tr = input.closest("tr");
     const qty = tr ? tr.querySelector(".qty-input") : null;
     if (qty && !qty.value && item.unit != null && String(item.unit) !== "") {
       qty.value = item.unit;
     }
-
-    // move to qty
     if (qty) qty.focus();
-    recalcRow(tr);
-    recalcAll();
   }
 
   /* ===============================
-     Auto calc
+     Typing → filter suggestions
   =============================== */
-  function recalcRow(tr) {
-    if (!tr) return;
-    const qtyInput = tr.querySelector(".qty-input");
-    const priceInput = tr.querySelector(".price-input");
-    const amountInput = tr.querySelector(".amount-display");
-    if (!qtyInput || !priceInput || !amountInput) return;
-
-    const q = parseIntSafe(qtyInput.value);
-    const p = parseIntSafe(priceInput.value);
-    const a = q * p;
-    amountInput.value = a ? a.toLocaleString("ja-JP") : "";
-  }
-
-  function recalcAll() {
-    tbody.querySelectorAll("tr").forEach(recalcRow);
-
-    const totalCell = document.getElementById("total_amount_display");
-    if (totalCell) {
-      let total = 0;
-      tbody.querySelectorAll(".amount-display").forEach(inp => {
-        total += parseIntSafe(inp.value);
-      });
-      totalCell.textContent = total ? total.toLocaleString("ja-JP") : "";
-    }
-  }
-
-  /* qty/price input -> recalc */
   tbody.addEventListener("input", (e) => {
-    const t = e.target;
+    const input = e.target;
+    if (!input.classList.contains("item-autocomplete")) return;
 
-    // item search typing -> suggestions
-    if (t.classList.contains("item-autocomplete")) {
-      const { hidden, box } = getCellElements(t);
-      if (!hidden || !box) return;
-      hidden.value = "";
-      buildSuggestions(t, hidden, box, false);
+    const { hidden, box } = getCellElements(input);
+    if (!hidden || !box) return;
+
+    hidden.value = "";
+    buildSuggestions(input, hidden, box, false);
+  });
+
+  /* ===============================
+     Focus → open top list (optional)
+  =============================== */
+  tbody.addEventListener("focusin", (e) => {
+    const input = e.target;
+    if (!input.classList.contains("item-autocomplete")) return;
+
+    const { hidden, box } = getCellElements(input);
+    if (!hidden || !box) return;
+
+    buildSuggestions(input, hidden, box, true);
+  });
+
+  /* ===============================
+     Arrow/Enter inside dropdown
+  =============================== */
+  tbody.addEventListener("keydown", (e) => {
+    const input = e.target;
+    if (!input.classList.contains("item-autocomplete")) return;
+
+    const { hidden, box } = getCellElements(input);
+    if (!hidden || !box) return;
+
+    const isOpen = !box.hidden;
+
+    // ArrowDown: open or move
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!isOpen) {
+        buildSuggestions(input, hidden, box, true);
+        return;
+      }
+
+      const list = Array.from(box.querySelectorAll(".item-suggest-item"));
+      let idx = list.findIndex(el => el.classList.contains("active"));
+      idx = (idx < 0) ? 0 : Math.min(idx + 1, list.length - 1);
+      setActive(list, idx);
       return;
     }
 
-    // qty/price -> calc
-    if (t.classList.contains("qty-input") || t.classList.contains("price-input")) {
-      const tr = t.closest("tr");
-      recalcRow(tr);
-      recalcAll();
-    }
-  });
-
-  /* ===============================
-     Row renumber + row_count
-  =============================== */
-  function renumberRows() {
-    const rows = tbody.querySelectorAll("tr");
-    let n = 1;
-    rows.forEach(tr => {
-      const noCell = tr.querySelector(".row-no");
-      if (noCell) noCell.textContent = n;
-      n++;
-    });
-    if (rowCountInput) rowCountInput.value = String(rows.length);
-  }
-
-  /* ===============================
-     Add row
-  =============================== */
-  if (addBtn) {
-    addBtn.addEventListener("click", () => {
-      const currentRows = tbody.querySelectorAll("tr").length;
-      if (currentRows >= 30) {
-        alert("これ以上追加できません（上限30行）");
-        return;
-      }
-      const newIndex = currentRows + 1;
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td class="row-no"></td>
-        <td class="item-cell">
-          <input type="text"
-                 class="item-autocomplete nav-input"
-                 data-col="0"
-                 placeholder="品名・コード検索"
-                 autocomplete="off"
-                 style="width:210px;">
-          <input type="hidden" name="item_id_${newIndex}" class="item-id">
-          <div class="item-suggestions" hidden></div>
-        </td>
-        <td>
-          <input type="text"
-                 name="quantity_${newIndex}"
-                 class="num qty-input nav-input"
-                 data-col="1"
-                 style="width:80px;">
-        </td>
-        <td>
-          <input type="text"
-                 name="unit_price_${newIndex}"
-                 class="num price-input nav-input"
-                 data-col="2"
-                 style="width:100px;">
-        </td>
-        <td>
-          <input type="text"
-                 name="amount_display_${newIndex}"
-                 class="amount-display"
-                 readonly tabindex="-1">
-        </td>
-        <td>
-          <button type="button" class="delete-row">✖</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-      renumberRows();
-      recalcAll();
-
-      // focus new row item cell
-      tr.querySelector(".item-autocomplete")?.focus();
-    });
-  }
-
-  /* ===============================
-     Delete row (event delegation)
-  =============================== */
-  tbody.addEventListener("click", (e) => {
-    if (e.target.classList.contains("delete-row")) {
-      const tr = e.target.closest("tr");
-      if (tr) {
-        tr.remove();
-        renumberRows();
-        recalcAll();
-      }
-    }
-  });
-
-  /* ===============================
-     Excel-like navigation
-     - If dropdown OPEN: arrows/enter are for dropdown
-     - If dropdown CLOSED: arrows move between cells
-     - Enter never submits form here
-  =============================== */
-  function getNavGrid() {
-    const rows = Array.from(tbody.querySelectorAll("tr"));
-    return rows.map(tr => Array.from(tr.querySelectorAll(".nav-input")));
-  }
-
-  function focusCell(nav, r, c) {
-    if (nav[r] && nav[r][c]) nav[r][c].focus();
-  }
-
-  tbody.addEventListener("keydown", (e) => {
-    const el = e.target;
-    if (!el.classList.contains("nav-input")) return;
-
-    // prevent form submit by Enter in grid (this fixes "jump to date")
-    if (e.key === "Enter") {
+    // ArrowUp: move (only when open)
+    if (e.key === "ArrowUp" && isOpen) {
       e.preventDefault();
-    }
+      e.stopPropagation();
 
-    // ITEM CELL special handling
-    if (el.classList.contains("item-autocomplete")) {
-      const { hidden, box } = getCellElements(el);
-      if (!hidden || !box) return;
-
-      const isOpen = !box.hidden;
       const list = Array.from(box.querySelectorAll(".item-suggest-item"));
+      let idx = list.findIndex(el => el.classList.contains("active"));
+      idx = (idx < 0) ? 0 : Math.max(idx - 1, 0);
+      setActive(list, idx);
+      return;
+    }
 
-      // ArrowDown: open dropdown if closed; else move inside dropdown
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        e.stopPropagation();
+    // Enter selects (only when open)
+    if (e.key === "Enter" && isOpen) {
+      e.preventDefault();
+      e.stopPropagation();
 
-        if (!isOpen) {
-          buildSuggestions(el, hidden, box, true);
-          return;
-        }
-        if (list.length === 0) return;
-        let idx = list.findIndex(x => x.classList.contains("active"));
-        idx = (idx < 0) ? 0 : Math.min(idx + 1, list.length - 1);
-        setActive(list, idx);
-        return;
-      }
+      const list = Array.from(box.querySelectorAll(".item-suggest-item"));
+      const idx = list.findIndex(el => el.classList.contains("active"));
+      if (idx >= 0) {
+        const id = list[idx].dataset.id || "";
+        const unit = list[idx].dataset.unit || "";
+        const text = list[idx].textContent || "";
 
-      // ArrowUp: dropdown nav only when open
-      if (e.key === "ArrowUp" && isOpen) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (list.length === 0) return;
-        let idx = list.findIndex(x => x.classList.contains("active"));
-        idx = (idx < 0) ? 0 : Math.max(idx - 1, 0);
-        setActive(list, idx);
-        return;
-      }
-
-      // Enter selects when open
-      if (e.key === "Enter" && isOpen) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (list.length === 0) return;
-
-        const idx = list.findIndex(x => x.classList.contains("active"));
-        if (idx >= 0) {
-          const id = list[idx].dataset.id || "";
-          const unit = list[idx].dataset.unit || "";
-          const text = list[idx].textContent || "";
-
-          el.value = text;
-          hidden.value = id;
-          closeBox(box);
-
-          const tr = el.closest("tr");
-          const qty = tr ? tr.querySelector(".qty-input") : null;
-          if (qty && !qty.value && unit) qty.value = unit;
-          if (qty) qty.focus();
-
-          recalcRow(tr);
-          recalcAll();
-        }
-        return;
-      }
-
-      // Esc closes
-      if (e.key === "Escape" && isOpen) {
-        e.preventDefault();
-        e.stopPropagation();
+        input.value = text;
+        hidden.value = id;
         closeBox(box);
-        return;
-      }
 
-      // If dropdown open, do NOT run grid arrow nav (avoid conflicts)
-      if (isOpen && (e.key.startsWith("Arrow") || e.key === "Enter")) return;
+        const tr = input.closest("tr");
+        const qty = tr ? tr.querySelector(".qty-input") : null;
+        if (qty && !qty.value && unit) qty.value = unit;
+        if (qty) qty.focus();
+      }
+      return;
     }
 
-    // GRID movement (dropdown closed)
-    const nav = getNavGrid();
-
-    let r = -1, c = -1;
-    for (let i = 0; i < nav.length; i++) {
-      for (let j = 0; j < nav[i].length; j++) {
-        if (nav[i][j] === el) { r = i; c = j; break; }
-      }
-      if (r >= 0) break;
-    }
-    if (r < 0 || c < 0) return;
-
-    if (e.key === "ArrowRight") { e.preventDefault(); return focusCell(nav, r, c + 1); }
-    if (e.key === "ArrowLeft")  { e.preventDefault(); return focusCell(nav, r, c - 1); }
-    if (e.key === "ArrowDown")  { e.preventDefault(); return focusCell(nav, r + 1, c); }
-    if (e.key === "ArrowUp")    { e.preventDefault(); return focusCell(nav, r - 1, c); }
-
-    if (e.key === "Enter") {
-      // move right, end-of-row -> next row first col
-      if (nav[r][c + 1]) return focusCell(nav, r, c + 1);
-      if (nav[r + 1] && nav[r + 1][0]) return focusCell(nav, r + 1, 0);
+    // Escape closes
+    if (e.key === "Escape" && isOpen) {
+      e.preventDefault();
+      e.stopPropagation();
+      closeBox(box);
+      return;
     }
   });
 
   /* ===============================
-     Click outside -> close dropdowns
+     Click outside cell → close
   =============================== */
   document.addEventListener("click", (e) => {
     document.querySelectorAll(".item-cell").forEach((cell) => {
@@ -688,10 +522,6 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!cell.contains(e.target)) closeBox(box);
     });
   });
-
-  // initial
-  renumberRows();
-  recalcAll();
 });
 </script>
 {% endblock %}
