@@ -310,7 +310,74 @@ def init_report_views(app, get_db):
             "SELECT id, name FROM stores ORDER BY code"
         ).fetchall()
         store_id = request.args.get("store_id") or ""
-
+    
+        # ★ 仕入先一覧（プルダウン用）
+        suppliers = db.execute(
+            "SELECT id, name FROM suppliers ORDER BY code"
+        ).fetchall()
+    
+        # クエリパラメータ
+        store_id = request.args.get("store_id") or ""
+        selected_store_id = int(store_id) if store_id else None
+    
+        # ★ 仕入先ID（クエリパラメータ）
+        supplier_id = request.args.get("supplier_id") or ""
+        selected_supplier_id = int(supplier_id) if supplier_id else None
+    
+        # 期間（すでにあればそのまま）
+        from_date = request.args.get("from_date") or ""
+        to_date = request.args.get("to_date") or ""
+    
+        # ここから下は元の usage_report のロジックを使いつつ、
+        # WHERE 句を組み立てているところに supplier_id 条件を足します
+        where = []
+        params = []
+    
+        if from_date:
+            where.append("p.delivery_date >= ?")
+            params.append(from_date)
+    
+        if to_date:
+            where.append("p.delivery_date <= ?")
+            params.append(to_date)
+    
+        if store_id:
+            where.append("p.store_id = ?")
+            params.append(store_id)
+    
+        # ★ 仕入先フィルタを追加
+        if supplier_id:
+            where.append("p.supplier_id = ?")
+            params.append(supplier_id)
+    
+        where_sql = ""
+        if where:
+            where_sql = "WHERE " + " AND ".join(where)
+    
+        sql = f"""
+            SELECT
+                i.id   AS item_id,
+                i.name AS item_name,
+                SUM(p.quantity) AS total_qty,
+                SUM(p.amount)   AS total_amount
+            FROM purchases p
+            JOIN items i ON i.id = p.item_id
+            {where_sql}
+            GROUP BY i.id, i.name
+            ORDER BY i.name
+        """
+        rows = db.execute(sql, params).fetchall()
+    
+        return render_template(
+            "usage_report.html",
+            stores=stores,
+            selected_store_id=selected_store_id,
+            suppliers=suppliers,                        # ★ 追加
+            selected_supplier_id=selected_supplier_id,  # ★ 追加
+            from_date=from_date,
+            to_date=to_date,
+            rows=rows,
+        )
         # 直近13ヶ月
         today = datetime.now().date()
         year = today.year
