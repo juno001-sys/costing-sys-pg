@@ -697,5 +697,67 @@ if (addBtn && tbody) {
 // run once at startup
 renumberRowsAndNames();
 calc_recalcAll();  
+
+  /* ===============================
+   Step 3: Enter key = Tab (Shift+Enter = Shift+Tab)
+   - Only for inputs inside the detail table (#item-rows)
+   - Prevents form submit on Enter
+=============================== */
+
+const form = document.getElementById("purchase-form");
+
+function focusNextPrev(el, dir) {
+  // dir: +1 (next) / -1 (prev)
+  const focusables = Array.from(
+    form.querySelectorAll(
+      "#item-rows input, #item-rows select, #item-rows button"
+    )
+  ).filter(node => {
+    // skip readonly/disabled/hidden & skip amount display
+    if (node.disabled) return false;
+    if (node.type === "hidden") return false;
+    if (node.classList && node.classList.contains("amount-display")) return false;
+    return true;
+  });
+
+  const idx = focusables.indexOf(el);
+  if (idx < 0) return;
+
+  const next = focusables[idx + dir];
+  if (next) {
+    next.focus();
+    if (typeof next.select === "function" && next.tagName === "INPUT") {
+      next.select();
+    }
+  }
+}
+
+// Capture phase so Enter won't be stolen by other handlers
+tbody.addEventListener(
+  "keydown",
+  (e) => {
+    // Only handle Enter inside detail rows
+    const el = e.target;
+    if (!el.closest("#item-rows")) return;
+
+    if (e.key === "Enter") {
+      // If autocomplete dropdown is open, let Step4 handle selection later
+      const cell = el.closest(".item-cell");
+      const box = cell ? cell.querySelector(".item-suggestions") : null;
+      const dropdownOpen = box && !box.hidden && box.querySelector(".item-suggest-item");
+
+      if (dropdownOpen) {
+        return; // don't hijack Enter here
+      }
+
+      e.preventDefault(); // prevent form submit
+      e.stopPropagation();
+
+      // Shift+Enter = back
+      focusNextPrev(el, e.shiftKey ? -1 : 1);
+    }
+  },
+  true
+);
 </script>
 {% endblock %}
