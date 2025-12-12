@@ -120,24 +120,23 @@
       <tr>
         <td class="row-no">{{ i }}</td>
       
-      <td class="item-cell">
+<td class="item-cell">
   <!-- Single input: search + select -->
   <input type="text"
          class="item-autocomplete nav-input"
-         name="item_label_{{ i }}"
+         data-col="0"
          placeholder="品名・コード検索"
          autocomplete="off"
          style="width:210px;">
 
-  <!-- 실제로 서버에 보내는 값 -->
+  <!-- サーバーに送る item_id（これが本体） -->
   <input type="hidden"
          name="item_id_{{ i }}"
          class="item-id">
 
-  <!-- suggestion dropdown -->
-  <div class="item-suggestions"></div>
+  <!-- 候補ドロップダウン -->
+  <div class="item-suggestions" hidden></div>
 </td>
-
 <td>
   <input type="text"
          name="quantity_{{ i }}"
