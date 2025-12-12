@@ -78,15 +78,22 @@
       {% for i in range(1, 9) %}
       <tr>
         <td class="row-no">{{ i }}</td>
-
-        <td>
-          <select name="item_id_{{ i }}"
-                  class="item-select nav-input"
-                  data-col="0">
-            <option value="">（品目を選択）</option>
-          </select>
-        </td>
-
+      
+      <td>
+        <!-- 行ごとの品目検索 -->
+        <input type="text"
+               class="item-search"
+               placeholder="品名・コード検索"
+               autocomplete="off"
+               style="width:210px; margin-bottom:2px;">
+      
+        <!-- 実際に送信される品目選択 -->
+        <select name="item_id_{{ i }}"
+                class="item-select nav-input"
+                data-col="0">
+          <option value="">（品目を選択）</option>
+        </select>
+      </td>
         <td>
           <input type="text"
                  name="quantity_{{ i }}"
@@ -211,33 +218,48 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const supplierSelect = document.getElementById("supplier_id");
-  const tbody = document.getElementById("item-rows");
-  const rowCountInput = document.getElementById("row_count");
-  const addBtn = document.getElementById("add-row-btn");
+  const tbody          = document.getElementById("item-rows");
+  const rowCountInput  = document.getElementById("row_count");
+  const addBtn         = document.getElementById("add-row-btn");
 
-  /* ------------------------------
-     仕入先変更 → 品目リスト再取得
-     （option に data-unit を付ける）
-  ------------------------------ */
+  // 仕入先ごとの全品目リスト（1回APIで取って、検索時に使い回す）
+  let baseItems = [];
+
+  function parseIntSafe(v) {
+    if (!v) return 0;
+    return parseInt(String(v).replace(/,/g, ""), 10) || 0;
+  }
+
+  /* -----------------------------------
+     品目プルダウンのロード（仕入先単位）
+  ----------------------------------- */
   function loadItems(supplierId) {
-    const selects = tbody.querySelectorAll(".item-select");
+    const selects  = tbody.querySelectorAll(".item-select");
+    const searches = tbody.querySelectorAll(".item-search");
 
-    // 仕入先未選択なら空に
     if (!supplierId) {
-      selects.forEach((sel) => {
+      baseItems = [];
+      selects.forEach(sel => {
         sel.innerHTML = '<option value="">（品目を選択）</option>';
       });
+      searches.forEach(inp => { inp.value = ""; });
       return;
     }
 
     fetch(`/api/items/by_supplier/${supplierId}`)
-      .then((resp) => resp.json())
-      .then((data) => {
-        selects.forEach((sel) => {
+      .then(resp => resp.json())
+      .then(data => {
+        baseItems = data || [];
+
+        // 仕入先が変わったら検索キーワードはクリア
+        searches.forEach(inp => { inp.value = ""; });
+
+        // 各行の品目セレクトをフルリストで再構築
+        selects.forEach(sel => {
           const current = sel.value || "";
           sel.innerHTML = '<option value="">（品目を選択）</option>';
 
-          data.forEach((item) => {
+          baseItems.forEach(item => {
             const opt = document.createElement("option");
             opt.value = item.id;
             opt.textContent = `${item.code || ""} ${item.name}`;
@@ -253,26 +275,22 @@ document.addEventListener("DOMContentLoaded", function () {
       });
   }
 
-  // 初期：仕入先が選択済みなら品目ロード
-  if (supplierSelect.value) {
-    loadItems(supplierSelect.value);
+  // 初期ロード & 仕入先変更時
+  if (supplierSelect) {
+    if (supplierSelect.value) {
+      loadItems(supplierSelect.value);
+    }
+    supplierSelect.addEventListener("change", function () {
+      loadItems(this.value);
+    });
   }
-
-  supplierSelect.addEventListener("change", () => {
-    loadItems(supplierSelect.value);
-  });
 
   /* -----------------------------------
-     数量 × 単価 → 金額 自動計算
+     金額計算系
   ----------------------------------- */
-  function parseIntSafe(v) {
-    if (!v) return 0;
-    return parseInt(String(v).replace(/,/g, ""), 10) || 0;
-  }
-
   function recalcRow(tr) {
-    const qtyInput = tr.querySelector(".qty-input");
-    const priceInput = tr.querySelector(".price-input");
+    const qtyInput    = tr.querySelector(".qty-input");
+    const priceInput  = tr.querySelector(".price-input");
     const amountInput = tr.querySelector(".amount-display");
     if (!qtyInput || !priceInput || !amountInput) return;
 
@@ -288,51 +306,20 @@ document.addEventListener("DOMContentLoaded", function () {
     const totalCell = document.getElementById("total_amount_display");
     if (totalCell) {
       let total = 0;
-      tbody.querySelectorAll(".amount-display").forEach((inp) => {
+      tbody.querySelectorAll(".amount-display").forEach(inp => {
         total += parseIntSafe(inp.value);
       });
       totalCell.textContent = total ? total.toLocaleString("ja-JP") : "";
     }
   }
 
-  // 数量/単価入力時にその行＆合計を再計算
-  tbody.addEventListener("input", (e) => {
-    if (e.target.matches(".qty-input") || e.target.matches(".price-input")) {
-      const tr = e.target.closest("tr");
-      if (tr) {
-        recalcRow(tr);
-        recalcAll();
-      }
-    }
-  });
-
   /* -----------------------------------
-     品目選択 → unit を数量にセット
-  ----------------------------------- */
-  tbody.addEventListener("change", (e) => {
-    if (!e.target.matches(".item-select")) return;
-
-    const sel = e.target;
-    const opt = sel.options[sel.selectedIndex];
-    const unit = opt ? opt.getAttribute("data-unit") : null;
-    const tr = sel.closest("tr");
-    const qtyInput = tr ? tr.querySelector(".qty-input") : null;
-
-    // 数量が未入力のときだけ、マスタの unit を入れる
-    if (qtyInput && unit && !qtyInput.value) {
-      qtyInput.value = unit;
-    }
-    recalcRow(tr);
-    recalcAll();
-  });
-
-  /* -----------------------------------
-     行番号 再採番
+     行番号 & row_count 再採番
   ----------------------------------- */
   function renumberRows() {
     const rows = tbody.querySelectorAll("tr");
     let n = 1;
-    rows.forEach((tr) => {
+    rows.forEach(tr => {
       const noCell = tr.querySelector(".row-no");
       if (noCell) noCell.textContent = n;
       n++;
@@ -340,10 +327,86 @@ document.addEventListener("DOMContentLoaded", function () {
     rowCountInput.value = String(rows.length);
   }
 
+  /* -----------------------------------
+     品目選択 → unit を数量にセット
+  ----------------------------------- */
+  tbody.addEventListener("change", function (e) {
+    if (!e.target.matches(".item-select")) return;
+
+    const sel      = e.target;
+    const opt      = sel.options[sel.selectedIndex];
+    const unit     = opt ? opt.getAttribute("data-unit") : null;
+    const tr       = sel.closest("tr");
+    const qtyInput = tr ? tr.querySelector(".qty-input") : null;
+
+    if (qtyInput && unit && !qtyInput.value) {
+      qtyInput.value = unit;
+    }
+    if (tr) {
+      recalcRow(tr);
+      recalcAll();
+    }
+  });
+
+  /* -----------------------------------
+     tbody の input イベントまとめて処理
+     - 数量 / 単価入力 → 金額再計算
+     - 品目検索（per-row） → セレクトの選択肢を絞り込み
+  ----------------------------------- */
+  function rebuildRowOptions(tr, query) {
+    if (!baseItems || baseItems.length === 0) return;
+    const sel = tr.querySelector(".item-select");
+    if (!sel) return;
+
+    const current = sel.value || "";
+    const q = (query || "").toLowerCase();
+
+    sel.innerHTML = '<option value="">（品目を選択）</option>';
+
+    baseItems.forEach(item => {
+      const text = `${item.code || ""} ${item.name || ""}`.trim();
+      if (!q || text.toLowerCase().includes(q)) {
+        const opt = document.createElement("option");
+        opt.value = item.id;
+        opt.textContent = text;
+        if (item.unit != null) {
+          opt.setAttribute("data-unit", item.unit);
+        }
+        if (current && String(current) === String(item.id)) {
+          opt.selected = true;
+        }
+        sel.appendChild(opt);
+      }
+    });
+  }
+
+  tbody.addEventListener("input", function (e) {
+    const target = e.target;
+
+    // 数量 / 単価 → 行と合計を再計算
+    if (target.matches(".qty-input") || target.matches(".price-input")) {
+      const tr = target.closest("tr");
+      if (tr) {
+        recalcRow(tr);
+        recalcAll();
+      }
+      return;
+    }
+
+    // 行ごとの品目検索
+    if (target.classList.contains("item-search")) {
+      const tr = target.closest("tr");
+      if (tr) {
+        rebuildRowOptions(tr, target.value);
+      }
+      return;
+    }
+  });
+
   /* ------------------------------
-     ＋行を追加（最大 30 行）
+     ＋行を追加（最大30行）
   ------------------------------ */
-  addBtn.addEventListener("click", () => {
+  addBtn.addEventListener("click", function () {
     const currentRows = tbody.querySelectorAll("tr").length;
     if (currentRows >= 30) {
       alert("これ以上追加できません（上限30行）");
@@ -355,6 +418,11 @@ document.addEventListener("DOMContentLoaded", function () {
     tr.innerHTML = `
       <td class="row-no"></td>
       <td>
+        <input type="text"
+               class="item-search"
+               placeholder="品名・コード検索"
+               autocomplete="off"
+               style="width:210px; margin-bottom:2px;">
         <select name="item_id_${newIndex}"
                 class="item-select nav-input"
                 data-col="0">
@@ -384,9 +452,19 @@ document.addEventListener("DOMContentLoaded", function () {
     `;
     tbody.appendChild(tr);
 
-    // 追加行の品目プルダウンにも候補をセット
-    if (supplierSelect.value) {
-      loadItems(supplierSelect.value);
+    // すでに baseItems があれば、新しい行のセレクトにも候補をセット
+    if (baseItems.length > 0) {
+      const sel = tr.querySelector(".item-select");
+      sel.innerHTML = '<option value="">（品目を選択）</option>';
+      baseItems.forEach(item => {
+        const opt = document.createElement("option");
+        opt.value = item.id;
+        opt.textContent = `${item.code || ""} ${item.name}`;
+        if (item.unit != null) {
+          opt.setAttribute("data-unit", item.unit);
+        }
+        sel.appendChild(opt);
+      });
     }
 
     renumberRows();
@@ -394,9 +472,9 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   /* -----------------------------------
-     行削除 ＆ No. 再採番
+     行削除 ＆ 再採番
   ----------------------------------- */
-  tbody.addEventListener("click", function(e) {
+  tbody.addEventListener("click", function (e) {
     if (e.target.classList.contains("delete-row")) {
       const tr = e.target.closest("tr");
       if (tr) {
@@ -408,25 +486,22 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   /* ======================================================
-     Excel-like Navigation WITHOUT data-row / data-col
-     ====================================================== */
-
+     Excel-like Navigation（矢印＋Enter）
+     nav-input（品目select / 数量 / 単価）だけを対象
+  ====================================================== */
   function getNavCells() {
-    // rows → cols → .nav-input
-    const rows = [...tbody.querySelectorAll("tr")];
-    return rows.map((tr) => [...tr.querySelectorAll(".nav-input")]);
+    const rows = Array.from(tbody.querySelectorAll("tr"));
+    return rows.map(tr => Array.from(tr.querySelectorAll(".nav-input")));
   }
 
-  tbody.addEventListener("keydown", (e) => {
+  tbody.addEventListener("keydown", function (e) {
     const el = e.target;
     if (!el.classList.contains("nav-input")) return;
 
-    const nav = getNavCells(); // 最新の状態を毎回再構築
+    const nav = getNavCells();
 
-    // 現在位置を特定
     let rowIndex = -1;
     let colIndex = -1;
-
     for (let r = 0; r < nav.length; r++) {
       for (let c = 0; c < nav[r].length; c++) {
         if (nav[r][c] === el) {
@@ -437,12 +512,11 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       if (rowIndex >= 0) break;
     }
-
     if (rowIndex < 0 || colIndex < 0) return;
 
-    const isSelect = el.tagName === "SELECT";
+    const isSelect = (el.tagName === "SELECT");
 
-    // → 右
+    // → right
     if (e.key === "ArrowRight") {
       if (nav[rowIndex][colIndex + 1]) {
         nav[rowIndex][colIndex + 1].focus();
@@ -451,7 +525,7 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // ← 左
+    // ← left
     if (e.key === "ArrowLeft") {
       if (colIndex > 0 && nav[rowIndex][colIndex - 1]) {
         nav[rowIndex][colIndex - 1].focus();
@@ -460,7 +534,7 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // ↓ 下（input のときだけ。select は上下で候補移動したいので残す）
+    // ↓ down（select はネイティブ動作優先、input だけ縦移動）
     if (!isSelect && e.key === "ArrowDown") {
       if (nav[rowIndex + 1] && nav[rowIndex + 1][colIndex]) {
         nav[rowIndex + 1][colIndex].focus();
@@ -469,7 +543,7 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // ↑ 上（input のときだけ）
+    // ↑ up（inputのみ）
     if (!isSelect && e.key === "ArrowUp") {
       if (rowIndex > 0 && nav[rowIndex - 1][colIndex]) {
         nav[rowIndex - 1][colIndex].focus();
@@ -478,32 +552,23 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // Enter キー
+    // Enter キーで右隣へ、行末なら次行の先頭へ
     if (e.key === "Enter") {
       e.preventDefault();
 
-      // セレクトの場合：選択確定して右へ
-      if (isSelect) {
-        if (nav[rowIndex][colIndex + 1]) {
-          nav[rowIndex][colIndex + 1].focus();
-          return;
-        }
-      }
-
-      // input の場合：右へ
+      // select の場合も「確定して右へ」
       if (nav[rowIndex][colIndex + 1]) {
         nav[rowIndex][colIndex + 1].focus();
         return;
       }
-
-      // 行末なら次の行の最初のセルへ
+      // 行末 → 次の行の最初のセル
       if (nav[rowIndex + 1] && nav[rowIndex + 1][0]) {
         nav[rowIndex + 1][0].focus();
       }
     }
   });
 
-  // 初期計算
+  // 初期再計算
   renumberRows();
   recalcAll();
 });
