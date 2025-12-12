@@ -100,7 +100,9 @@
     <div style="margin-bottom: 12px;">
   <label style="margin-right: 16px;">
     <span class="field-label">店舗：</span>
-    <select name="store_id" id="store_id">
+    <select name="store_id"
+        id="store_id"
+        onchange="document.getElementById('focus_after_reload').value='supplier'; this.form.submit();">
       <option value="">（店舗を選択）</option>
       {% for st in stores %}
         <option value="{{ st.id }}"
@@ -308,20 +310,33 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // -------------------------------
-  // Restore focus after refresh
-  // -------------------------------
-  const nextFocus = sessionStorage.getItem("nextFocus");
-  if (nextFocus) {
-    sessionStorage.removeItem("nextFocus");
+// Restore focus after refresh
+// -------------------------------
+let focused = false;
 
-    // wait a tick so DOM is fully ready
-    setTimeout(() => {
-      if (nextFocus === "supplier" && supplierSelect) supplierSelect.focus();
-      else if (nextFocus === "date" && dateInput) dateInput.focus();
-      else if (nextFocus === "firstItem") focusFirstItemCell();
-    }, 0);
+const nextFocus = sessionStorage.getItem("nextFocus");
+if (nextFocus) {
+  sessionStorage.removeItem("nextFocus");
+
+  setTimeout(() => {
+    if (nextFocus === "supplier" && supplierSelect) supplierSelect.focus();
+    else if (nextFocus === "date" && dateInput) dateInput.focus();
+    else if (nextFocus === "firstItem") focusFirstItemCell();
+  }, 0);
+
+  focused = true;
+}
+
+// Fallback: hidden input (only if sessionStorage didn't do it)
+if (!focused) {
+  const focusAfter = document.getElementById("focus_after_reload")?.value;
+
+  if (focusAfter === "supplier") {
+    document.getElementById("supplier_id")?.focus();
+  } else {
+    document.getElementById("store_id")?.focus();
   }
-
+}
   // -------------------------------
   // Enter key = move forward in header
   // -------------------------------
