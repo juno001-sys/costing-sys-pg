@@ -333,7 +333,7 @@ def init_master_views(app, get_db):
                 # 1) 利用中チェック
                 # purchases / stock_counts で使われていたら削除禁止
                 in_pur = db.execute(
-                    "SELECT COUNT(*) AS cnt FROM purchases WHERE item_id = ?" AND is_deleted = 0",
+                    "SELECT COUNT(*) AS cnt FROM purchases WHERE item_id = ? AND is_deleted = 0",
                     (item_id,),
                 ).fetchone()
                 in_stock = db.execute(
