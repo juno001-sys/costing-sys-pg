@@ -85,7 +85,7 @@ def init_master_views(app, get_db):
             flash("指定された仕入先が見つかりません。")
             return redirect(url_for("suppliers_master"))
 
-                if request.method == "POST":
+            if request.method == "POST":
 
             # ----------------------
             # 削除ボタン押下時
