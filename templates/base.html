@@ -354,6 +354,15 @@
             品目マスタ
           </a>
         </li>
+
+      <li>
+  <a
+    href="{{ url_for('stores_master') }}"
+    class="{% if request.endpoint in ['stores_master', 'edit_store'] %}active{% endif %}"
+  >
+    店舗マスタ
+  </a>
+</li>
       </ul>
     </nav>
 
