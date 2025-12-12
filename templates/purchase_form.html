@@ -396,5 +396,40 @@ tbody.addEventListener("click", function(e) {
   // 初期計算（画面表示直後の値があれば）
   recalcAll();
 });
+  
+  /* -----------------------------------
+     テンキー移動（↑↓）復活！
+     数量・単価欄だけを対象にする
+  ----------------------------------- */
+  tbody.addEventListener("keydown", function(e) {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+
+    const el = e.target;
+    // 対象は数量・単価だけ（品目プルダウンやヘッダーは無視）
+    if (!el.classList.contains("qty-input") &&
+        !el.classList.contains("price-input")) {
+      return;
+    }
+
+    const row = parseInt(el.dataset.row || "0", 10);
+    const col = el.dataset.col;
+    if (!row || col === undefined) return;
+
+    const nextRow = (e.key === "ArrowDown") ? row + 1 : row - 1;
+    if (nextRow < 1) return;
+
+    const next = tbody.querySelector(
+      `.nav-input[data-row="${nextRow}"][data-col="${col}"]`
+    );
+    if (next) {
+      next.focus();
+      e.preventDefault();
+    }
+  });
+
+  // 初期化：行番号と data-row をセットしてから計算
+  renumberRows();
+  recalcAll();
+});
 </script>
 {% endblock %}
