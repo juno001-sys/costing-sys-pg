@@ -579,5 +579,126 @@ if (calcTbody) {
 // Initial calc (in case values already exist)
 calc_recalcAll();
 
+/* ===============================
+   Step 2: Delete row + renumber
+=============================== */
+
+const rowCountInput = document.getElementById("row_count");
+
+// call your existing recalcAll if it exists
+function safeRecalcAll() {
+  if (typeof recalcAll === "function") recalcAll();
+}
+
+function renumberRowsAndNames() {
+  const rows = Array.from(tbody.querySelectorAll("tr"));
+  rows.forEach((tr, idx) => {
+    const n = idx + 1;
+
+    // row no
+    const noCell = tr.querySelector(".row-no");
+    if (noCell) noCell.textContent = String(n);
+
+    // rename fields to keep POST loop consistent
+    const itemId = tr.querySelector("input.item-id");
+    if (itemId) itemId.name = `item_id_${n}`;
+
+    const qty = tr.querySelector("input.qty-input");
+    if (qty) qty.name = `quantity_${n}`;
+
+    const price = tr.querySelector("input.price-input");
+    if (price) price.name = `unit_price_${n}`;
+
+    const amount = tr.querySelector("input.amount-display");
+    if (amount) amount.name = `amount_display_${n}`;
+  });
+
+  if (rowCountInput) rowCountInput.value = String(rows.length);
+}
+
+tbody.addEventListener("click", (e) => {
+  const btn = e.target.closest(".delete-row");
+  if (!btn) return;
+
+  const tr = btn.closest("tr");
+  if (!tr) return;
+
+  tr.remove();
+  renumberRowsAndNames();
+  safeRecalcAll();
+});
+  /* ===============================
+   Step 5: Add row button
+=============================== */
+
+const addBtn = document.getElementById("add-row-btn");
+
+if (addBtn) {
+  addBtn.addEventListener("click", () => {
+    const currentRows = tbody.querySelectorAll("tr").length;
+    if (currentRows >= 30) {
+      alert("これ以上追加できません（上限30行）");
+      return;
+    }
+
+    const newIndex = currentRows + 1;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="row-no">${newIndex}</td>
+
+      <td class="item-cell">
+        <input type="text"
+               class="item-autocomplete nav-input"
+               data-col="0"
+               placeholder="品名・コード検索"
+               autocomplete="off"
+               style="width:210px;">
+
+        <input type="hidden"
+               name="item_id_${newIndex}"
+               class="item-id">
+
+        <div class="item-suggestions" hidden></div>
+      </td>
+
+      <td>
+        <input type="text"
+               name="quantity_${newIndex}"
+               class="num qty-input nav-input"
+               data-col="1"
+               style="width:80px;">
+      </td>
+
+      <td>
+        <input type="text"
+               name="unit_price_${newIndex}"
+               class="num price-input nav-input"
+               data-col="2"
+               style="width:100px;">
+      </td>
+
+      <td>
+        <input type="text"
+               name="amount_display_${newIndex}"
+               class="amount-display"
+               readonly
+               tabindex="-1">
+      </td>
+
+      <td>
+        <button type="button" class="delete-row">✖</button>
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+
+    // keep row_count correct + keep server POST loop consistent
+    renumberRowsAndNames();
+    safeRecalcAll();
+  });
+}
+
+  
 </script>
 {% endblock %}
