@@ -1,31 +1,63 @@
 {% extends "base.html" %}
 {% block title %}店舗編集{% endblock %}
-{% block content %}
 
+{% block content %}
 <h2>店舗編集</h2>
 
 <form method="post">
-  <label>コード：</label>
-  <input type="text" name="code" value="{{ store.code or '' }}">
+  <div class="form-group">
+    <label>コード：</label>
+    <input type="text" name="code" value="{{ store.code or '' }}">
+  </div>
 
-  <label>店舗名：</label>
-  <input type="text" name="name" value="{{ store.name or '' }}">
+  <div class="form-group">
+    <label>店舗名：</label>
+    <input type="text" name="name" value="{{ store.name or '' }}" required>
+  </div>
 
-  <label>座席：</label>
-  <input type="text" name="seats" value="{{ store.seats or '' }}">
+  <div class="form-group">
+    <label>座席数：</label>
+    <input type="text" name="seats" value="{{ store.seats or '' }}">
+  </div>
 
-  <label>開店日：</label>
-  <input type="date" name="opened_on" value="{{ store.opened_on or '' }}">
+  <div class="form-group">
+    <label>開店日：</label>
+    <input type="date" name="opened_on" value="{{ store.opened_on or '' }}">
+  </div>
 
-  <label>閉店日：</label>
-  <input type="date" name="closed_on" value="{{ store.closed_on or '' }}">
+  <div class="form-group">
+    <label>閉店日：</label>
+    <input type="date" name="closed_on" value="{{ store.closed_on or '' }}">
+  </div>
+
+  <hr>
+
+  <h3>取扱仕入れ先</h3>
+  <div class="supplier-checkbox-list">
+    {% for s in suppliers %}
+      <label style="display:block; margin-bottom:4px;">
+        <input
+          type="checkbox"
+          name="supplier_ids"
+          value="{{ s.id }}"
+          {% if s.id in linked_supplier_ids %}checked{% endif %}
+        >
+        {{ s.code }} - {{ s.name }}
+      </label>
+    {% endfor %}
+  </div>
+
+  <hr>
 
   <button type="submit">更新</button>
 
-  <button type="submit" name="delete" value="1"
-          onclick="return confirm('無効化しますか？')">
+  <button
+    type="submit"
+    name="delete"
+    value="1"
+    onclick="return confirm('この店舗を無効化しますか？');"
+  >
     無効化
   </button>
 </form>
-
 {% endblock %}
