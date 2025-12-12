@@ -53,9 +53,14 @@ def init_master_views(app, get_db):
 
             return redirect(url_for("suppliers_master"))
 
-        # GET
+        # GET：有効な仕入先のみ表示
         suppliers = db.execute(
-            "SELECT id, code, name, phone, email, address FROM suppliers ORDER BY code, id"
+            """
+            SELECT id, code, name, phone, email, address, is_active
+            FROM suppliers
+            WHERE is_active = 1
+            ORDER BY code, id
+            """
         ).fetchall()
 
         return render_template(
@@ -64,17 +69,17 @@ def init_master_views(app, get_db):
         )
 
     # ----------------------------------------
-    # 仕入先編集・削除
+    # 仕入先編集・削除（実態は「無効化」）
     # /suppliers/<id>/edit
     # ----------------------------------------
     @app.route("/suppliers/<int:supplier_id>/edit", methods=["GET", "POST"])
     def edit_supplier(supplier_id):
         db = get_db()
 
-        # 対象仕入先を取得
+        # 対象仕入先を取得（有効/無効問わず）
         supplier = db.execute(
             """
-            SELECT id, code, name, phone, email, address
+            SELECT id, code, name, phone, email, address, is_active
             FROM suppliers
             WHERE id = ?
             """,
@@ -85,21 +90,31 @@ def init_master_views(app, get_db):
             flash("指定された仕入先が見つかりません。")
             return redirect(url_for("suppliers_master"))
 
-            if request.method == "POST":
+        if request.method == "POST":
 
             # ----------------------
-            # 削除ボタン押下時
+            # 削除ボタン押下時（＝無効化）
             # ----------------------
             if "delete" in request.form:
 
                 # 1) 利用中チェック
-                # purchases / items のどちらかで使われていたら削除禁止
+                # purchases / items のどちらかで使われていたら無効化禁止
                 in_pur = db.execute(
-                    "SELECT COUNT(*) AS cnt FROM purchases WHERE supplier_id = ? AND is_deleted = 0",
+                    """
+                    SELECT COUNT(*) AS cnt
+                    FROM purchases
+                    WHERE supplier_id = ?
+                      AND is_deleted = 0
+                    """,
                     (supplier_id,),
                 ).fetchone()
+
                 in_items = db.execute(
-                    "SELECT COUNT(*) AS cnt FROM items WHERE supplier_id = ?",
+                    """
+                    SELECT COUNT(*) AS cnt
+                    FROM items
+                    WHERE supplier_id = ?
+                    """,
                     (supplier_id,),
                 ).fetchone()
 
@@ -108,25 +123,25 @@ def init_master_views(app, get_db):
 
                 if pur_cnt > 0 or item_cnt > 0:
                     flash(
-                        "この仕入先は取引または品目マスタで利用されているため削除できません。"
-                        "使用をやめる場合は、別の仕入先に切り替えたうえで停止などの運用にしてください。"
+                        "この仕入先は取引または品目マスタで利用されているため無効化できません。"
+                        "使用をやめる場合は、品目や取引を他の仕入先に切り替えてから無効化してください。"
                     )
                     return redirect(url_for("suppliers_master"))
 
-                # 2) 利用されていなければ削除実行
+                # 2) 利用されていなければ無効化
                 try:
                     db.execute(
-                        "DELETE FROM suppliers WHERE id = ?",
+                        "UPDATE suppliers SET is_active = 0 WHERE id = ?",
                         (supplier_id,),
                     )
                     db.commit()
-                    flash(f"仕入先（{supplier['name']}）を削除しました。")
+                    flash(f"仕入先（{supplier['name']}）を無効化しました。")
                 except sqlite3.Error as e:
                     db.rollback()
-                    flash(f"仕入先削除でエラーが発生しました: {e}")
+                    flash(f"仕入先更新でエラーが発生しました: {e}")
 
                 return redirect(url_for("suppliers_master"))
-                
+
             # ----------------------
             # 通常の更新処理
             # ----------------------
@@ -180,12 +195,17 @@ def init_master_views(app, get_db):
     def items_master():
         db = get_db()
 
-        # 仕入先一覧（プルダウン用）
+        # 仕入先一覧（プルダウン用：有効なもののみ）
         suppliers = db.execute(
-            "SELECT id, name, code FROM suppliers ORDER BY code"
+            """
+            SELECT id, name, code
+            FROM suppliers
+            WHERE is_active = 1
+            ORDER BY code
+            """
         ).fetchall()
 
-        # 登録済み品目一覧
+        # 登録済み品目一覧（有効なもののみ）
         items = db.execute(
             """
             SELECT
@@ -198,6 +218,7 @@ def init_master_views(app, get_db):
               s.name AS supplier_name
             FROM items i
             LEFT JOIN suppliers s ON i.supplier_id = s.id
+            WHERE i.is_active = 1
             ORDER BY i.code, i.name
             """
         ).fetchall()
@@ -286,19 +307,24 @@ def init_master_views(app, get_db):
         )
 
     # ----------------------------------------
-    # 品目編集
+    # 品目編集・削除（実態は「無効化」）
     # /items/<id>/edit
     # ----------------------------------------
     @app.route("/items/<int:item_id>/edit", methods=["GET", "POST"])
     def edit_item(item_id):
         db = get_db()
 
-        # 仕入先一覧（プルダウン用）
+        # 仕入先一覧（プルダウン用：有効なもののみ）
         suppliers = db.execute(
-            "SELECT id, name, code FROM suppliers ORDER BY code"
+            """
+            SELECT id, name, code
+            FROM suppliers
+            WHERE is_active = 1
+            ORDER BY code
+            """
         ).fetchall()
 
-        # 対象品目を取得
+        # 対象品目を取得（有効/無効問わず）
         item = db.execute(
             """
             SELECT
@@ -312,7 +338,8 @@ def init_master_views(app, get_db):
               i.inventory_unit,
               i.min_purchase_unit,
               i.is_internal,
-              i.storage_cost
+              i.storage_cost,
+              i.is_active
             FROM items i
             WHERE i.id = ?
             """,
@@ -323,21 +350,31 @@ def init_master_views(app, get_db):
             flash("指定された品目が見つかりません。")
             return redirect(url_for("items_master"))
 
-                if request.method == "POST":
+        if request.method == "POST":
 
             # ==============================
-            # 削除ボタンが押された場合
+            # 削除ボタンが押された場合（＝無効化）
             # ==============================
             if "delete" in request.form:
 
                 # 1) 利用中チェック
-                # purchases / stock_counts で使われていたら削除禁止
+                # purchases / stock_counts で使われていたら無効化禁止
                 in_pur = db.execute(
-                    "SELECT COUNT(*) AS cnt FROM purchases WHERE item_id = ? AND is_deleted = 0",
+                    """
+                    SELECT COUNT(*) AS cnt
+                    FROM purchases
+                    WHERE item_id = ?
+                      AND is_deleted = 0
+                    """,
                     (item_id,),
                 ).fetchone()
+
                 in_stock = db.execute(
-                    "SELECT COUNT(*) AS cnt FROM stock_counts WHERE item_id = ?",
+                    """
+                    SELECT COUNT(*) AS cnt
+                    FROM stock_counts
+                    WHERE item_id = ?
+                    """,
                     (item_id,),
                 ).fetchone()
 
@@ -346,25 +383,25 @@ def init_master_views(app, get_db):
 
                 if pur_cnt > 0 or stock_cnt > 0:
                     flash(
-                        "この品目は取引または棚卸で利用されているため削除できません。"
-                        "使用をやめる場合は、別の品目に切り替えたうえで停止などの運用にしてください。"
+                        "この品目は取引または棚卸で利用されているため無効化できません。"
+                        "使用をやめる場合は、別の品目に切り替えたうえで無効化してください。"
                     )
                     return redirect(url_for("items_master"))
 
-                # 2) 利用されていなければ削除実行
+                # 2) 利用されていなければ無効化
                 try:
                     db.execute(
-                        "DELETE FROM items WHERE id = ?",
+                        "UPDATE items SET is_active = 0 WHERE id = ?",
                         (item_id,),
                     )
                     db.commit()
-                    flash(f"品目（コード: {item['code']}）を削除しました。")
+                    flash(f"品目（コード: {item['code']}）を無効化しました。")
                 except sqlite3.Error as e:
                     db.rollback()
-                    flash(f"品目削除でエラーが発生しました: {e}")
+                    flash(f"品目更新でエラーが発生しました: {e}")
 
                 return redirect(url_for("items_master"))
-                
+
             # ==============================
             # 通常の更新処理
             # ==============================
