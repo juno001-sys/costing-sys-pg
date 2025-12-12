@@ -577,25 +577,19 @@ if (calcTbody) {
 }
 
 // Initial calc (in case values already exist)
-if (typeof recalcAll === "function") recalcAll();
+calc_recalcAll();
 
 /* ===============================
-   Step 2 + 5: Delete / Add rows
+   Step 2 + 5: Delete / Add rows (FIXED)
 =============================== */
 
+const tbody = document.getElementById("item-rows");   // ✅ define tbody
 const rowCountInput = document.getElementById("row_count");
 const addBtn = document.getElementById("add-row-btn");
 
-/** Call Step1's recalcAll safely (supports either name) */
-function safeRecalcAll() {
-  if (typeof recalcAll === "function") {
-    recalcAll();
-  } else if (typeof calc_recalcAll === "function") {
-    calc_recalcAll();
-  }
-}
-
 function renumberRowsAndNames() {
+  if (!tbody) return;
+
   const rows = Array.from(tbody.querySelectorAll("tr"));
   rows.forEach((tr, idx) => {
     const n = idx + 1;
@@ -604,7 +598,7 @@ function renumberRowsAndNames() {
     const noCell = tr.querySelector(".row-no");
     if (noCell) noCell.textContent = String(n);
 
-    // IMPORTANT: rename name=... to keep POST loop consistent
+    // keep POST loop consistent
     const itemId = tr.querySelector("input.item-id");
     if (itemId) itemId.name = `item_id_${n}`;
 
@@ -622,20 +616,22 @@ function renumberRowsAndNames() {
 }
 
 /* ---- Delete row (event delegation) ---- */
-tbody.addEventListener("click", (e) => {
-  const btn = e.target.closest(".delete-row");
-  if (!btn) return;
+if (tbody) {
+  tbody.addEventListener("click", (e) => {
+    const btn = e.target.closest(".delete-row");
+    if (!btn) return;
 
-  const tr = btn.closest("tr");
-  if (!tr) return;
+    const tr = btn.closest("tr");
+    if (!tr) return;
 
-  tr.remove();
-  renumberRowsAndNames();
-  safeRecalcAll();
-});
+    tr.remove();
+    renumberRowsAndNames();
+    calc_recalcAll(); // ✅ call Step1 calc directly
+  });
+}
 
 /* ---- Add row ---- */
-if (addBtn) {
+if (addBtn && tbody) {
   addBtn.addEventListener("click", () => {
     const currentRows = tbody.querySelectorAll("tr").length;
     if (currentRows >= 30) {
@@ -656,11 +652,9 @@ if (addBtn) {
                placeholder="品名・コード検索"
                autocomplete="off"
                style="width:210px;">
-
         <input type="hidden"
                name="item_id_${newIndex}"
                class="item-id">
-
         <div class="item-suggestions" hidden></div>
       </td>
 
@@ -695,18 +689,13 @@ if (addBtn) {
 
     tbody.appendChild(tr);
 
-    // keep row_count + names consistent
     renumberRowsAndNames();
-
-    // IMPORTANT: new row should open dropdown based on existing supplier items
-    // (Step1/Step3 should handle this; at least recalc totals)
-    safeRecalcAll();
+    calc_recalcAll(); // ✅ recalc total after adding
   });
 }
 
 // run once at startup
 renumberRowsAndNames();
-safeRecalcAll();
-  
+calc_recalcAll();  
 </script>
 {% endblock %}
