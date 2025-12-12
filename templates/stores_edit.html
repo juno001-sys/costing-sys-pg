@@ -6,19 +6,19 @@
 
 <form method="post">
   <label>コード：</label>
-  <input type="text" name="code" value="{{ store.code }}">
+  <input type="text" name="code" value="{{ store.code or '' }}">
 
   <label>店舗名：</label>
-  <input type="text" name="name" value="{{ store.name }}">
+  <input type="text" name="name" value="{{ store.name or '' }}">
 
   <label>座席：</label>
-  <input type="text" name="seats" value="{{ store.seats }}">
+  <input type="text" name="seats" value="{{ store.seats or '' }}">
 
   <label>開店日：</label>
-  <input type="date" name="opened_on" value="{{ store.opened_on }}">
+  <input type="date" name="opened_on" value="{{ store.opened_on or '' }}">
 
   <label>閉店日：</label>
-  <input type="date" name="closed_on" value="{{ store.closed_on }}">
+  <input type="date" name="closed_on" value="{{ store.closed_on or '' }}">
 
   <button type="submit">更新</button>
 
