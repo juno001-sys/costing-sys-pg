@@ -414,77 +414,108 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
 /* ======================================================
-   Keyboard Navigation for Purchase Entry Grid
+   Excel-like Navigation WITHOUT data-row / data-col
    ====================================================== */
 
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", () => {
   const tbody = document.getElementById("item-rows");
 
-  /* -----------------------------------
-     Helper: Move focus to a specific cell
-  ----------------------------------- */
-  function focusCell(row, col) {
-    const selector = `.nav-input[data-row="${row}"][data-col="${col}"]`;
-    const target = tbody.querySelector(selector);
-    if (target) {
-      target.focus();
-      return true;
-    }
-    return false;
+  function getNavCells() {
+    // Build a 2D array: rows → cols → input/select elements
+    const rows = [...tbody.querySelectorAll("tr")];
+
+    return rows.map((tr) => {
+      return [...tr.querySelectorAll(".nav-input")];
+    });
   }
 
-  /* -----------------------------------
-     Excel-like Navigation
-  ----------------------------------- */
-  tbody.addEventListener("keydown", function (e) {
+  tbody.addEventListener("keydown", (e) => {
     const el = e.target;
     if (!el.classList.contains("nav-input")) return;
 
-    const row = parseInt(el.dataset.row || "0", 10);
-    const col = parseInt(el.dataset.col || "0", 10);
+    const nav = getNavCells(); // always up-to-date
+
+    // Find current row/col
+    let rowIndex = -1;
+    let colIndex = -1;
+
+    for (let r = 0; r < nav.length; r++) {
+      for (let c = 0; c < nav[r].length; c++) {
+        if (nav[r][c] === el) {
+          rowIndex = r;
+          colIndex = c;
+        }
+      }
+    }
+
+    if (rowIndex < 0 || colIndex < 0) return;
+
     const isSelect = el.tagName === "SELECT";
 
-    /* ---------- Left / Right arrows ---------- */
+    /* ============ Arrow Keys ============ */
 
+    // → right
     if (e.key === "ArrowRight") {
-      if (focusCell(row, col + 1)) e.preventDefault();
-      return;
-    }
-    if (e.key === "ArrowLeft") {
-      if (focusCell(row, col - 1)) e.preventDefault();
-      return;
-    }
-
-    /* ---------- Up / Down arrows ---------- */
-    if (!isSelect && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
-      const nextRow = e.key === "ArrowDown" ? row + 1 : row - 1;
-      if (nextRow >= 1 && focusCell(nextRow, col)) {
+      if (nav[rowIndex][colIndex + 1]) {
+        nav[rowIndex][colIndex + 1].focus();
         e.preventDefault();
       }
       return;
     }
-    // NOTE: For <select>, Up/Down keys remain standard (open list navigation)
 
-    /* ---------- Enter key behavior ---------- */
+    // ← left
+    if (e.key === "ArrowLeft") {
+      if (colIndex > 0 && nav[rowIndex][colIndex - 1]) {
+        nav[rowIndex][colIndex - 1].focus();
+        e.preventDefault();
+      }
+      return;
+    }
+
+    // ↓ down (only for input, selects use ↑↓ natively)
+    if (!isSelect && e.key === "ArrowDown") {
+      if (nav[rowIndex + 1] && nav[rowIndex + 1][colIndex]) {
+        nav[rowIndex + 1][colIndex].focus();
+        e.preventDefault();
+      }
+      return;
+    }
+
+    // ↑ up (input only)
+    if (!isSelect && e.key === "ArrowUp") {
+      if (rowIndex > 0 && nav[rowIndex - 1][colIndex]) {
+        nav[rowIndex - 1][colIndex].focus();
+        e.preventDefault();
+      }
+      return;
+    }
+
+    /* ============ Enter Key ============ */
+
     if (e.key === "Enter") {
       e.preventDefault();
 
+      // For select → commit choice → move RIGHT
       if (isSelect) {
-        // For dropdowns: Enter = confirm selection and go RIGHT
-        if (focusCell(row, col + 1)) return;
-      } else {
-        // Inputs: Right → if no right cell, go to next row start
-        let nextCol = col + 1;
-        if (focusCell(row, nextCol)) return;
+        if (nav[rowIndex][colIndex + 1]) {
+          nav[rowIndex][colIndex + 1].focus();
+          return;
+        }
+      }
 
-        // Move to next row, first column
-        const nextRow = row + 1;
-        focusCell(nextRow, 0);
+      // For input → move RIGHT
+      if (nav[rowIndex][colIndex + 1]) {
+        nav[rowIndex][colIndex + 1].focus();
+        return;
+      }
+
+      // End of row → go to next row, first column
+      if (nav[rowIndex + 1] && nav[rowIndex + 1][0]) {
+        nav[rowIndex + 1][0].focus();
       }
     }
   });
-});
-  // 初期化：行番号と data-row をセットしてから計算
+});  // 初期化：行番号と data-row をセットしてから計算
   renumberRows();
   recalcAll();
 });
