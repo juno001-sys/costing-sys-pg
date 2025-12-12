@@ -21,7 +21,6 @@ def init_purchase_views(app, get_db, log_purchase_change):
 
     という形で使います。
     """
-
     # ----------------------------------------
     # 取引入力（納品書）
     # /purchases/new
@@ -29,13 +28,23 @@ def init_purchase_views(app, get_db, log_purchase_change):
     @app.route("/purchases/new", methods=["GET", "POST"])
     def new_purchase():
         db = get_db()
-
-                # 店舗一覧（固定）
+    
+        # --- 1) store_id を GET から取得して先に selected_store_id を定義 ---
+        store_id = request.args.get("store_id")
+        if store_id:
+            try:
+                selected_store_id = int(store_id)
+            except ValueError:
+                selected_store_id = None
+        else:
+            selected_store_id = None
+    
+        # --- 2) 店舗一覧（固定） ---
         stores = db.execute(
             "SELECT id, name FROM stores WHERE is_active = 1 ORDER BY code"
         ).fetchall()
-
-        # 店舗に応じて仕入先を絞る
+    
+        # --- 3) 店舗に応じて仕入先を絞る ---
         if selected_store_id:
             suppliers = db.execute(
                 """
@@ -59,7 +68,6 @@ def init_purchase_views(app, get_db, log_purchase_change):
                 ORDER BY code
                 """
             ).fetchall()
-
         # ----------------------------------------------------
         # POST: 登録（新規 INSERT）処理
         #   ヘッダー：store_id, supplier_id, delivery_date
