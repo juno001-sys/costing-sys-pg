@@ -263,198 +263,247 @@ document.addEventListener("DOMContentLoaded", function () {
   const supplierSelect = document.getElementById("supplier_id");
   const tbody = document.getElementById("item-rows");
 
+  // supplier -> items cache
   let baseItems = [];
 
-  /* ===============================
-     Load items by supplier
-  =============================== */
-  function loadItems(supplierId) {
+  // -----------------------------
+  // Load items by supplier (API)
+  // -----------------------------
+  async function loadItems(supplierId) {
     baseItems = [];
     if (!supplierId) return;
 
-    fetch(`/api/items/by_supplier/${supplierId}`)
-      .then(r => r.json())
-      .then(data => {
-        baseItems = Array.isArray(data) ? data : [];
-      });
+    const resp = await fetch(`/api/items/by_supplier/${supplierId}`);
+    const data = await resp.json();
+    baseItems = Array.isArray(data) ? data : [];
+
+    // supplier changed -> clear all rows (safer)
+    tbody.querySelectorAll(".item-autocomplete").forEach(inp => inp.value = "");
+    tbody.querySelectorAll(".item-id").forEach(h => h.value = "");
+    closeAllSuggestions();
   }
 
+  // If you want "no default supplier", uncomment the next 2 lines:
+  // if (supplierSelect) supplierSelect.value = "";
+  // baseItems = [];
+
   if (supplierSelect) {
-    if (supplierSelect.value) loadItems(supplierSelect.value);
-    supplierSelect.addEventListener("change", e => {
+    if (supplierSelect.value) {
+      loadItems(supplierSelect.value);
+    }
+    supplierSelect.addEventListener("change", (e) => {
       loadItems(e.target.value);
     });
   }
 
-  /* ===============================
-     Autocomplete logic
-  =============================== */
-  function buildSuggestions(input, hidden, box) {
+  // -----------------------------
+  // Helpers
+  // -----------------------------
+  function textOf(it) {
+    return `${it.code || ""} ${it.name || ""}`.trim();
+  }
+
+  function getParts(input) {
+    const cell = input.closest(".item-cell");
+    if (!cell) return {};
+    return {
+      cell,
+      hidden: cell.querySelector(".item-id"),
+      box: cell.querySelector(".item-suggestions")
+    };
+  }
+
+  function closeAllSuggestions() {
+    tbody.querySelectorAll(".item-suggestions").forEach(box => {
+      box.innerHTML = "";
+      box.hidden = true;
+    });
+  }
+
+  function setActive(box, index) {
+    const items = Array.from(box.querySelectorAll(".suggest-item"));
+    items.forEach(el => el.classList.remove("active"));
+    if (items[index]) {
+      items[index].classList.add("active");
+      items[index].scrollIntoView({ block: "nearest" });
+    }
+  }
+
+  function buildSuggestions(input) {
+    const { hidden, box } = getParts(input);
+    if (!box || !hidden) return;
+
     const q = input.value.trim().toLowerCase();
     box.innerHTML = "";
-    if (!q || baseItems.length === 0) {
-      box.style.display = "none";
+
+    if (!supplierSelect || !supplierSelect.value || baseItems.length === 0) {
+      box.hidden = true;
       return;
     }
 
-    const matched = baseItems.filter(it => {
-      const text = `${it.code || ""} ${it.name || ""}`.toLowerCase();
-      return text.includes(q);
-    }).slice(0, 30);
+    // If empty query: show first 30 (so ArrowDown can open a list)
+    let matched = baseItems;
+    if (q) {
+      matched = baseItems.filter(it => textOf(it).toLowerCase().includes(q));
+    }
+    matched = matched.slice(0, 30);
 
     if (matched.length === 0) {
-      box.style.display = "none";
+      box.hidden = true;
       return;
     }
 
     matched.forEach((it, idx) => {
       const div = document.createElement("div");
-      div.textContent = `${it.code || ""} ${it.name}`;
+      div.className = "suggest-item";
+      div.textContent = textOf(it);
       div.dataset.id = it.id;
-      div.dataset.unit = it.unit ?? "";
+      div.dataset.unit = (it.unit ?? "");
       if (idx === 0) div.classList.add("active");
 
-      div.addEventListener("mousedown", () => {
-        selectItem(input, hidden, box, it);
+      // use mousedown so it works before blur
+      div.addEventListener("mousedown", (ev) => {
+        ev.preventDefault();
+        selectItem(input, it);
       });
 
       box.appendChild(div);
     });
 
-    box.style.display = "block";
+    box.hidden = false;
   }
 
-  function selectItem(input, hidden, box, item) {
-    input.value = `${item.code || ""} ${item.name}`;
-    hidden.value = item.id;
-    box.style.display = "none";
+  function selectItem(input, item) {
+    const { hidden, box } = getParts(input);
+    if (!hidden || !box) return;
 
+    input.value = textOf(item);
+    hidden.value = item.id;
+    box.hidden = true;
+
+    // auto-fill qty if empty
     const tr = input.closest("tr");
-    const qty = tr.querySelector(".qty-input");
+    const qty = tr ? tr.querySelector(".qty-input") : null;
     if (qty && !qty.value && item.unit) qty.value = item.unit;
+
+    // move focus next cell (qty)
     if (qty) qty.focus();
   }
 
-  /* ===============================
-     Keyboard control
-  =============================== */
-  tbody.addEventListener("keydown", e => {
+  function openSuggestions(input) {
+    const { box } = getParts(input);
+    if (!box) return;
+
+    // if closed or empty, rebuild first (empty query shows top items)
+    if (box.hidden || box.children.length === 0) {
+      buildSuggestions(input);
+    }
+    if (!box.hidden) {
+      setActive(box, 0);
+    }
+  }
+
+  // -----------------------------
+  // Input: typing -> filter
+  // -----------------------------
+  tbody.addEventListener("input", (e) => {
     const input = e.target;
     if (!input.classList.contains("item-autocomplete")) return;
 
-    const box = input.closest(".item-cell").querySelector(".item-suggestions");
-    const items = [...box.querySelectorAll("div")];
-    if (items.length === 0) return;
+    const { hidden } = getParts(input);
+    if (hidden) hidden.value = ""; // typing means "not fixed yet"
+    buildSuggestions(input);
+  });
 
-    let idx = items.findIndex(d => d.classList.contains("active"));
+  // -----------------------------
+  // Focus: optional auto-open
+  // (If you want auto-open on focus, uncomment)
+  // -----------------------------
+  // tbody.addEventListener("focusin", (e) => {
+  //   const input = e.target;
+  //   if (!input.classList.contains("item-autocomplete")) return;
+  //   openSuggestions(input);
+  // });
 
+  // -----------------------------
+  // Keyboard control
+  // ArrowDown: open / move
+  // ArrowUp: move
+  // Enter: select
+  // Esc: close
+  // -----------------------------
+  tbody.addEventListener("keydown", (e) => {
+    const input = e.target;
+    if (!input.classList.contains("item-autocomplete")) return;
+
+    const { box } = getParts(input);
+    if (!box) return;
+
+    // ↓ opens dropdown if closed
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      items[idx]?.classList.remove("active");
-      idx = Math.min(idx + 1, items.length - 1);
-      items[idx].classList.add("active");
-    }
 
-    if (e.key === "ArrowUp") {
-      e.preventDefault();
-      items[idx]?.classList.remove("active");
-      idx = Math.max(idx - 1, 0);
-      items[idx].classList.add("active");
-    }
+      if (box.hidden) {
+        openSuggestions(input);
+        return;
+      }
 
-    if (e.key === "Enter") {
-      e.preventDefault();
-      items[idx].dispatchEvent(new MouseEvent("mousedown"));
-    }
-  });
+      const items = Array.from(box.querySelectorAll(".suggest-item"));
+      if (items.length === 0) return;
 
-  /* ===============================
-     Input handler
-  =============================== */
-  tbody.addEventListener("input", e => {
-    const input = e.target;
-    if (!input.classList.contains("item-autocomplete")) return;
-
-    const cell = input.closest(".item-cell");
-    const hidden = cell.querySelector(".item-id");
-    const box = cell.querySelector(".item-suggestions");
-
-    hidden.value = "";
-    buildSuggestions(input, hidden, box);
-  });
-
-  /* ===============================
-     Click outside → close
-  =============================== */
-  document.addEventListener("click", e => {
-    document.querySelectorAll(".item-suggestions").forEach(box => {
-      if (!box.contains(e.target)) box.style.display = "none";
-    });
-  });
-});
-  function openSuggestions(input) {
-  const wrap = input.closest(".item-cell");
-  const box  = wrap.querySelector(".item-suggestions");
-
-  if (!box || box.children.length === 0) return;
-
-  box.hidden = false;
-
-  // highlight first item
-  const first = box.querySelector(".suggest-item");
-  if (first) {
-    first.classList.add("active");
-  }
-}
-  tbody.addEventListener("keydown", function (e) {
-  const input = e.target;
-  if (!input.classList.contains("item-autocomplete")) return;
-
-  const cell = input.closest(".item-cell");
-  const box  = cell.querySelector(".item-suggestions");
-  const items = box ? Array.from(box.querySelectorAll(".suggest-item")) : [];
-
-  if (!box || items.length === 0) return;
-
-  let index = items.findIndex(el => el.classList.contains("active"));
-
-  /* ↓ open / move down */
-  if (e.key === "ArrowDown") {
-    e.preventDefault();
-
-    if (box.hidden) {
-      openSuggestions(input);
+      let idx = items.findIndex(el => el.classList.contains("active"));
+      idx = (idx < 0) ? 0 : Math.min(idx + 1, items.length - 1);
+      setActive(box, idx);
       return;
     }
 
-    items.forEach(el => el.classList.remove("active"));
-    index = Math.min(index + 1, items.length - 1);
-    items[index].classList.add("active");
-    items[index].scrollIntoView({ block: "nearest" });
-  }
+    if (e.key === "ArrowUp") {
+      // if open, hijack; if closed, let cursor behave normally
+      if (box.hidden) return;
 
-  /* ↑ move up */
-  if (e.key === "ArrowUp") {
-    e.preventDefault();
-    items.forEach(el => el.classList.remove("active"));
-    index = Math.max(index - 1, 0);
-    items[index].classList.add("active");
-    items[index].scrollIntoView({ block: "nearest" });
-  }
+      e.preventDefault();
+      const items = Array.from(box.querySelectorAll(".suggest-item"));
+      if (items.length === 0) return;
 
-  /* Enter = select */
-  if (e.key === "Enter") {
-    e.preventDefault();
-    if (index >= 0) {
-      items[index].click();   // reuse click handler
+      let idx = items.findIndex(el => el.classList.contains("active"));
+      idx = (idx < 0) ? 0 : Math.max(idx - 1, 0);
+      setActive(box, idx);
+      return;
     }
-  }
 
-  /* Esc = close */
-  if (e.key === "Escape") {
-    box.hidden = true;
-    items.forEach(el => el.classList.remove("active"));
-  }
+    if (e.key === "Enter") {
+      // if dropdown open -> pick active
+      if (!box.hidden) {
+        e.preventDefault();
+        const active = box.querySelector(".suggest-item.active");
+        if (active) {
+          const id = active.dataset.id;
+          const item = baseItems.find(it => String(it.id) === String(id));
+          if (item) selectItem(input, item);
+        }
+        return;
+      }
+      // if dropdown closed, let Enter move naturally (your nav script / browser)
+      return;
+    }
+
+    if (e.key === "Escape") {
+      if (!box.hidden) {
+        e.preventDefault();
+        box.hidden = true;
+      }
+    }
+  });
+
+  // -----------------------------
+  // Click outside -> close
+  // -----------------------------
+  document.addEventListener("click", (e) => {
+    const inside = e.target.closest(".item-cell");
+    if (!inside) {
+      closeAllSuggestions();
+    }
+  });
 });
 </script>
 {% endblock %}
