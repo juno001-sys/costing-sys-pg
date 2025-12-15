@@ -18,4 +18,12 @@
   "usage.purchased_qty": "当月仕入数",
   "usage.used_qty": "利用数（差引）",
   "usage.ending_stock": "棚卸数（次月繰越）"
+
+  "nav.purchase_report": "仕入れ照会",
+  "nav.usage_report": "月次利用量照会",
+  "nav.cost_report": "売上原価月次推移",
+  "nav.suppliers_master": "仕入先マスタ",
+  "nav.items_master": "品目マスタ",
+  "nav.stores_master": "店舗マスタ&仕入れ先紐付け"
+
 }
