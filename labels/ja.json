@@ -131,5 +131,16 @@
   "suppliers.name": "仕入先名",
   "suppliers.phone": "電話",
   "suppliers.email": "Email",
+  "suppliers.address": "住所",
+  
+  "suppliers.master.title": "仕入先マスタ",
+  "suppliers.new.title": "新規登録",
+  "suppliers.list.title": "仕入先一覧",
+  "suppliers.empty": "仕入先が登録されていません。",
+
+  "suppliers.code": "仕入先コード",
+  "suppliers.name": "仕入先名",
+  "suppliers.phone": "電話",
+  "suppliers.email": "Email",
   "suppliers.address": "住所"
 }
