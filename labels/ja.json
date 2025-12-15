@@ -83,5 +83,23 @@
 
   "common.select": "（選択してください）",
   "common.create": "登録する",
-  "common.edit": "編集"
+  "common.edit": "編集",
+
+  {
+  "purchase.edit.title": "取引編集",
+  "purchase.edit.heading": "取引編集",
+  "purchase.delivery_date": "納品日",
+
+  "form.item": "品目",
+  "form.quantity": "数量",
+  "form.unit_price": "単価",
+
+  "common.code": "コード",
+  "common.unset": "（未設定）",
+  "common.update": "更新する",
+  "common.delete": "削除する",
+  "common.back": "戻る",
+
+  "purchase.delete_confirm_soft": "本当に削除しますか？（ソフトデリート）"
+}
 }
