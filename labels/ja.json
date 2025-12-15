@@ -3,14 +3,22 @@
   "nav.purchase_form": "仕入れ入力",
   "nav.inventory_count": "棚卸し入力",
   "nav.reports": "レポート",
+  "nav.purchase_report": "仕入れ照会",
+  "nav.usage_report": "月次利用量照会",
+  "nav.cost_report": "売上原価月次推移",
+  "nav.suppliers_master": "仕入先マスタ",
+  "nav.items_master": "品目マスタ",
+  "nav.stores_master": "店舗マスタ&仕入れ先紐付け",
 
   "report.usage.title": "月次利用量レポート",
+  "report.cost.title": "売上原価 月次推移",
 
   "form.store": "店舗",
   "form.supplier": "仕入先",
   "form.show": "表示",
 
   "common.all": "（全て）",
+  "common.total": "合計",
 
   "usage.item": "品目",
   "usage.metric": "指標",
@@ -19,11 +27,9 @@
   "usage.used_qty": "利用数（差引）",
   "usage.ending_stock": "棚卸数（次月繰越）",
 
-  "nav.purchase_report": "仕入れ照会",
-  "nav.usage_report": "月次利用量照会",
-  "nav.cost_report": "売上原価月次推移",
-  "nav.suppliers_master": "仕入先マスタ",
-  "nav.items_master": "品目マスタ",
-  "nav.stores_master": "店舗マスタ&仕入れ先紐付け"
-
+  "cost.category": "区分",
+  "cost.begin_inventory": "期首繰越",
+  "cost.purchase_amount": "仕入額",
+  "cost.cogs": "売上原価",
+  "cost.ending_inventory": "月末棚卸し"
 }
