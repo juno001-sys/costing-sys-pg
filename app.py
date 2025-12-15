@@ -11,7 +11,7 @@ from views.inventory import init_inventory_views
 from views.masters import init_master_views
 from views.purchases import init_purchase_views
 from views.reports import init_report_views
-
+from labels import label
 
 # ----------------------------------------
 # Flask app
@@ -39,6 +39,11 @@ def inject_version():
 def teardown_db(exc):
     close_db(exc)
 
+
+@app.context_processor
+def inject_labels():
+    # Usage in Jinja: {{ L("form.store") }}
+    return {"L": label}
 
 # ----------------------------------------
 # Helpers
