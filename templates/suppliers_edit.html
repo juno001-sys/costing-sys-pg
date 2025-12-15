@@ -1,43 +1,53 @@
 {% extends "base.html" %}
 
-{% block title %}仕入先編集{% endblock %}
+{% block title %}{{ t("suppliers.edit.title") }}{% endblock %}
 
 {% block content %}
-  <h2>仕入先編集 (ID: {{ supplier.id }})</h2>
+  <h2>
+    {{ t("suppliers.edit.heading") }} (ID: {{ supplier.id }})
+  </h2>
 
   <form method="post">
     <div>
-      <label>仕入先コード：</label>
+      <label>{{ t("suppliers.code") }}：</label>
       <input type="text" name="code" value="{{ supplier.code or '' }}">
     </div>
+
     <div style="margin-top: 4px;">
-      <label>仕入先名：</label>
+      <label>{{ t("suppliers.name") }}：</label>
       <input type="text" name="name" value="{{ supplier.name or '' }}" required>
     </div>
+
     <div style="margin-top: 4px;">
-      <label>電話：</label>
+      <label>{{ t("suppliers.phone") }}：</label>
       <input type="text" name="phone" value="{{ supplier.phone or '' }}">
     </div>
+
     <div style="margin-top: 4px;">
-      <label>Email：</label>
+      <label>{{ t("suppliers.email") }}：</label>
       <input type="email" name="email" value="{{ supplier.email or '' }}">
     </div>
+
     <div style="margin-top: 4px;">
-      <label>住所：</label>
+      <label>{{ t("suppliers.address") }}：</label>
       <input type="text" name="address" value="{{ supplier.address or '' }}">
     </div>
 
     <div style="margin-top: 12px;">
-      <button type="submit">更新する</button>
+      <button type="submit">{{ t("common.update") }}</button>
+
       <button
         type="submit"
         name="delete"
         value="1"
-        onclick="return confirm('本当に削除しますか？');"
+        onclick="return confirm('{{ t("common.confirm_delete") }}');"
       >
-        削除する
+        {{ t("common.delete") }}
       </button>
-      <a href="{{ url_for('suppliers_master') }}">戻る</a>
+
+      <a href="{{ url_for('suppliers_master') }}">
+        {{ t("common.back") }}
+      </a>
     </div>
   </form>
 {% endblock %}
