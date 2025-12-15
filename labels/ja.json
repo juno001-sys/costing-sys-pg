@@ -48,5 +48,24 @@
   "inventory.stock_amount": "在庫金額",
   "inventory.count_qty_input": "棚卸数（入力）",
 
-  "inventory.save": "棚卸結果を保存"
+  "inventory.save": "棚卸結果を保存",
+
+  
+  "items.edit.title": "品目編集",
+  "items.edit.heading": "品目編集",
+  "items.code": "コード",
+  "items.name": "品目名",
+  "items.case_size": "ケース入数",
+  "items.temp_zone": "温度帯",
+  "items.purchase_unit": "発注単位",
+  "items.inventory_unit": "在庫管理単位",
+  "items.min_purchase_unit": "最小発注単位",
+  "items.storage_cost": "保管コスト（円／月など）",
+  "items.is_internal": "内製品",
+
+  "common.unset": "（未設定）",
+  "common.update": "更新する",
+  "common.delete": "削除する",
+  "common.back": "戻る",
+  "common.confirm_delete": "本当に削除しますか？"
 }
