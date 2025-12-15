@@ -17,7 +17,7 @@
   "usage.total": "合計",
   "usage.purchased_qty": "当月仕入数",
   "usage.used_qty": "利用数（差引）",
-  "usage.ending_stock": "棚卸数（次月繰越）"
+  "usage.ending_stock": "棚卸数（次月繰越）",
 
   "nav.purchase_report": "仕入れ照会",
   "nav.usage_report": "月次利用量照会",
