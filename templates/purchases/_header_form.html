@@ -1,29 +1,31 @@
-<h2>仕入れ（納品書）入力</h2>
+<h2>{{ t("purchase.form.title") }}</h2>
 
 <form method="post" id="purchase-form">
-<input type="hidden" id="focus_after_reload" name="focus_after_reload" value="">
+  <input type="hidden" id="focus_after_reload" name="focus_after_reload" value="">
+
   <!-- 伝票ヘッダー -->
-    <div style="margin-bottom: 12px;">
-  <label style="margin-right: 16px;">
-    <span class="field-label">店舗：</span>
-    <select name="store_id"
-        id="store_id"
-        onchange="document.getElementById('focus_after_reload').value='supplier'; this.form.submit();">
-      <option value="">（店舗を選択）</option>
-      {% for st in stores %}
-        <option value="{{ st.id }}"
-          {% if selected_store_id == st.id %}selected{% endif %}>
-          {{ st.name }}
-        </option>
-      {% endfor %}
-    </select>
-  </label>
-</div>
   <div style="margin-bottom: 12px;">
     <label style="margin-right: 16px;">
-      <span class="field-label">仕入先：</span>
+      <span class="field-label">{{ t("form.store") }}：</span>
+      <select name="store_id"
+              id="store_id"
+              onchange="document.getElementById('focus_after_reload').value='supplier'; this.form.submit();">
+        <option value="">{{ t("inventory.select_store") }}</option>
+        {% for st in stores %}
+          <option value="{{ st.id }}"
+                  {% if selected_store_id == st.id %}selected{% endif %}>
+            {{ st.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+
+  <div style="margin-bottom: 12px;">
+    <label style="margin-right: 16px;">
+      <span class="field-label">{{ t("form.supplier") }}：</span>
       <select name="supplier_id" id="supplier_id" required>
-        <option value="">（仕入先を選択）</option>
+        <option value="">{{ t("purchase.select_supplier") }}</option>
         {% for sp in suppliers %}
           <option value="{{ sp.id }}">{{ sp.name }}</option>
         {% endfor %}
@@ -31,8 +33,9 @@
     </label>
 
     <label>
-      <span class="field-label">納品日：</span>
+      <span class="field-label">{{ t("purchase.delivery_date") }}：</span>
       <input type="date" name="delivery_date" id="delivery_date" required />
     </label>
   </div>
+
   <!-- 明細テーブル -->
