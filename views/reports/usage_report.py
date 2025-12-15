@@ -1,12 +1,10 @@
 from __future__ import annotations
 
+from flask import render_template, request
 from datetime import datetime
 
-from flask import render_template, request
-
-from . import reports_bp, get_db
-
-
+def register(app, get_db):
+    
 @reports_bp.route("/usage/report", methods=["GET"])
 def usage_report():
     db = get_db()
