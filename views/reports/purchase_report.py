@@ -7,7 +7,7 @@ def register(app, get_db):
     # ----------------------------------------
     # 仕入れ照会（月次・直近13ヶ月）
     # ----------------------------------------
-    @app.route("/purchases/report", methods=["GET"])
+    @app.route("/purchases/report", methods=["GET"], endpoint="purchase_report"))
     def purchase_report():
         db = get_db()
 
