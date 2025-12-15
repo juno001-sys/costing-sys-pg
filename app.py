@@ -1,22 +1,16 @@
-import os
-import sqlite3
-import psycopg2
-import urllib.parse
+from __future__ import annotations
+
 import json
-from datetime import datetime, date, timedelta
-from pathlib import Path
+import os
+from datetime import datetime, date
 
-from flask import (
-    Flask,
-    render_template,
-    request,
-    redirect,
-    url_for,
-    g,
-    flash,
-    jsonify,
-)
+from flask import Flask, flash, g, jsonify, redirect, render_template, request, url_for
 
+from db import get_db, close_db
+from views.inventory import init_inventory_views
+from views.masters import init_master_views
+from views.purchases import init_purchase_views
+from views.reports import init_report_views
 
 
 # ----------------------------------------
