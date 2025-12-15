@@ -32,7 +32,7 @@
       {% for r in rows %}
         <tr>
           <td>
-            <a href="{{ url_for('purchase_report_supplier', supplier_id=r.supplier_id, store_id=selected_store_id) }}">
+            <a href="{{ url_for('reports.purchase_report_supplier', supplier_id=r.supplier_id, store_id=selected_store_id) }}">
               {{ r.supplier_name }}
             </a>
           </td>
