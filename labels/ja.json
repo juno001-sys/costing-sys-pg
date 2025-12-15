@@ -104,5 +104,15 @@
   "purchase.total_qty": "合計数量",
   "report.monthly_total_amount": "月計 金額",
   "report.monthly_total_qty": "月計 数量",
-  "common.no_data": "データがありません。"
+  "common.no_data": "データがありません。",
+  
+  "stores.edit.title": "店舗編集",
+  "stores.edit.heading": "店舗編集",
+  "stores.name": "店舗名",
+  "stores.seats": "座席数",
+  "stores.opened_on": "開店日",
+  "stores.closed_on": "閉店日",
+  "stores.suppliers.title": "取扱仕入れ先",
+  "stores.disable": "無効化",
+  "stores.confirm_disable": "この店舗を無効化しますか？"
 }
