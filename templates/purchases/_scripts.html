@@ -372,7 +372,7 @@ calc_recalcAll();
    Step 2 + 5: Delete / Add rows (FIXED)
 =============================== */
 
-const tbody = document.getElementById("item-rows");   // ✅ define tbody
+const tbody = document.getElementById("item-rows");   // define tbody
 const rowCountInput = document.getElementById("row_count");
 const addBtn = document.getElementById("add-row-btn");
 
@@ -415,7 +415,7 @@ if (tbody) {
 
     tr.remove();
     renumberRowsAndNames();
-    calc_recalcAll(); // ✅ call Step1 calc directly
+    calc_recalcAll(); //  call Step1 calc directly
   });
 }
 
@@ -479,7 +479,7 @@ if (addBtn && tbody) {
     tbody.appendChild(tr);
 
     renumberRowsAndNames();
-    calc_recalcAll(); // ✅ recalc total after adding
+    calc_recalcAll(); // recalc total after adding
   });
 }
 
