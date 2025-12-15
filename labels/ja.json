@@ -114,5 +114,14 @@
   "stores.closed_on": "閉店日",
   "stores.suppliers.title": "取扱仕入れ先",
   "stores.disable": "無効化",
-  "stores.confirm_disable": "この店舗を無効化しますか？"
+  "stores.confirm_disable": "この店舗を無効化しますか？",
+  
+  "stores.master.title": "店舗マスタ",
+  "stores.name": "店舗名",
+  "stores.seats": "座席数",
+  "stores.opened_on": "開店日",
+  "stores.closed_on": "閉店日",
+  "stores.status": "状態",
+  "stores.active": "有効",
+  "stores.inactive": "無効"
 }
