@@ -96,5 +96,13 @@
   "form.amount": "金額",
   "report.purchase.title": "仕入れ照会（月次・仕入先別）",
   "common.no_data": "データがありません。",
-  "report.monthly_total": "月計"
+  "report.monthly_total": "月計",
+  
+  "report.purchase_supplier.title": "仕入れ照会",
+  "purchase.amount": "金額",
+  "purchase.total_amount": "合計金額",
+  "purchase.total_qty": "合計数量",
+  "report.monthly_total_amount": "月計 金額",
+  "report.monthly_total_qty": "月計 数量",
+  "common.no_data": "データがありません。"
 }
