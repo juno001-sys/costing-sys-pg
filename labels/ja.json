@@ -31,5 +31,8 @@
   "cost.begin_inventory": "期首繰越",
   "cost.purchase_amount": "仕入額",
   "cost.cogs": "売上原価",
-  "cost.ending_inventory": "月末棚卸し"
+  "cost.ending_inventory": "月末棚卸し",
+
+  "nav.home": "ホーム",
+  "home.welcome": "ようこそ！CMS Dev 環境です。"
 }
