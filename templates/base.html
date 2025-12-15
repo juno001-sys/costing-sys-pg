@@ -312,7 +312,7 @@
 
         <li>
           <a
-            href="{{ url_for('purchase_report') }}"
+            href="{{ url_for('reports.purchase_report') }}"
             class="{% if request.endpoint in ['purchase_report', 'purchase_report_supplier'] %}active{% endif %}"
           >
             仕入れ照会
@@ -321,7 +321,7 @@
 
         <li>
           <a
-            href="{{ url_for('usage_report') }}"
+            href="{{ url_for('reports.usage_report') }}"
             class="{% if request.endpoint == 'usage_report' %}active{% endif %}"
           >
             月次利用量照会
@@ -330,7 +330,7 @@
 
         <li>
           <a
-            href="{{ url_for('cost_report') }}"
+            href="{{ url_for('reports.cost_report') }}"
             class="{% if request.endpoint == 'cost_report' %}active{% endif %}"
           >
             売上原価月次推移
