@@ -78,5 +78,9 @@
   "purchase.edit.title": "取引編集",
   "purchase.edit.heading": "取引編集",
   "purchase.delivery_date": "納品日",
-  "purchase.delete_confirm_soft": "本当に削除しますか？（ソフトデリート）"
+  "purchase.delete_confirm_soft": "本当に削除しますか？（ソフトデリート）",
+ 
+  "form.amount": "金額",
+  "purchase.item_search_placeholder": "品名検索",
+  "purchase.add_row": "行を追加"
 }
