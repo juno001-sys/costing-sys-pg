@@ -1,15 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}月次利用量レポート{% endblock %}
+{% block title %}{{ L("report.usage.title") }}{% endblock %}
 
 {% block content %}
-  
 
 <form method="get" style="margin-bottom: 16px;">
   <label>
-    店舗：
+    {{ L("form.store") }}：
     <select name="store_id">
-      <option value="">（全店舗）</option>
+      <option value="">{{ L("common.all") }}</option>
       {% for s in stores %}
         <option value="{{ s.id }}"
                 {% if selected_store_id == s.id %}selected{% endif %}>
@@ -21,9 +20,9 @@
 
   <!-- ★ 仕入先プルダウン -->
   <label style="margin-left: 12px;">
-    仕入先：
+    {{ L("form.supplier") }}：
     <select name="supplier_id">
-      <option value="">（全仕入先）</option>
+      <option value="">{{ L("common.all") }}</option>
       {% for s in suppliers %}
         <option value="{{ s.id }}"
                 {% if selected_supplier_id == s.id %}selected{% endif %}>
@@ -33,67 +32,75 @@
     </select>
   </label>
 
-  <button type="submit" style="margin-left: 12px;">表示</button>
+  <button type="submit" style="margin-left: 12px;">
+    {{ L("form.show") }}
+  </button>
 </form>
 
-  <table class="monthly-table usage-table">
-    <thead>
-      <tr>
-        <th>品目</th>
-        <th>指標</th>
-        {% for ym in month_keys %}
-          <th>{{ ym }}</th>
-        {% endfor %}
-        <th>合計</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in item_rows %}
-
-        {# 1 行目：当月仕入数 #}
-        <tr class="row-metric-pur">
-          <td rowspan="3">{{ item.item_name }}</td>
-          <td class="metric-label">当月仕入数</td>
-          {% for ym in month_keys %}
-            {% set v = item.per_month[ym]["pur_qty"] %}
-            <td class="num">
-              {{ "{:,}".format(v) if v else "" }}
-            </td>
-          {% endfor %}
-          <td class="num">
-            {{ "{:,}".format(item.total_pur) if item.total_pur else "" }}
-          </td>
-        </tr>
-
-        {# 2 行目：利用数（差引） #}
-        <tr class="row-metric-use">
-          <td class="metric-label">利用数（差引）</td>
-          {% for ym in month_keys %}
-            {% set v = item.per_month[ym]["used_qty"] %}
-            <td class="num">
-              {{ "{:,}".format(v) if v else "" }}
-            </td>
-          {% endfor %}
-          <td class="num">
-            {{ "{:,}".format(item.total_used) if item.total_used else "" }}
-          </td>
-        </tr>
-
-        {# 3 行目：棚卸数（次月繰越） #}
-        <tr class="row-metric-stock">
-          <td class="metric-label">棚卸数（次月繰越）</td>
-          {% for ym in month_keys %}
-            {% set v = item.per_month[ym]["end_qty"] %}
-            <td class="num">
-              {{ "{:,}".format(v) if v else "" }}
-            </td>
-          {% endfor %}
-          <td class="num">
-            {{ "{:,}".format(item.total_end) if item.total_end else "" }}
-          </td>
-        </tr>
-
+<table class="monthly-table usage-table">
+  <thead>
+    <tr>
+      <th>{{ L("usage.item", "品目") }}</th>
+      <th>{{ L("usage.metric", "指標") }}</th>
+      {% for ym in month_keys %}
+        <th>{{ ym }}</th>
       {% endfor %}
-    </tbody>
-  </table>
+      <th>{{ L("usage.total", "合計") }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in item_rows %}
+
+      {# 1 行目：当月仕入数 #}
+      <tr class="row-metric-pur">
+        <td rowspan="3">{{ item.item_name }}</td>
+        <td class="metric-label">
+          {{ L("usage.purchased_qty", "当月仕入数") }}
+        </td>
+        {% for ym in month_keys %}
+          {% set v = item.per_month[ym]["pur_qty"] %}
+          <td class="num">
+            {{ "{:,}".format(v) if v else "" }}
+          </td>
+        {% endfor %}
+        <td class="num">
+          {{ "{:,}".format(item.total_pur) if item.total_pur else "" }}
+        </td>
+      </tr>
+
+      {# 2 行目：利用数（差引） #}
+      <tr class="row-metric-use">
+        <td class="metric-label">
+          {{ L("usage.used_qty", "利用数（差引）") }}
+        </td>
+        {% for ym in month_keys %}
+          {% set v = item.per_month[ym]["used_qty"] %}
+          <td class="num">
+            {{ "{:,}".format(v) if v else "" }}
+          </td>
+        {% endfor %}
+        <td class="num">
+          {{ "{:,}".format(item.total_used) if item.total_used else "" }}
+        </td>
+      </tr>
+
+      {# 3 行目：棚卸数（次月繰越） #}
+      <tr class="row-metric-stock">
+        <td class="metric-label">
+          {{ L("usage.ending_stock", "棚卸数（次月繰越）") }}
+        </td>
+        {% for ym in month_keys %}
+          {% set v = item.per_month[ym]["end_qty"] %}
+          <td class="num">
+            {{ "{:,}".format(v) if v else "" }}
+          </td>
+        {% endfor %}
+        <td class="num">
+          {{ "{:,}".format(item.total_end) if item.total_end else "" }}
+        </td>
+      </tr>
+
+    {% endfor %}
+  </tbody>
+</table>
 {% endblock %}
