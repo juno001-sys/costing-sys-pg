@@ -1,1 +1,11 @@
-
+{
+  "nav.home": "Home",
+  "nav.purchase_form": "New Purchase",
+  "nav.inventory_count": "Inventory Count",
+  "nav.reports": "Reports",
+  "report.usage.title": "Monthly Usage Report",
+  "form.store": "Store",
+  "form.supplier": "Supplier",
+  "form.show": "Show",
+  "common.all": "(All)"
+}
