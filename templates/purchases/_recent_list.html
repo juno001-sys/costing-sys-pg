@@ -1,0 +1,64 @@
+
+<!-- ============================
+     直近50件（既存）
+============================ -->
+<h2>直近 50 件</h2>
+
+<form method="get" style="margin-bottom: 12px;">
+  <label style="margin-right: 12px;">
+    店舗：
+    <select name="store_id">
+      <option value="">（全店舗）</option>
+      {% for s in stores %}
+        <option value="{{ s.id }}"
+                {% if selected_store_id == s.id %}selected{% endif %}>
+          {{ s.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <label style="margin-right: 12px;">
+    期間：
+    <input type="date" name="from_date" value="{{ from_date or '' }}">
+    〜
+    <input type="date" name="to_date" value="{{ to_date or '' }}">
+  </label>
+
+  <label style="margin-right: 12px;">
+    キーワード：
+    <input type="text" name="q" value="{{ search_q or '' }}">
+  </label>
+
+  <button type="submit">検索</button>
+  <a href="{{ url_for('new_purchase', clear='1', store_id=selected_store_id) }}">
+    条件クリア
+  </a>
+</form>
+
+<table class="monthly-table">
+  <thead>
+    <tr>
+      <th>納品日</th>
+      <th>仕入先</th>
+      <th>品目</th>
+      <th class="num">数量</th>
+      <th class="num">単価</th>
+      <th class="num">金額</th>
+      <th>編集</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in purchases %}
+    <tr>
+      <td>{{ p.delivery_date }}</td>
+      <td>{{ p.supplier_name }}</td>
+      <td>{{ p.item_name }}</td>
+      <td class="num">{{ "{:,}".format(p.quantity) }}</td>
+      <td class="num">{{ "{:,}".format(p.unit_price) }}</td>
+      <td class="num">{{ "{:,}".format(p.amount) }}</td>
+      <td><a href="{{ url_for('edit_purchase', purchase_id=p.id) }}">編集</a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
