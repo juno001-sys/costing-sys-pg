@@ -201,5 +201,3 @@ def register(app, get_db):
             end_inv_total=end_inv_total,
             cogs_total=cogs_total,
         )
-        
-return render_template("cost_report.html")
