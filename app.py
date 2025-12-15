@@ -21,12 +21,12 @@ app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "kurajika-dev")
 app.config["JSON_AS_ASCII"] = False
 
 APP_VERSION = os.getenv("RAILWAY_GIT_COMMIT_SHA", "dev")[:7]
-APP_ENV = os.getenv("APP_ENV", "development")  # dev / production / staging etc.
+APP_ENV = os.getenv("APP_ENV", "development")  # dev / mail / prod etc.
 
 
 @app.context_processor
 def inject_env():
-    # Use APP_ENV consistently (instead of ENV)
+    # For templates: {{ env }}
     return {"env": APP_ENV}
 
 
@@ -45,24 +45,30 @@ def inject_labels():
     # Usage in Jinja: {{ L("form.store") }}
     return {"L": label}
 
+
+# ----------------------------------------
+# i18n (t function)
+# ----------------------------------------
 def load_lang_dict(lang: str) -> dict:
-    path = os.path.join(app.root_path, "i18n", f"{lang}.json")
+    # ✅ FIX: load from ./labels/<lang>.json
+    path = os.path.join(app.root_path, "labels", f"{lang}.json")
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
-# simple cache
+
 _LANG_CACHE: dict[str, dict] = {}
+
 
 def get_translations(lang: str) -> dict:
     if lang not in _LANG_CACHE:
         _LANG_CACHE[lang] = load_lang_dict(lang)
     return _LANG_CACHE[lang]
 
+
 @app.context_processor
 def inject_t():
-    # choose language (for now fixed to Japanese)
+    # For now fixed to Japanese
     lang = "ja"
-
     translations = get_translations(lang)
 
     def t(key: str, default: str | None = None) -> str:
@@ -79,6 +85,7 @@ def log_purchase_change(db, purchase_id, action, old_row, new_row, changed_by=No
     purchases changes -> purchase_logs
     (Works for both sqlite row-like and dict rows)
     """
+
     def row_to_dict(row):
         if row is None:
             return None
@@ -128,7 +135,7 @@ def index():
 
 
 # ----------------------------------------
-# Register views (blueprint-style init)
+# Register views
 # ----------------------------------------
 init_purchase_views(app, get_db, log_purchase_change)
 init_report_views(app, get_db)
