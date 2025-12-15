@@ -34,5 +34,19 @@
   "cost.ending_inventory": "月末棚卸し",
 
   "nav.home": "ホーム",
-  "home.welcome": "ようこそ！CMS Dev 環境です。"
+  "home.welcome": "ようこそ！CMS Dev 環境です。",
+  
+  "inventory.count_date": "棚卸日",
+  "inventory.select_store": "（店舗を選択）",
+  "inventory.latest_count_dates": "直近棚卸し日",
+  "inventory.hint_select_store": "店舗を選択して「表示」を押すと、棚卸し対象の品目が表示されます。",
+
+  "inventory.item_code": "コード",
+  "inventory.item_name": "品目名",
+  "inventory.system_qty": "システム在庫",
+  "inventory.unit_price": "単価",
+  "inventory.stock_amount": "在庫金額",
+  "inventory.count_qty_input": "棚卸数（入力）",
+
+  "inventory.save": "棚卸結果を保存"
 }
