@@ -1,6 +1,9 @@
 from __future__ import annotations
-from . import reports_bp
 
+from flask import render_template, request
+from datetime import datetime
+
+def register(app, get_db):
     # ----------------------------------------
     # 売上原価 月次推移（棚卸しは最新棚卸しを FIFO 単価で評価）
     # /cost/report
@@ -198,3 +201,5 @@ from . import reports_bp
             end_inv_total=end_inv_total,
             cogs_total=cogs_total,
         )
+        
+return render_template("cost_report.html")
