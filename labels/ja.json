@@ -93,5 +93,8 @@
   "form.keyword": "キーワード",
   "common.search": "検索",
   "common.clear_conditions": "条件クリア",
-  "form.amount": "金額"
+  "form.amount": "金額",
+  "report.purchase.title": "仕入れ照会（月次・仕入先別）",
+  "common.no_data": "データがありません。",
+  "report.monthly_total": "月計"
 }
