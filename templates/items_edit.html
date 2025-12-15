@@ -1,20 +1,20 @@
 {% extends "base.html" %}
 
-{% block title %}品目編集{% endblock %}
+{% block title %}{{ t("items.edit.title") }}{% endblock %}
 
 {% block content %}
-  <h2>品目編集 (コード: {{ item.code }})</h2>
+  <h2>{{ t("items.edit.heading") }} ({{ t("items.code") }}: {{ item.code }})</h2>
 
   <form method="post">
     <div>
-      <label>品目名：</label>
+      <label>{{ t("items.name") }}：</label>
       <input type="text" name="name" value="{{ item.name }}" required>
     </div>
 
     <div style="margin-top: 4px;">
-      <label>仕入先：</label>
+      <label>{{ t("form.supplier") }}：</label>
       <select name="supplier_id">
-        <option value="">（未設定）</option>
+        <option value="">{{ t("common.unset") }}</option>
         {% for s in suppliers %}
           <option value="{{ s.id }}" {% if item.supplier_id == s.id %}selected{% endif %}>
             {{ s.code }} {{ s.name }}
@@ -24,14 +24,14 @@
     </div>
 
     <div style="margin-top: 4px;">
-      <label>ケース入数：</label>
+      <label>{{ t("items.case_size") }}：</label>
       <input type="text" name="unit" value="{{ item.unit or '' }}" size="6">
     </div>
 
     <div style="margin-top: 4px;">
-      <label>温度帯：</label>
+      <label>{{ t("items.temp_zone") }}：</label>
       <select name="temp_zone">
-        <option value="">（未設定）</option>
+        <option value="">{{ t("common.unset") }}</option>
         {% for z in ["冷凍","冷蔵","常温","その他"] %}
           <option value="{{ z }}" {% if item.temp_zone == z %}selected{% endif %}>
             {{ z }}
@@ -41,22 +41,22 @@
     </div>
 
     <div style="margin-top: 4px;">
-      <label>発注単位：</label>
+      <label>{{ t("items.purchase_unit") }}：</label>
       <input type="text" name="purchase_unit" value="{{ item.purchase_unit or '' }}" size="6">
     </div>
 
     <div style="margin-top: 4px;">
-      <label>在庫管理単位：</label>
+      <label>{{ t("items.inventory_unit") }}：</label>
       <input type="text" name="inventory_unit" value="{{ item.inventory_unit or '' }}" size="6">
     </div>
 
     <div style="margin-top: 4px;">
-      <label>最小発注単位：</label>
+      <label>{{ t("items.min_purchase_unit") }}：</label>
       <input type="text" name="min_purchase_unit" value="{{ item.min_purchase_unit or '' }}" size="6">
     </div>
 
     <div style="margin-top: 4px;">
-      <label>保管コスト（円／月など）：</label>
+      <label>{{ t("items.storage_cost") }}：</label>
       <input type="text" name="storage_cost" value="{{ item.storage_cost or '' }}" size="10">
     </div>
 
@@ -64,21 +64,21 @@
       <label>
         <input type="checkbox" name="is_internal" value="1"
                {% if item.is_internal %}checked{% endif %}>
-        内製品
+        {{ t("items.is_internal") }}
       </label>
     </div>
 
     <div style="margin-top: 12px;">
-      <button type="submit">更新する</button>
+      <button type="submit">{{ t("common.update") }}</button>
       <button
         type="submit"
         name="delete"
         value="1"
-        onclick="return confirm('本当に削除しますか？');"
+        onclick="return confirm('{{ t("common.confirm_delete") }}');"
       >
-        削除する
+        {{ t("common.delete") }}
       </button>
-      <a href="{{ url_for('items_master') }}">戻る</a>
+      <a href="{{ url_for('items_master') }}">{{ t("common.back") }}</a>
     </div>
   </form>
 {% endblock %}
