@@ -1,10 +1,15 @@
-{# templates/purchase_form.html #}
+{# purchase_form.html #}
 {% extends "base.html" %}
 
-{# 
-  Wrapper template.
-  We keep the legacy file unchanged and include it here,
-  so routing stays the same while we refactor safely.
-#}
+{% block title %}仕入れ（納品書）入力{% endblock %}
 
-{% include "purchase_form_legacy.html" %}
+{% block content %}
+  {% include "partials/_purchase_header.html" %}
+  {% include "partials/_purchase_detail_table.html" %}
+  {% include "partials/_purchase_recent_list.html" %}
+{% endblock %}
+
+{% block body_extra %}
+  {% include "partials/_purchase_scripts.html" %}
+{% endblock %}
+
