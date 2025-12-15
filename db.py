@@ -9,17 +9,27 @@ class DBWrapper:
         self.conn = conn
 
     def execute(self, sql, params=None):
-        """
-        Execute SQL with SQLite-style placeholders support.
-
-        - If SQL contains "?" placeholders, convert to Postgres "%s".
-        - params can be None / tuple / list.
-        """
+        # Keep None as None (psycopg2 allows it)
         if params is None:
             params = []
 
-        # SQLite "?" -> Postgres "%s"
+        # Convert SQLite style placeholders
         fixed_sql = sql.replace("?", "%s")
+
+        # ---- Guard: placeholder count vs params count ----
+        placeholder_count = fixed_sql.count("%s")
+        try:
+            param_count = len(params)
+        except TypeError:
+            # if params is not sized (rare), skip
+            param_count = None
+
+        if param_count is not None and placeholder_count != param_count:
+            raise ValueError(
+                f"SQL placeholder mismatch: %s={placeholder_count}, params={param_count}\n"
+                f"SQL: {fixed_sql}\n"
+                f"params: {params}"
+            )
 
         cur = self.conn.cursor()
         cur.execute(fixed_sql, params)
@@ -27,7 +37,6 @@ class DBWrapper:
 
     def __getattr__(self, name):
         return getattr(self.conn, name)
-
 
 def _current_env() -> str:
     """
