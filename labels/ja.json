@@ -123,5 +123,13 @@
   "stores.closed_on": "閉店日",
   "stores.status": "状態",
   "stores.active": "有効",
-  "stores.inactive": "無効"
+  "stores.inactive": "無効",
+  "suppliers.edit.title": "仕入先編集",
+  "suppliers.edit.heading": "仕入先編集",
+
+  "suppliers.code": "仕入先コード",
+  "suppliers.name": "仕入先名",
+  "suppliers.phone": "電話",
+  "suppliers.email": "Email",
+  "suppliers.address": "住所"
 }
