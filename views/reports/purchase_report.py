@@ -1,6 +1,9 @@
 from __future__ import annotations
-from . import reports_bp
 
+from flask import render_template, request
+from datetime import datetime
+
+def register(app, get_db):
     # ----------------------------------------
     # 仕入れ照会（月次・直近13ヶ月）
     # ----------------------------------------
