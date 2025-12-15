@@ -1,44 +1,47 @@
 {% extends "base.html" %}
 
-{% block title %}仕入れ照会（月次・仕入先別）{% endblock %}
+{% block title %}{{ t("report.purchase.title") }}{% endblock %}
 
 {% block content %}
-  
 
   <form method="get">
-    <label>店舗：</label>
+    <label>{{ t("form.store") }}：</label>
     <select name="store_id" onchange="this.form.submit()">
-      <option value="">（全店舗）</option>
+      <option value="">{{ t("common.all") }}</option>
       {% for s in stores %}
         <option value="{{ s.id }}" {% if selected_store_id == s.id %}selected{% endif %}>
           {{ s.name }}
         </option>
       {% endfor %}
     </select>
-    <noscript><button type="submit">表示</button></noscript>
+    <noscript>
+      <button type="submit">{{ t("form.show") }}</button>
+    </noscript>
   </form>
 
   <table border="1" cellpadding="4" cellspacing="0" style="margin-top: 12px;">
     <thead>
       <tr>
-        <th>仕入先</th>
+        <th>{{ t("form.supplier") }}</th>
         {% for ym in month_keys %}
           <th>{{ ym }}</th>
         {% endfor %}
-        <th>合計</th>
+        <th>{{ t("common.total") }}</th>
       </tr>
     </thead>
     <tbody>
       {% for r in rows %}
         <tr>
           <td>
-            <a href="{{ url_for('reports.purchase_report_supplier', supplier_id=r.supplier_id, store_id=selected_store_id) }}">
+            <a href="{{ url_for('reports.purchase_report_supplier',
+                                supplier_id=r.supplier_id,
+                                store_id=selected_store_id) }}">
               {{ r.supplier_name }}
             </a>
           </td>
           {% for ym in month_keys %}
             <td style="text-align:right;">
-              {{ "{:,}".format( r["values"].get(ym, 0)) }}
+              {{ "{:,}".format(r["values"].get(ym, 0)) }}
             </td>
           {% endfor %}
           <td style="text-align:right;">
@@ -47,18 +50,23 @@
         </tr>
       {% else %}
         <tr>
-          <td colspan="{{ month_keys|length + 2 }}">データがありません。</td>
+          <td colspan="{{ month_keys|length + 2 }}">
+            {{ t("common.no_data") }}
+          </td>
         </tr>
       {% endfor %}
     </tbody>
     <tfoot>
       <tr>
-        <th>月計</th>
+        <th>{{ t("report.monthly_total") }}</th>
         {% for total in month_totals %}
-          <th style="text-align:right;">{{ "{:,}".format(total) }}</th>
+          <th style="text-align:right;">
+            {{ "{:,}".format(total) }}
+          </th>
         {% endfor %}
         <th></th>
       </tr>
     </tfoot>
   </table>
+
 {% endblock %}
