@@ -290,81 +290,81 @@
     <!-- ============================
          横タブメニュー（全画面共通）
     ============================ -->
-    <nav>
-      <ul class="nav-tabs">
-        <li>
-          <a
-            href="{{ url_for('new_purchase') }}"
-            class="{% if request.endpoint in ['new_purchase', 'edit_purchase'] %}active{% endif %}"
-          >
-            仕入れ入力
-          </a>
-        </li>
+<nav>
+  <ul class="nav-tabs">
+    <li>
+      <a
+        href="{{ url_for('new_purchase') }}"
+        class="{% if request.endpoint in ['new_purchase', 'edit_purchase'] %}active{% endif %}"
+      >
+        {{ L("nav.purchase_form") }}
+      </a>
+    </li>
 
-        <li>
-          <a
-            href="{{ url_for('inventory_count') }}"
-            class="{% if request.endpoint == 'inventory_count' %}active{% endif %}"
-          >
-            棚卸し入力
-          </a>
-        </li>
+    <li>
+      <a
+        href="{{ url_for('inventory_count') }}"
+        class="{% if request.endpoint == 'inventory_count' %}active{% endif %}"
+      >
+        {{ L("nav.inventory_count") }}
+      </a>
+    </li>
 
-        <li>
-          <a
-            href="{{ url_for('reports.purchase_report') }}"
-            class="{% if request.endpoint in ['purchase_report', 'purchase_report_supplier'] %}active{% endif %}"
-          >
-            仕入れ照会
-          </a>
-        </li>
+    <li>
+      <a
+        href="{{ url_for('reports.purchase_report') }}"
+        class="{% if request.endpoint in ['purchase_report', 'purchase_report_supplier'] %}active{% endif %}"
+      >
+        {{ L("nav.purchase_report") }}
+      </a>
+    </li>
 
-        <li>
-          <a
-            href="{{ url_for('reports.usage_report') }}"
-            class="{% if request.endpoint == 'usage_report' %}active{% endif %}"
-          >
-            月次利用量照会
-          </a>
-        </li>
+    <li>
+      <a
+        href="{{ url_for('reports.usage_report') }}"
+        class="{% if request.endpoint == 'usage_report' %}active{% endif %}"
+      >
+        {{ L("nav.usage_report") }}
+      </a>
+    </li>
 
-        <li>
-          <a
-            href="{{ url_for('reports.cost_report') }}"
-            class="{% if request.endpoint == 'cost_report' %}active{% endif %}"
-          >
-            売上原価月次推移
-          </a>
-        </li>
+    <li>
+      <a
+        href="{{ url_for('reports.cost_report') }}"
+        class="{% if request.endpoint == 'cost_report' %}active{% endif %}"
+      >
+        {{ L("nav.cost_report") }}
+      </a>
+    </li>
 
-        <li>
-          <a
-            href="{{ url_for('suppliers_master') }}"
-            class="{% if request.endpoint == 'suppliers_master' %}active{% endif %}"
-          >
-            仕入先マスタ
-          </a>
-        </li>
+    <li>
+      <a
+        href="{{ url_for('suppliers_master') }}"
+        class="{% if request.endpoint == 'suppliers_master' %}active{% endif %}"
+      >
+        {{ L("nav.suppliers_master") }}
+      </a>
+    </li>
 
-        <li>
-          <a
-            href="{{ url_for('items_master') }}"
-            class="{% if request.endpoint in ['items_master', 'edit_item'] %}active{% endif %}"
-          >
-            品目マスタ
-          </a>
-        </li>
+    <li>
+      <a
+        href="{{ url_for('items_master') }}"
+        class="{% if request.endpoint in ['items_master', 'edit_item'] %}active{% endif %}"
+      >
+        {{ L("nav.items_master") }}
+      </a>
+    </li>
 
-      <li>
-  <a
-    href="{{ url_for('stores_master') }}"
-    class="{% if request.endpoint in ['stores_master', 'edit_store'] %}active{% endif %}"
-  >
-    店舗マスタ&仕入れ先紐付け
-  </a>
-</li>
-      </ul>
-    </nav>
+    <li>
+      <a
+        href="{{ url_for('stores_master') }}"
+        class="{% if request.endpoint in ['stores_master', 'edit_store'] %}active{% endif %}"
+      >
+        {{ L("nav.stores_master") }}
+      </a>
+    </li>
+  </ul>
+</nav>
 
     {% block content %}{% endblock %}
     {% block body_extra %}{% endblock %}
