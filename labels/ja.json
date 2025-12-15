@@ -85,5 +85,13 @@
   "purchase.add_row": "行を追加",
   
   "purchase.form.title": "仕入れ（納品書）入力",
-  "purchase.select_supplier": "（仕入先を選択）"
+  "purchase.select_supplier": "（仕入先を選択）",
+  
+  "purchase.recent.title": "直近 50 件",
+  "common.all_stores": "（全店舗）",
+  "form.period": "期間",
+  "form.keyword": "キーワード",
+  "common.search": "検索",
+  "common.clear_conditions": "条件クリア",
+  "form.amount": "金額"
 }
