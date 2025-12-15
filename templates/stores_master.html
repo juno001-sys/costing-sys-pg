@@ -1,24 +1,32 @@
 {% extends "base.html" %}
-{% block title %}店舗マスタ{% endblock %}
+{% block title %}{{ t("stores.master.title") }}{% endblock %}
 {% block content %}
 
 <form method="post" style="margin-bottom:20px;">
-  <label>コード：</label>
+  <label>{{ t("common.code") }}：</label>
   <input type="text" name="code">
-  <label>店舗名：</label>
+
+  <label>{{ t("stores.name") }}：</label>
   <input type="text" name="name">
-  <label>座席数：</label>
+
+  <label>{{ t("stores.seats") }}：</label>
   <input type="text" name="seats" size="5">
-  <label>開店日：</label>
+
+  <label>{{ t("stores.opened_on") }}：</label>
   <input type="date" name="opened_on">
 
-  <button type="submit">登録</button>
+  <button type="submit">{{ t("common.create") }}</button>
 </form>
 
 <table class="table">
   <tr>
-    <th>コード</th><th>店舗名</th><th>座席</th>
-    <th>開店</th><th>閉店</th><th>状態</th><th></th>
+    <th>{{ t("common.code") }}</th>
+    <th>{{ t("stores.name") }}</th>
+    <th>{{ t("stores.seats") }}</th>
+    <th>{{ t("stores.opened_on") }}</th>
+    <th>{{ t("stores.closed_on") }}</th>
+    <th>{{ t("stores.status") }}</th>
+    <th></th>
   </tr>
   {% for s in stores %}
   <tr>
@@ -27,8 +35,14 @@
     <td>{{ s.seats }}</td>
     <td>{{ s.opened_on }}</td>
     <td>{{ s.closed_on }}</td>
-    <td>{{ "有効" if s.is_active else "無効" }}</td>
-    <td><a href="{{ url_for('edit_store', store_id=s.id) }}">編集</a></td>
+    <td>
+      {{ t("stores.active") if s.is_active else t("stores.inactive") }}
+    </td>
+    <td>
+      <a href="{{ url_for('edit_store', store_id=s.id) }}">
+        {{ t("common.edit") }}
+      </a>
+    </td>
   </tr>
   {% endfor %}
 </table>
