@@ -1,15 +1,13 @@
-{# purchase_form.html #}
 {% extends "base.html" %}
 
 {% block title %}仕入れ（納品書）入力{% endblock %}
 
+{% block head_extra %}
+  {% include "purchases/_scripts.html" %}
+{% endblock %}
+
 {% block content %}
-  {% include "partials/_purchase_header.html" %}
-  {% include "partials/_purchase_detail_table.html" %}
-  {% include "partials/_purchase_recent_list.html" %}
+  {% include "purchases/_header_form.html" %}
+  {% include "purchases/_detail_table.html" %}
+  {% include "purchases/_recent_list.html" %}
 {% endblock %}
-
-{% block body_extra %}
-  {% include "partials/_purchase_scripts.html" %}
-{% endblock %}
-
