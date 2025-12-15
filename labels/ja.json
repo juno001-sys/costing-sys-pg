@@ -85,7 +85,6 @@
   "common.create": "登録する",
   "common.edit": "編集",
 
-  {
   "purchase.edit.title": "取引編集",
   "purchase.edit.heading": "取引編集",
   "purchase.delivery_date": "納品日",
@@ -101,5 +100,4 @@
   "common.back": "戻る",
 
   "purchase.delete_confirm_soft": "本当に削除しますか？（ソフトデリート）"
-}
 }
