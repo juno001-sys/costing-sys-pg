@@ -8,4 +8,10 @@
   "form.supplier": "仕入先",
   "form.show": "表示",
   "common.all": "（全て）"
+  "usage.item": "品目",
+  "usage.metric": "指標",
+  "usage.total": "合計",
+  "usage.purchased_qty": "当月仕入数",
+  "usage.used_qty": "利用数（差引）",
+  "usage.ending_stock": "棚卸数（次月繰越）"
 }
