@@ -2,21 +2,22 @@
 
   <table id="items-table" class="monthly-table">
     <colgroup>
-  <col style="width:60px;">
-  <col style="width:360px;">  <!-- 品目 -->
-  <col style="width:120px;">
-  <col style="width:140px;">
-  <col style="width:140px;">
-  <col style="width:70px;">
-</colgroup>
+      <col style="width:60px;">
+      <col style="width:360px;">  <!-- 品目 -->
+      <col style="width:120px;">
+      <col style="width:140px;">
+      <col style="width:140px;">
+      <col style="width:70px;">
+    </colgroup>
+
     <thead>
       <tr>
         <th style="width:40px;">No.</th>
-        <th style="width:320px;">品目</th>
-        <th class="num" style="width:90px;">数量</th>
-        <th class="num" style="width:110px;">単価</th>
-        <th class="num" style="width:120px;">金額</th>
-        <th style="width:50px;">削除</th>
+        <th style="width:320px;">{{ t("form.item") }}</th>
+        <th class="num" style="width:90px;">{{ t("form.quantity") }}</th>
+        <th class="num" style="width:110px;">{{ t("form.unit_price") }}</th>
+        <th class="num" style="width:120px;">{{ t("form.amount") }}</th>
+        <th style="width:50px;">{{ t("common.delete") }}</th>
       </tr>
     </thead>
 
@@ -24,29 +25,30 @@
       {% for i in range(1, 9) %}
       <tr>
         <td class="row-no">{{ i }}</td>
-            
-      <td class="item-cell">
-        <input type="text"
-               class="item-autocomplete nav-input"
-               data-col="0"
-               placeholder="品名検索"
-               autocomplete="off"
-               >
-      
-        <!-- value actually submitted -->
-        <input type="hidden"
-               name="item_id_{{ i }}"
-               class="item-id">
-      
-        <div class="item-suggestions" hidden></div>
-      </td>
+
+        <td class="item-cell">
+          <input type="text"
+                 class="item-autocomplete nav-input"
+                 data-col="0"
+                 placeholder="{{ t('purchase.item_search_placeholder') }}"
+                 autocomplete="off">
+
+          <!-- value actually submitted -->
+          <input type="hidden"
+                 name="item_id_{{ i }}"
+                 class="item-id">
+
+          <div class="item-suggestions" hidden></div>
+        </td>
+
         <td>
-  <input type="text"
-         name="quantity_{{ i }}"
-         class="num qty-input nav-input"
-         data-col="1"
-         style="width:80px;">
-</td>
+          <input type="text"
+                 name="quantity_{{ i }}"
+                 class="num qty-input nav-input"
+                 data-col="1"
+                 style="width:80px;">
+        </td>
+
         <td>
           <input type="text"
                  name="unit_price_{{ i }}"
@@ -71,22 +73,14 @@
     </tbody>
 
     <!-- 合計行 -->
-        <tfoot>
+    <tfoot>
       <tr class="total-row">
-        <td colspan="4" class="num">合計</td>
+        <td colspan="4" class="num">{{ t("common.total") }}</td>
         <td class="num" id="total_amount_display"></td>
       </tr>
     </tfoot>
   </table>
 
   <button type="button" id="add-row-btn" style="margin-top:12px;">
-    ＋ 行を追加
+    ＋ {{ t("purchase.add_row") }}
   </button>
-
-  <div style="margin-top:16px;">
-    <button type="submit">登録</button>
-  </div>
-
-</form>
-
-<hr style="margin:32px 0;">
