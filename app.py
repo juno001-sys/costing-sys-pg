@@ -45,6 +45,32 @@ def inject_labels():
     # Usage in Jinja: {{ L("form.store") }}
     return {"L": label}
 
+def load_lang_dict(lang: str) -> dict:
+    path = os.path.join(app.root_path, "i18n", f"{lang}.json")
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+# simple cache
+_LANG_CACHE: dict[str, dict] = {}
+
+def get_translations(lang: str) -> dict:
+    if lang not in _LANG_CACHE:
+        _LANG_CACHE[lang] = load_lang_dict(lang)
+    return _LANG_CACHE[lang]
+
+@app.context_processor
+def inject_t():
+    # choose language (for now fixed to Japanese)
+    lang = "ja"
+
+    translations = get_translations(lang)
+
+    def t(key: str, default: str | None = None) -> str:
+        return translations.get(key, default or key)
+
+    return {"t": t, "lang": lang}
+
+
 # ----------------------------------------
 # Helpers
 # ----------------------------------------
