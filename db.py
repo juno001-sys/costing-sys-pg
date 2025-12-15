@@ -3,17 +3,31 @@ import psycopg2
 import psycopg2.extras
 from flask import g
 
+
 class DBWrapper:
     def __init__(self, conn):
         self.conn = conn
 
-    def execute(self, *args, **kwargs):
+    def execute(self, sql, params=None):
+        """
+        Execute SQL with SQLite-style placeholders support.
+
+        - If SQL contains "?" placeholders, convert to Postgres "%s".
+        - params can be None / tuple / list.
+        """
+        if params is None:
+            params = []
+
+        # SQLite "?" -> Postgres "%s"
+        fixed_sql = sql.replace("?", "%s")
+
         cur = self.conn.cursor()
-        cur.execute(*args, **kwargs)
+        cur.execute(fixed_sql, params)
         return cur
 
     def __getattr__(self, name):
         return getattr(self.conn, name)
+
 
 def _current_env() -> str:
     """
@@ -29,6 +43,7 @@ def _current_env() -> str:
     if env in ("dev", "development", "local"):
         return "development"
     return env  # allow custom names like "staging"
+
 
 def _db_url_for_env(env: str) -> str:
     """
@@ -51,6 +66,7 @@ def _db_url_for_env(env: str) -> str:
         )
     return url
 
+
 def get_db():
     if "db" not in g:
         env = _current_env()
@@ -64,7 +80,13 @@ def get_db():
 
     return g.db
 
+
 def close_db(e=None):
     db = g.pop("db", None)
     if db is not None:
-        db.close()
+        # db is DBWrapper; ensure we close the underlying connection
+        try:
+            db.conn.close()
+        except Exception:
+            # fallback
+            db.close()
