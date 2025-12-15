@@ -1,21 +1,20 @@
 {% extends "base.html" %}
 
-{% block title %}棚卸し入力{% endblock %}
+{% block title %}{{ t("nav.inventory_count") }}{% endblock %}
 
 {% block content %}
 
-
-<!-- 店舗・日付選択（GET） -->
+<!-- Store + date selector (GET) -->
 <form method="get" style="margin-bottom: 12px;">
   <label style="margin-right: 16px;">
-    棚卸日：
+    {{ t("inventory.count_date") }}：
     <input type="date" name="count_date" value="{{ count_date }}">
   </label>
 
   <label style="margin-right: 16px;">
-    店舗：
+    {{ t("form.store") }}：
     <select name="store_id" id="store_id">
-      <option value="">（店舗を選択）</option>
+      <option value="">{{ t("inventory.select_store") }}</option>
       {% for s in stores %}
         <option value="{{ s.id }}"
                 {% if selected_store_id == s.id %}selected{% endif %}>
@@ -25,13 +24,13 @@
     </select>
   </label>
 
-  <button type="submit">表示</button>
+  <button type="submit">{{ t("form.show") }}</button>
 </form>
 
 {% if selected_store_id %}
   {% if latest_dates %}
     <p>
-      直近棚卸し日：
+      {{ t("inventory.latest_count_dates") }}：
       {% for d in latest_dates %}
         <a href="{{ url_for('inventory_count',
                             store_id=selected_store_id,
@@ -44,11 +43,11 @@
 {% endif %}
 
 {% if not selected_store_id %}
-  <p>店舗を選択して「表示」を押すと、棚卸し対象の品目が表示されます。</p>
+  <p>{{ t("inventory.hint_select_store") }}</p>
 {% endif %}
 
 {% if items %}
-  <!-- 棚卸し登録フォーム（POST） -->
+  <!-- Inventory submit form (POST) -->
   <form method="post" id="inventory-form">
     <input type="hidden" name="store_id" value="{{ selected_store_id }}">
     <input type="hidden" name="count_date" value="{{ count_date }}">
@@ -64,12 +63,12 @@
         <table class="monthly-table">
           <thead>
             <tr>
-              <th>コード</th>
-              <th>品目名</th>
-              <th class="num">システム在庫</th>
-              <th class="num">単価</th>
-              <th class="num">在庫金額</th>
-              <th class="num">棚卸数（入力）</th>
+              <th>{{ t("inventory.item_code") }}</th>
+              <th>{{ t("inventory.item_name") }}</th>
+              <th class="num">{{ t("inventory.system_qty") }}</th>
+              <th class="num">{{ t("inventory.unit_price") }}</th>
+              <th class="num">{{ t("inventory.stock_amount") }}</th>
+              <th class="num">{{ t("inventory.count_qty_input") }}</th>
             </tr>
           </thead>
           <tbody>
@@ -112,7 +111,7 @@
     {% endfor %}
 
     <div style="margin-top:16px;">
-      <button type="submit">棚卸結果を保存</button>
+      <button type="submit">{{ t("inventory.save") }}</button>
     </div>
   </form>
 {% endif %}
