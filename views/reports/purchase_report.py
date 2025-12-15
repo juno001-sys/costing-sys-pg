@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+
 from flask import render_template, request
 
 from . import reports_bp, get_db
@@ -16,6 +17,7 @@ def purchase_report():
 
     store_id = request.args.get("store_id") or ""
 
+    # last 13 months
     today = datetime.now().date()
     year, month = today.year, today.month
 
@@ -37,11 +39,11 @@ def purchase_report():
         "p.delivery_date >= %s",
         "p.delivery_date < %s",
     ]
-    params = [start_date, end_date]
+    params: list[object] = [start_date, end_date]
 
     if store_id:
         where.append("p.store_id = %s")
-        params.append(store_id)
+        params.append(int(store_id))
 
     sql = f"""
         SELECT
@@ -62,14 +64,19 @@ def purchase_report():
     supplier_map = {}
     for r in rows_raw:
         sid = r["supplier_id"] or 0
-        supplier_map.setdefault(sid, {
-            "supplier_id": sid,
-            "supplier_name": r["supplier_name"] or "(Unknown)",
-            "values": {},
-            "total": 0,
-        })
-        supplier_map[sid]["values"][r["ym"]] = r["total_amount"] or 0
-        supplier_map[sid]["total"] += r["total_amount"] or 0
+        if sid not in supplier_map:
+            supplier_map[sid] = {
+                "supplier_id": sid,
+                "supplier_name": r["supplier_name"] or "(Unknown)",
+                "values": {k: 0 for k in month_keys},  # ensure all months exist
+                "total": 0,
+            }
+
+        ym = r["ym"]
+        amt = r["total_amount"] or 0
+        if ym in supplier_map[sid]["values"]:
+            supplier_map[sid]["values"][ym] = amt
+        supplier_map[sid]["total"] += amt
 
     rows = list(supplier_map.values())
 
