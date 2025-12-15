@@ -16,9 +16,23 @@
   "form.store": "店舗",
   "form.supplier": "仕入先",
   "form.show": "表示",
+  "form.item": "品目",
+  "form.quantity": "数量",
+  "form.unit_price": "単価",
 
   "common.all": "（全て）",
   "common.total": "合計",
+  "common.unset": "（未設定）",
+  "common.update": "更新する",
+  "common.delete": "削除する",
+  "common.back": "戻る",
+  "common.confirm_delete": "本当に削除しますか？",
+  "common.select": "（選択してください）",
+  "common.create": "登録する",
+  "common.edit": "編集",
+  "common.code": "コード",
+
+  "home.welcome": "ようこそ！CMS Dev 環境です。",
 
   "usage.item": "品目",
   "usage.metric": "指標",
@@ -33,26 +47,24 @@
   "cost.cogs": "売上原価",
   "cost.ending_inventory": "月末棚卸し",
 
-  "nav.home": "ホーム",
-  "home.welcome": "ようこそ！CMS Dev 環境です。",
-  
   "inventory.count_date": "棚卸日",
   "inventory.select_store": "（店舗を選択）",
   "inventory.latest_count_dates": "直近棚卸し日",
   "inventory.hint_select_store": "店舗を選択して「表示」を押すと、棚卸し対象の品目が表示されます。",
-
   "inventory.item_code": "コード",
   "inventory.item_name": "品目名",
   "inventory.system_qty": "システム在庫",
   "inventory.unit_price": "単価",
   "inventory.stock_amount": "在庫金額",
   "inventory.count_qty_input": "棚卸数（入力）",
-
   "inventory.save": "棚卸結果を保存",
 
-  
   "items.edit.title": "品目編集",
   "items.edit.heading": "品目編集",
+  "items.master.title": "品目マスタ",
+  "items.new.title": "新規登録",
+  "items.list.title": "品目一覧",
+  "items.empty": "品目が登録されていません。",
   "items.code": "コード",
   "items.name": "品目名",
   "items.case_size": "ケース入数",
@@ -63,41 +75,8 @@
   "items.storage_cost": "保管コスト（円／月など）",
   "items.is_internal": "内製品",
 
-  "common.unset": "（未設定）",
-  "common.update": "更新する",
-  "common.delete": "削除する",
-  "common.back": "戻る",
-  "common.confirm_delete": "本当に削除しますか？",
-
-  
-  "items.master.title": "品目マスタ",
-  "items.new.title": "新規登録",
-  "items.list.title": "品目一覧",
-  "items.empty": "品目が登録されていません。",
-
-  "items.code": "コード",
-  "items.name": "品目名",
-  "items.case_size": "ケース入数",
-  "items.temp_zone": "温度帯",
-  "items.is_internal": "内製品",
-
-  "common.select": "（選択してください）",
-  "common.create": "登録する",
-  "common.edit": "編集",
-
   "purchase.edit.title": "取引編集",
   "purchase.edit.heading": "取引編集",
   "purchase.delivery_date": "納品日",
-
-  "form.item": "品目",
-  "form.quantity": "数量",
-  "form.unit_price": "単価",
-
-  "common.code": "コード",
-  "common.unset": "（未設定）",
-  "common.update": "更新する",
-  "common.delete": "削除する",
-  "common.back": "戻る",
-
   "purchase.delete_confirm_soft": "本当に削除しますか？（ソフトデリート）"
 }
