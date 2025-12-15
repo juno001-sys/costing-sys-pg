@@ -67,5 +67,21 @@
   "common.update": "更新する",
   "common.delete": "削除する",
   "common.back": "戻る",
-  "common.confirm_delete": "本当に削除しますか？"
+  "common.confirm_delete": "本当に削除しますか？",
+
+  
+  "items.master.title": "品目マスタ",
+  "items.new.title": "新規登録",
+  "items.list.title": "品目一覧",
+  "items.empty": "品目が登録されていません。",
+
+  "items.code": "コード",
+  "items.name": "品目名",
+  "items.case_size": "ケース入数",
+  "items.temp_zone": "温度帯",
+  "items.is_internal": "内製品",
+
+  "common.select": "（選択してください）",
+  "common.create": "登録する",
+  "common.edit": "編集"
 }
