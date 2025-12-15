@@ -1,1 +1,11 @@
-
+{
+  "nav.home": "ホーム",
+  "nav.purchase_form": "仕入れ入力",
+  "nav.inventory_count": "棚卸し入力",
+  "nav.reports": "レポート",
+  "report.usage.title": "月次利用量レポート",
+  "form.store": "店舗",
+  "form.supplier": "仕入先",
+  "form.show": "表示",
+  "common.all": "（全て）"
+}
