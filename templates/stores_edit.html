@@ -1,38 +1,38 @@
 {% extends "base.html" %}
-{% block title %}店舗編集{% endblock %}
+{% block title %}{{ t("stores.edit.title") }}{% endblock %}
 
 {% block content %}
-<h2>店舗編集</h2>
+<h2>{{ t("stores.edit.heading") }}</h2>
 
 <form method="post">
   <div class="form-group">
-    <label>コード：</label>
+    <label>{{ t("common.code") }}：</label>
     <input type="text" name="code" value="{{ store.code or '' }}">
   </div>
 
   <div class="form-group">
-    <label>店舗名：</label>
+    <label>{{ t("stores.name") }}：</label>
     <input type="text" name="name" value="{{ store.name or '' }}" required>
   </div>
 
   <div class="form-group">
-    <label>座席数：</label>
+    <label>{{ t("stores.seats") }}：</label>
     <input type="text" name="seats" value="{{ store.seats or '' }}">
   </div>
 
   <div class="form-group">
-    <label>開店日：</label>
+    <label>{{ t("stores.opened_on") }}：</label>
     <input type="date" name="opened_on" value="{{ store.opened_on or '' }}">
   </div>
 
   <div class="form-group">
-    <label>閉店日：</label>
+    <label>{{ t("stores.closed_on") }}：</label>
     <input type="date" name="closed_on" value="{{ store.closed_on or '' }}">
   </div>
 
   <hr>
 
-  <h3>取扱仕入れ先</h3>
+  <h3>{{ t("stores.suppliers.title") }}</h3>
   <div class="supplier-checkbox-list">
     {% for s in suppliers %}
       <label style="display:block; margin-bottom:4px;">
@@ -49,15 +49,15 @@
 
   <hr>
 
-  <button type="submit">更新</button>
+  <button type="submit">{{ t("common.update") }}</button>
 
   <button
     type="submit"
     name="delete"
     value="1"
-    onclick="return confirm('この店舗を無効化しますか？');"
+    onclick="return confirm('{{ t("stores.confirm_disable") }}');"
   >
-    無効化
+    {{ t("stores.disable") }}
   </button>
 </form>
 {% endblock %}
