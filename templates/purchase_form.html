@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}仕入れ（納品書）入力{% endblock %}
+{% block title %}{{ t("purchase.form.title") }}{% endblock %}
 
-{# ✅ Put the old CSS here so amount-display comes back #}
+{# Put the old CSS here so amount-display comes back #}
 {% block head_extra %}
 <style>
   /* 金額欄は「表示専用」っぽく */
@@ -17,7 +17,13 @@
 
   /* (keep the rest of your old purchase_form.html CSS here) */
   .item-cell { position: relative; padding-right: 8px; }
-  .item-autocomplete { width: 100%; box-sizing: border-box; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item-autocomplete {
+    width: 100%;
+    box-sizing: border-box;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
   .item-suggestions {
     position: absolute;
@@ -44,7 +50,7 @@
 {% endblock %}
 
 {% block content %}
-<h2>仕入れ（納品書）入力</h2>
+<h2>{{ t("purchase.form.title") }}</h2>
 
 <form method="post" id="purchase-form">
   <input type="hidden" id="focus_after_reload" name="focus_after_reload" value="">
@@ -53,7 +59,7 @@
   {% include "purchases/_detail_table.html" %}
 
   <div style="margin-top:16px;">
-    <button type="submit">登録</button>
+    <button type="submit">{{ t("common.create") }}</button>
   </div>
 </form>
 
@@ -62,7 +68,7 @@
 {% include "purchases/_recent_list.html" %}
 {% endblock %}
 
-{# ✅ Make sure scripts load at the very end of body #}
+{#  Make sure scripts load at the very end of body #}
 {% block body_extra %}
 {% include "purchases/_scripts.html" %}
 {% endblock %}
