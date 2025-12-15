@@ -1,14 +1,13 @@
-
 <!-- ============================
-     直近50件（既存）
+     Recent 50 purchases
 ============================ -->
-<h2>直近 50 件</h2>
+<h2>{{ t("purchase.recent.title") }}</h2>
 
 <form method="get" style="margin-bottom: 12px;">
   <label style="margin-right: 12px;">
-    店舗：
+    {{ t("form.store") }}：
     <select name="store_id">
-      <option value="">（全店舗）</option>
+      <option value="">{{ t("common.all_stores") }}</option>
       {% for s in stores %}
         <option value="{{ s.id }}"
                 {% if selected_store_id == s.id %}selected{% endif %}>
@@ -19,33 +18,33 @@
   </label>
 
   <label style="margin-right: 12px;">
-    期間：
+    {{ t("form.period") }}：
     <input type="date" name="from_date" value="{{ from_date or '' }}">
     〜
     <input type="date" name="to_date" value="{{ to_date or '' }}">
   </label>
 
   <label style="margin-right: 12px;">
-    キーワード：
+    {{ t("form.keyword") }}：
     <input type="text" name="q" value="{{ search_q or '' }}">
   </label>
 
-  <button type="submit">検索</button>
+  <button type="submit">{{ t("common.search") }}</button>
   <a href="{{ url_for('new_purchase', clear='1', store_id=selected_store_id) }}">
-    条件クリア
+    {{ t("common.clear_conditions") }}
   </a>
 </form>
 
 <table class="monthly-table">
   <thead>
     <tr>
-      <th>納品日</th>
-      <th>仕入先</th>
-      <th>品目</th>
-      <th class="num">数量</th>
-      <th class="num">単価</th>
-      <th class="num">金額</th>
-      <th>編集</th>
+      <th>{{ t("purchase.delivery_date") }}</th>
+      <th>{{ t("form.supplier") }}</th>
+      <th>{{ t("form.item") }}</th>
+      <th class="num">{{ t("form.quantity") }}</th>
+      <th class="num">{{ t("form.unit_price") }}</th>
+      <th class="num">{{ t("form.amount") }}</th>
+      <th>{{ t("common.edit") }}</th>
     </tr>
   </thead>
   <tbody>
@@ -57,7 +56,9 @@
       <td class="num">{{ "{:,}".format(p.quantity) }}</td>
       <td class="num">{{ "{:,}".format(p.unit_price) }}</td>
       <td class="num">{{ "{:,}".format(p.amount) }}</td>
-      <td><a href="{{ url_for('edit_purchase', purchase_id=p.id) }}">編集</a></td>
+      <td>
+        <a href="{{ url_for('edit_purchase', purchase_id=p.id) }}">{{ t("common.edit") }}</a>
+      </td>
     </tr>
     {% endfor %}
   </tbody>
