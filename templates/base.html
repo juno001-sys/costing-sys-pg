@@ -318,7 +318,7 @@
         href="{{ url_for('inventory_count') }}"
         class="{% if request.endpoint == 'inventory_count' %}active{% endif %}"
       >
-        {{ L("nav.inventory_count") }}
+        {{ t("nav.inventory_count") }}
       </a>
     </li>
 
@@ -327,7 +327,7 @@
         href="{{ url_for('reports.purchase_report') }}"
         class="{% if request.endpoint in ['purchase_report', 'purchase_report_supplier'] %}active{% endif %}"
       >
-        {{ L("nav.purchase_report") }}
+        {{ t("nav.purchase_report") }}
       </a>
     </li>
 
@@ -336,7 +336,7 @@
         href="{{ url_for('reports.usage_report') }}"
         class="{% if request.endpoint == 'usage_report' %}active{% endif %}"
       >
-        {{ L("nav.usage_report") }}
+        {{ t("nav.usage_report") }}
       </a>
     </li>
 
@@ -345,7 +345,7 @@
         href="{{ url_for('reports.cost_report') }}"
         class="{% if request.endpoint == 'cost_report' %}active{% endif %}"
       >
-        {{ L("nav.cost_report") }}
+        {{ t("nav.cost_report") }}
       </a>
     </li>
 
@@ -354,7 +354,7 @@
         href="{{ url_for('suppliers_master') }}"
         class="{% if request.endpoint == 'suppliers_master' %}active{% endif %}"
       >
-        {{ L("nav.suppliers_master") }}
+        {{ t("nav.suppliers_master") }}
       </a>
     </li>
 
@@ -363,7 +363,7 @@
         href="{{ url_for('items_master') }}"
         class="{% if request.endpoint in ['items_master', 'edit_item'] %}active{% endif %}"
       >
-        {{ L("nav.items_master") }}
+        {{ t("nav.items_master") }}
       </a>
     </li>
 
@@ -372,7 +372,7 @@
         href="{{ url_for('stores_master') }}"
         class="{% if request.endpoint in ['stores_master', 'edit_store'] %}active{% endif %}"
       >
-        {{ L("nav.stores_master") }}
+        {{ t("nav.stores_master") }}
       </a>
     </li>
   </ul>
