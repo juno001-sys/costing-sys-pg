@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}{{ L("report.cost.title") }}{% endblock %}
+{% block title %}{{ t("report.cost.title") }}{% endblock %}
 
 {% block content %}
 
   <form method="get" style="margin-bottom: 16px;">
     <label>
-      {{ L("form.store") }}：
+      {{ t("form.store") }}：
       <select name="store_id">
-        <option value="">{{ L("common.all") }}</option>
+        <option value="">{{ t("common.all") }}</option>
         {% for s in stores %}
           <option value="{{ s.id }}"
                   {% if selected_store_id == s.id %}selected{% endif %}>
@@ -17,17 +17,17 @@
         {% endfor %}
       </select>
     </label>
-    <button type="submit">{{ L("form.show") }}</button>
+    <button type="submit">{{ t("form.show") }}</button>
   </form>
 
   <table class="monthly-table">
     <thead>
       <tr>
-        <th>{{ L("cost.category") }}</th>
+        <th>{{ t("cost.category") }}</th>
         {% for ym in month_keys %}
           <th>{{ ym }}</th>
         {% endfor %}
-        <th>{{ L("common.total") }}</th>
+        <th>{{ t("common.total") }}</th>
       </tr>
     </thead>
 
@@ -35,7 +35,7 @@
 
       <!-- 期首繰越 -->
       <tr>
-        <td>{{ L("cost.begin_inventory") }}</td>
+        <td>{{ t("cost.begin_inventory") }}</td>
         {% for ym in month_keys %}
           {% set v = beg_inv_by_month[ym] %}
           <td class="num">
@@ -53,7 +53,7 @@
 
       <!-- 仕入額 -->
       <tr>
-        <td>{{ L("cost.purchase_amount") }}</td>
+        <td>{{ t("cost.purchase_amount") }}</td>
         {% for ym in month_keys %}
           {% set v = purchases_by_month[ym] %}
           <td class="num">
@@ -71,7 +71,7 @@
 
       <!-- 売上原価（強調行） -->
       <tr class="cogs-row">
-        <td>{{ L("cost.cogs") }}</td>
+        <td>{{ t("cost.cogs") }}</td>
         {% for ym in month_keys %}
           {% set v = cogs_by_month[ym] %}
           <td class="num">
@@ -89,7 +89,7 @@
 
       <!-- 月末棚卸し -->
       <tr>
-        <td>{{ L("cost.ending_inventory") }}</td>
+        <td>{{ t("cost.ending_inventory") }}</td>
         {% for ym in month_keys %}
           {% set v = end_inv_by_month[ym] %}
           <td class="num">
