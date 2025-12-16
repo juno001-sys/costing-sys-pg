@@ -4,7 +4,7 @@ import json
 import os
 from datetime import datetime, date
 
-from flask import Flask, g, render_template
+from flask import Flask, g, render_template, session, request, redirect, url_for
 
 from db import get_db, close_db
 from views.inventory import init_inventory_views
@@ -22,6 +22,8 @@ app.config["JSON_AS_ASCII"] = False
 
 APP_VERSION = os.getenv("RAILWAY_GIT_COMMIT_SHA", "dev")[:7]
 APP_ENV = os.getenv("APP_ENV", "development")  # dev / mail / prod etc.
+SUPPORTED_LANGS = ["ja", "en"]
+DEFAULT_LANG = "ja"
 
 
 @app.context_processor
@@ -67,15 +69,17 @@ def get_translations(lang: str) -> dict:
 
 @app.context_processor
 def inject_t():
-    # For now fixed to Japanese
-    lang = "ja"
+    lang = get_lang()
     translations = get_translations(lang)
 
     def t(key: str, default: str | None = None) -> str:
         return translations.get(key, default or key)
 
-    return {"t": t, "lang": lang}
-
+    return {
+        "t": t,
+        "lang": lang,
+        "supported_langs": SUPPORTED_LANGS,
+    }
 
 # ----------------------------------------
 # Helpers
@@ -124,7 +128,23 @@ def log_purchase_change(db, purchase_id, action, old_row, new_row, changed_by=No
             datetime.now().isoformat(timespec="seconds"),
         ),
     )
+    
+def get_lang() -> str:
+    lang = session.get("lang")
+    if lang in SUPPORTED_LANGS:
+        return lang
+    return DEFAULT_LANG
 
+@app.post("/set-lang")
+def set_lang():
+    lang = request.form.get("lang", DEFAULT_LANG)
+    if lang not in SUPPORTED_LANGS:
+        lang = DEFAULT_LANG
+
+    session["lang"] = lang
+
+    next_url = request.form.get("next") or request.referrer or url_for("index")
+    return redirect(next_url)
 
 # ----------------------------------------
 # Home
