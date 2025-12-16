@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="{{ lang }}">
   <head>
     <meta charset="UTF-8" />
     <title>{% block title %}TEST Dev{% endblock %}</title>
@@ -260,6 +260,8 @@
     <!-- ★ ここまで追加 ★ -->
 
     {% block head_extra %}{% endblock %}
+
+  
   </head>
 
   {# APP_ENV に応じて body クラスを切り替え（app.py 側で APP_ENV を設定しておく想定） #}
@@ -274,6 +276,16 @@
       {% endif %}
     "
   >
+     <form method="post" action="{{ url_for('set_lang') }}" style="display:inline;">
+  <input type="hidden" name="next" value="{{ request.path }}">
+  <select name="lang" onchange="this.form.submit()">
+    {% for code in supported_langs %}
+      <option value="{{ code }}" {% if lang == code %}selected{% endif %}>
+        {{ code.upper() }}
+      </option>
+    {% endfor %}
+  </select>
+</form>
     <h1>TEST test tst 倉島事業開発 CMS PostGres Dev Env</h1>
 
     {# flash メッセージ #}
@@ -297,7 +309,7 @@
         href="{{ url_for('new_purchase') }}"
         class="{% if request.endpoint in ['new_purchase', 'edit_purchase'] %}active{% endif %}"
       >
-        {{ L("nav.purchase_form") }}
+        {{ t("nav.purchase_form") }}
       </a>
     </li>
 
