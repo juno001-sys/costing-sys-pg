@@ -1,0 +1,27 @@
+{
+  "nav.home": "Beranda",
+  "nav.purchase_form": "Entri Pembelian",
+  "nav.inventory_count": "Hitung Stok",
+  "nav.reports": "Laporan",
+  "nav.purchase_report": "Laporan Pembelian",
+  "nav.usage_report": "Laporan Pemakaian Bulanan",
+  "nav.cost_report": "Tren HPP Bulanan",
+  "nav.suppliers_master": "Master Pemasok",
+  "nav.items_master": "Master Item",
+  "nav.stores_master": "Master Toko & Relasi Pemasok",
+
+  "report.usage.title": "Laporan Pemakaian Bulanan",
+  "report.cost.title": "Tren HPP Bulanan",
+
+  "form.store": "Toko",
+  "form.supplier": "Pemasok",
+  "form.show": "Tampilkan",
+  "form.item": "Item",
+  "form.quantity": "Jumlah",
+  "form.unit_price": "Harga Satuan",
+  "form.total": "Total",
+  "form.save": "Simpan",
+  "form.clear": "Bersihkan",
+
+  "ui.language": "Bahasa"
+}
