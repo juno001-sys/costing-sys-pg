@@ -1,0 +1,27 @@
+{
+  "nav.home": "होम",
+  "nav.purchase_form": "खरीद प्रविष्टि",
+  "nav.inventory_count": "स्टॉक गणना",
+  "nav.reports": "रिपोर्ट",
+  "nav.purchase_report": "खरीद रिपोर्ट",
+  "nav.usage_report": "मासिक उपयोग रिपोर्ट",
+  "nav.cost_report": "मासिक COGS ट्रेंड",
+  "nav.suppliers_master": "आपूर्तिकर्ता मास्टर",
+  "nav.items_master": "आइटम मास्टर",
+  "nav.stores_master": "स्टोर मास्टर और सप्लायर लिंक",
+
+  "report.usage.title": "मासिक उपयोग रिपोर्ट",
+  "report.cost.title": "मासिक COGS ट्रेंड",
+
+  "form.store": "स्टोर",
+  "form.supplier": "आपूर्तिकर्ता",
+  "form.show": "दिखाएँ",
+  "form.item": "आइटम",
+  "form.quantity": "मात्रा",
+  "form.unit_price": "इकाई मूल्य",
+  "form.total": "कुल",
+  "form.save": "सहेजें",
+  "form.clear": "साफ़ करें",
+
+  "ui.language": "भाषा"
+}
