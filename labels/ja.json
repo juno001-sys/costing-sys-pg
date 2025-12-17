@@ -133,5 +133,14 @@
   "inventory.locations_view": "品目配置一覧を開く",
   "inventory.locations.title": "棚卸配置整理表",
   "inventory.locations.hint_select_store": "店舗を選択すると、品目ごとの配置（場所・温度帯・棚）が表示されます。",
-  "inventory.locations.column": "配置"
+  "inventory.locations.column": "配置",
+  "inventory.locations.title": "棚卸配置",
+"inventory.locations.hint_select_store": "店舗を選択すると、品目ごとの配置を設定できます。",
+"inventory.locations.current": "現在の配置",
+"inventory.locations.assign": "配置を設定",
+"inventory.locations.area": "場所",
+"inventory.locations.zone": "温度帯",
+"inventory.locations.shelf": "棚",
+"inventory.locations.saved": "保存しました",
+"inventory.locations.save_missing": "入力が不足しています"
 }
