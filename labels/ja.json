@@ -131,5 +131,7 @@
   "stores.inventory_locations_open": "品目配置一覧を開く",
   "stores.inventory_count_open": "棚卸入力を開く",
   "inventory.locations_view": "品目配置一覧を開く",
-  "inventory.locations.title": "配置整理表"
+  "inventory.locations.title": "棚卸配置整理表",
+  "inventory.locations.hint_select_store": "店舗を選択すると、品目ごとの配置（場所・温度帯・棚）が表示されます。",
+  "inventory.locations.column": "配置"
 }
