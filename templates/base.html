@@ -144,7 +144,11 @@
       </form>
     </div>
 
-    <h1>倉島事業開発 CMS – Postgres Dev</h1>
+    {% if env == "prod" %}
+  <h1>倉島事業開発 CMS – Postgres</h1>
+{% else %}
+  <h1>TEST TST TEST</h1>
+{% endif %}
 
     {% with messages = get_flashed_messages() %}
       {% if messages %}
