@@ -11,52 +11,30 @@
     </a>
   </div>
 
-  {% if zones %}
-    <form method="get" action="{{ url_for('zone_master') }}">
+  <p class="muted" style="margin: 8px 0 14px;">
+    ※ 現在の構造ではゾーンは固定（AMB / CHILL / FREEZE）です。追加・削除はできません。
+  </p>
+
+  {% if selected_store_id %}
+    {% if zones %}
       <table>
         <thead>
           <tr>
             <th>{{ t("inventory.zone", "__inventory.zone__") }}</th>
-            <th>{{ t("common.delete", "__common.delete__") }}</th>
           </tr>
         </thead>
         <tbody>
           {% for z in zones %}
             <tr>
-              <td>{{ z.name }}</td>
-              <td>
-                <button class="btn" type="submit" name="delete_zone_id" value="{{ z.id }}"
-                        onclick="return confirm('{{ t('common.confirm_delete', '__common.confirm_delete__') }}');">
-                  {{ t("common.delete", "__common.delete__") }}
-                </button>
-              </td>
+              <td>{{ z.temp_zone }}</td>
             </tr>
           {% endfor %}
-
-          {# New zone input row #}
-          <tr>
-            <td>
-              <input type="text" name="new_zone_name" placeholder="(new zone)" style="width: 240px;">
-            </td>
-            <td>
-              <button class="btn btn-primary" type="submit" name="action" value="add">
-                {{ t("common.create", "__common.create__") }}
-              </button>
-            </td>
-          </tr>
         </tbody>
       </table>
-    </form>
-  {% else %}
-    <form method="post" action="{{ url_for('zone_master_save') }}">
+    {% else %}
       <p class="muted">{{ t("common.no_data", "__common.no_data__") }}</p>
-
-      <div style="margin-top:10px;">
-        <input type="text" name="new_zone_name" placeholder="(new zone)" style="width: 240px;">
-        <button class="btn btn-primary" type="submit" name="action" value="add">
-          {{ t("common.create", "__common.create__") }}
-        </button>
-      </div>
-    </form>
+    {% endif %}
+  {% else %}
+    <p class="muted">{{ t("inventory.hint_select_store", "__inventory.hint_select_store__") }}</p>
   {% endif %}
 {% endblock %}
