@@ -5,7 +5,11 @@
       <th>{{ t("inventory.item_code", "__inventory.item_code__") }}</th>
       <th>{{ t("inventory.item_name", "__inventory.item_name__") }}</th>
       <th>{{ t("inventory.temp_zone", "__inventory.temp_zone__") }}</th>
-      <th>{{ t("inventory.shelf", "__inventory.shelf__") }}</th>
+     <th>
+  <a href="{{ url_for('shelf_master', store_id=selected_store_id) }}">
+    {{ t("inventory.shelf", "__inventory.shelf__") }}
+  </a>
+</th>
     </tr>
   </thead>
   <tbody>
