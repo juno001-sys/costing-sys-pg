@@ -1,28 +1,33 @@
-<table class="count-table">
+{# templates/inventory/_locations_table.html #}
+<table>
   <thead>
     <tr>
-      <th>{{ t("inventory.item_code") }}</th>
-      <th>{{ t("inventory.item_name") }}</th>
-      <th class="num">{{ t("inventory.system_qty") }}</th>
-      <th class="num">{{ t("inventory.unit_price") }}</th>
-      <th class="num">{{ t("inventory.stock_amount") }}</th>
-      <th class="num">{{ t("inventory.count_qty_input") }}</th>
+      <th>{{ t("inventory.item_code", "__inventory.item_code__") }}</th>
+      <th>{{ t("inventory.item_name", "__inventory.item_name__") }}</th>
+      <th>{{ t("inventory.temp_zone", "__inventory.temp_zone__") }}</th>
+      <th>{{ t("inventory.shelf", "__inventory.shelf__") }}</th>
     </tr>
   </thead>
   <tbody>
-    {% for r in g.rows %}
-      <tr>
-        <td>{{ r.code }}</td>
-        <td>{{ r.name }}</td>
-        <td class="num">{{ r.system_qty }}</td>
-        <td class="num">{{ r.unit_price }}</td>
-        <td class="num">{{ r.stock_amount }}</td>
-        <td class="num">
-          <input class="num count-input"
-                 type="text"
-                 name="qty_{{ g.shelf_id }}_{{ r.item_id }}"
-                 value="{{ r.count_qty or '' }}"
-                 inputmode="numeric">
+    {% for it in items %}
+      <tr data-item-id="{{ it.id }}">
+        <td>{{ it.code }}</td>
+        <td>{{ it.name }}</td>
+
+        <td>
+          <select class="temp-zone" name="temp_zone_{{ it.id }}">
+            <option value="">{{ t("common.select", "__common.select__") }}</option>
+            {% for z in temp_zones %}
+              <option value="{{ z }}">{{ z }}</option>
+            {% endfor %}
+          </select>
+        </td>
+
+        <td>
+          <select class="shelf" name="shelf_id_{{ it.id }}">
+            <option value="">{{ t("common.select", "__common.select__") }}</option>
+            {# options filled by JS from /inventory/api/shelves #}
+          </select>
         </td>
       </tr>
     {% endfor %}
