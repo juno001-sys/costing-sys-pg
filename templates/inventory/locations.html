@@ -1,14 +1,13 @@
 {# templates/inventory/locations.html #}
 {% extends "base.html" %}
-{% block title %}{{ t("nav.inventory_count") }}{% endblock %}
+{% block title %}{{ t("stores.inventory_locations_title", "__stores.inventory_locations_title__") }}{% endblock %}
 
 {% block head_extra %}
   <link rel="stylesheet" href="{{ url_for('static', filename='inventory/inventory_count.css') }}">
 {% endblock %}
 
 {% block content %}
-  <h2>{{ t("stores.inventory_locations_title", "__stores.inventory_locations_title__") }}</h2>
-
+  {# Title is inside _locations_header.html (avoid duplicate) #}
   {% include "inventory/_locations_header.html" %}
 
   {% if not selected_store_id %}
@@ -20,8 +19,10 @@
   {% if selected_store_id and items %}
     <form method="post" action="{{ url_for('inventory_locations_save') }}">
       <input type="hidden" name="store_id" value="{{ selected_store_id }}">
+
+      {# keep list of item ids for server-side validation if you want #}
       {% for it in items %}
-        <input type="hidden" name="item_ids" value="{{ it.id }}">
+        <input type="hidden" name="item_ids" value="{{ it.item_id }}">
       {% endfor %}
 
       {% include "inventory/_locations_table.html" %}
