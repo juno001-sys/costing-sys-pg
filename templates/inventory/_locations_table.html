@@ -1,40 +1,62 @@
 {# templates/inventory/_locations_table.html #}
 
-<table class="monthly-table" style="margin-top:12px;">
+<table class="table table-bordered inventory-locations">
   <thead>
     <tr>
-      <th style="min-width:260px;">{{ t("inventory.item_name", "__inventory.item_name__") }}</th>
-      <th style="min-width:140px;">{{ t("inventory.temp_zone", "__inventory.temp_zone__") }}</th>
-      <th style="min-width:220px;">{{ t("inventory.shelf", "__inventory.shelf__") }}</th>
+      <th>
+  {{ t("inventory.item", "__inventory.item__") }}
+</th>
+
+      <th>
+        <a href="{{ url_for('zone_master', store_id=selected_store_id) }}">
+          {{ t("inventory.zone_master", "__inventory.zone_master__") }}
+        </a>
+      </th>
+
+      <th>
+        <a href="{{ url_for('shelf_master', store_id=selected_store_id) }}">
+          {{ t("inventory.shelf_master_open", "__inventory.shelf_master_open__") }}
+        </a>
+      </th>
     </tr>
   </thead>
 
   <tbody>
+    {% if not items %}
+      <tr>
+        <td colspan="3" class="muted">
+          {{ t("common.no_data", "__common.no_data__") }}
+        </td>
+      </tr>
+    {% endif %}
+
     {% for it in items %}
       <tr data-item-id="{{ it.id }}">
+        <!-- Item name -->
         <td>
-          {# tolerate different dict keys #}
-          {{ it.name or it.item_name or ("#" ~ it.id) }}
+          {{ it.name }}
         </td>
 
+        <!-- Zone -->
         <td>
-          <select class="temp-zone" name="temp_zone_{{ it.id }}">
+          <select name="zone_{{ it.id }}" class="form-select temp-zone">
+            <option value=""></option>
             {% for z in temp_zones %}
-              <option value="{{ z }}" {% if (it.temp_zone == z) %}selected{% endif %}>
+              <option value="{{ z }}"
+                {% if it.temp_zone == z %}selected{% endif %}>
                 {{ z }}
               </option>
             {% endfor %}
           </select>
         </td>
 
+        <!-- Shelf -->
         <td>
-          <select class="shelf" name="shelf_id_{{ it.id }}">
-            <option value="">{{ t("common.select", "__common.select__") }}</option>
-
-            {# If your locations_page passes preloaded shelves per item, show them here #}
+          <select name="shelf_{{ it.id }}" class="form-select shelf">
+            <option value=""></option>
             {% if it.shelf_id %}
               <option value="{{ it.shelf_id }}" selected>
-                {{ it.shelf_label or it.shelf_name or it.shelf_code or it.shelf_id }}
+                {{ it.shelf_name }}
               </option>
             {% endif %}
           </select>
