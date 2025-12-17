@@ -1,45 +1,41 @@
 {# templates/inventory/_locations_table.html #}
 
-<table>
+<table class="monthly-table" style="margin-top:12px;">
   <thead>
     <tr>
-      <th>{{ t("inventory.item_name", "__inventory.item_name__") }}</th>
-      <th>{{ t("inventory.temp_zone", "__inventory.temp_zone__") }}</th>
-      <th>{{ t("inventory.shelf", "__inventory.shelf__") }}</th>
+      <th style="min-width:260px;">{{ t("inventory.item_name", "__inventory.item_name__") }}</th>
+      <th style="min-width:140px;">{{ t("inventory.temp_zone", "__inventory.temp_zone__") }}</th>
+      <th style="min-width:220px;">{{ t("inventory.shelf", "__inventory.shelf__") }}</th>
     </tr>
   </thead>
 
   <tbody>
     {% for it in items %}
       <tr data-item-id="{{ it.id }}">
-        {# item name (this fixes “name not showing” when the template used wrong key) #}
-        <td>{{ it.name }}</td>
+        <td>
+          {# tolerate different dict keys #}
+          {{ it.name or it.item_name or ("#" ~ it.id) }}
+        </td>
 
-        {#  temp zone dropdown #}
         <td>
           <select class="temp-zone" name="temp_zone_{{ it.id }}">
-            <option value="">{{ t("common.select", "__common.select__") }}</option>
             {% for z in temp_zones %}
-              <option value="{{ z }}" {% if it.temp_zone == z %}selected{% endif %}>
+              <option value="{{ z }}" {% if (it.temp_zone == z) %}selected{% endif %}>
                 {{ z }}
               </option>
             {% endfor %}
           </select>
         </td>
 
-        {#  shelf dropdown (loaded via JS from /inventory/api/shelves?store_id=...&temp_zone=...) #}
         <td>
           <select class="shelf" name="shelf_id_{{ it.id }}">
             <option value="">{{ t("common.select", "__common.select__") }}</option>
 
-            {# If your backend already provides current_shelves per row, you can render them here.
-               Otherwise JS will repopulate after zone change. #}
-            {% if it.shelf_options %}
-              {% for sh in it.shelf_options %}
-                <option value="{{ sh.id }}" {% if it.shelf_id == sh.id %}selected{% endif %}>
-                  {{ sh.code }}{% if sh.name %} {{ sh.name }}{% endif %}
-                </option>
-              {% endfor %}
+            {# If your locations_page passes preloaded shelves per item, show them here #}
+            {% if it.shelf_id %}
+              <option value="{{ it.shelf_id }}" selected>
+                {{ it.shelf_label or it.shelf_name or it.shelf_code or it.shelf_id }}
+              </option>
             {% endif %}
           </select>
         </td>
