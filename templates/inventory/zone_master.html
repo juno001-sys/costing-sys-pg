@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}__inventory.zone_master__{% endblock %}
+
+{% block content %}
+  <h2>__inventory.zone_master__</h2>
+
+  <form method="get" style="margin: 12px 0;">
+    <label>{{ t("form.store") }}</label>
+    <select name="store_id" onchange="this.form.submit()">
+      <option value="">{{ t("common.select") }}</option>
+      {% for s in stores %}
+        <option value="{{ s.id }}" {% if selected_store_id == s.id %}selected{% endif %}>
+          {{ s.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </form>
+
+  {% if selected_store_id %}
+    <p>
+      <a href="{{ url_for('inventory_locations', store_id=selected_store_id) }}">
+        __inventory.locations_back__
+      </a>
+    </p>
+
+    {% if zones %}
+      <ul>
+        {% for z in zones %}
+          <li>{{ z.temp_zone }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>__common.no_data__</p>
+    {% endif %}
+  {% endif %}
+{% endblock %}
