@@ -1,0 +1,46 @@
+// static/inventory/locations.js
+
+(function () {
+  const cfg = window.KURAJIKA && window.KURAJIKA.LOCATIONS;
+  if (!cfg || !cfg.storeId) return;
+
+  async function loadShelves(tempZone) {
+    const url = new URL(cfg.shelvesApi, window.location.origin);
+    url.searchParams.set("store_id", String(cfg.storeId));
+    if (tempZone) url.searchParams.set("temp_zone", tempZone);
+
+    const res = await fetch(url.toString(), { headers: { "Accept": "application/json" } });
+    const data = await res.json();
+    if (!data.ok) return [];
+    return data.shelves || [];
+  }
+
+  async function onTempZoneChange(tr) {
+    const tempSel = tr.querySelector("select.temp-zone");
+    const shelfSel = tr.querySelector("select.shelf");
+    if (!tempSel || !shelfSel) return;
+
+    const shelves = await loadShelves(tempSel.value);
+
+    // reset
+    shelfSel.innerHTML = "";
+    const opt0 = document.createElement("option");
+    opt0.value = "";
+    opt0.textContent = "(select)";
+    shelfSel.appendChild(opt0);
+
+    for (const sh of shelves) {
+      const opt = document.createElement("option");
+      opt.value = sh.id;
+      opt.textContent = sh.name ? `${sh.code} ${sh.name}` : sh.code;
+      shelfSel.appendChild(opt);
+    }
+  }
+
+  document.querySelectorAll("tr[data-item-id]").forEach((tr) => {
+    const tempSel = tr.querySelector("select.temp-zone");
+    if (tempSel) {
+      tempSel.addEventListener("change", () => onTempZoneChange(tr));
+    }
+  });
+})();
