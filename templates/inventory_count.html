@@ -7,13 +7,12 @@
 <div style="display:flex; justify-content:space-between; align-items:center;">
   <h2>{{ t("nav.inventory_count") }}</h2>
 
-  <a href="{{ url_for('inventory_count_layout',
-                      store_id=selected_store_id,
-                      count_date=count_date) }}"
-     class="btn"
-     style="font-size:13px;">
-    ▶ Physical Layout View
-  </a>
+<a href="{{ url_for('inventory_count_layout',
+                    store_id=selected_store_id,
+                    count_date=count_date) }}"
+   class="btn">
+  {{ t("inventory.layout_view") }}
+</a>
 </div>
 <!-- Store + date selector (GET) -->
 <form method="get" style="margin-bottom: 12px;">
