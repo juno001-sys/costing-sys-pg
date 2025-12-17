@@ -171,6 +171,7 @@
   "inventory.shelf_master_open": "棚マスタを開く",
   "inventory.zone_master": "温度帯マスタ",
   "inventory.locations_back": "棚卸し場所設定に戻る",
-  "common.no_data": "データがありません。"
+  "common.no_data": "データがありません。",
+  "inventory.item": "品目"
   
 }
