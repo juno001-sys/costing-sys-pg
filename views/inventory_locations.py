@@ -45,24 +45,31 @@ def init_inventory_location_views(app, get_db):
                   i.code AS item_code,
                   i.name AS item_name,
                   i.is_internal,
-
+            
                   a.name  AS area_name,
                   tg.code AS temp_group_code,
                   tz.name AS temp_zone_name,
                   sh.code AS shelf_code,
                   sh.name AS shelf_name,
-
+            
                   a.sort_order  AS area_sort,
                   tg.sort_order AS group_sort,
                   tz.sort_order AS zone_sort,
                   sh.sort_order AS shelf_sort,
                   m.sort_order  AS item_sort
                 FROM item_shelf_map m
-                JOIN items i            ON i.id = m.item_id
-                JOIN store_shelves sh   ON sh.id = m.shelf_id AND sh.store_id = m.store_id
-                JOIN store_areas a      ON a.id = sh.area_id
-                JOIN temp_zones tz      ON tz.id = sh.temp_zone_id
-                JOIN temp_groups tg     ON tg.id = tz.group_id
+                JOIN items i          ON i.id = m.item_id
+                JOIN store_shelves sh ON sh.id = m.shelf_id AND sh.store_id = m.store_id
+                JOIN stores s         ON s.id = sh.store_id
+                JOIN store_areas a    ON a.id = sh.area_id
+            
+                -- NOTE: sh.temp_zone is TEXT in your schema
+                JOIN temp_zones tz
+                  ON tz.company_id = s.company_id
+                 AND tz.name = sh.temp_zone
+            
+                JOIN temp_groups tg   ON tg.id = tz.group_id
+            
                 WHERE m.store_id = ?
                   AND m.is_active = TRUE
                   AND sh.is_active = TRUE
@@ -75,7 +82,6 @@ def init_inventory_location_views(app, get_db):
                 """,
                 (selected_store_id,),
             ).fetchall()
-
             by_item = {}
 
             for r in rows:
