@@ -124,5 +124,9 @@
   "suppliers.name": "仕入先名",
   "suppliers.phone": "電話",
   "suppliers.email": "Email",
-  "suppliers.address": "住所"
+  "suppliers.address": "住所",
+   "stores.inventory_layout_section": "棚卸レイアウト",
+  "stores.inventory_layout_hint": "この店舗の棚卸し順（場所・温度帯・棚・品目）を設定します。",
+  "stores.inventory_layout_open": "レイアウト画面を開く",
+  "stores.inventory_count_open": "棚卸入力を開く"
 }
