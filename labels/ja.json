@@ -142,5 +142,13 @@
 "inventory.locations.zone": "温度帯",
 "inventory.locations.shelf": "棚",
 "inventory.locations.saved": "保存しました",
-"inventory.locations.save_missing": "入力が不足しています"
+"inventory.locations.save_missing": "入力が不足しています",
+  
+  "stores.inventory_locations_title": "棚卸ロケーション設定",
+  "stores.inventory_locations_hint": "店舗ごとの棚卸し場所（温度帯・棚など）を設定します。",
+
+  "inventory.temp_zone": "温度帯",
+  "inventory.shelf": "棚",
+  "inventory.zone": "ゾーン"
+  
 }
