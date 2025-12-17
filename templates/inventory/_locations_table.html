@@ -1,49 +1,57 @@
 {# templates/inventory/_locations_table.html #}
-<table>
-  <thead>
-    <tr>
-      <th>{{ t("inventory.item_code", "__inventory.item_code__") }}</th>
-      <th>{{ t("inventory.item_name", "__inventory.item_name__") }}</th>
-      <th>{{ t("inventory.temp_zone", "__inventory.temp_zone__") }}</th>
-     <th>
-  <a href="{{ url_for('shelf_master', store_id=selected_store_id) }}">
-    {{ t("inventory.shelf", "__inventory.shelf__") }}
-  </a>
-</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for it in items %}
-      <tr data-item-id="{{ it.id }}">
-        <td>{{ it.code }}</td>
-        <td>{{ it.name }}</td>
 
-        <td>
-          <select class="temp-zone" name="temp_zone_{{ it.id }}">
-            <option value="">{{ t("common.select", "__common.select__") }}</option>
-            {% for z in temp_zones %}
-              <option value="{{ z }}">{{ z }}</option>
-            {% endfor %}
-          </select>
-        </td>
-<th>
-  <a href="{{ url_for('zone_master', store_id=selected_store_id) }}">
-    {{ t("inventory.zone", "__inventory.zone__") }}
-  </a>
-</th>
-        <td>
-  <select class="zone" name="zone_id_{{ it.id }}">
-    <option value="">{{ t("common.select", "__common.select__") }}</option>
-    {# options filled by JS or server-side later #}
-  </select>
-</td>
-        <td>
-          <select class="shelf" name="shelf_id_{{ it.id }}">
-            <option value="">{{ t("common.select", "__common.select__") }}</option>
-            {# options filled by JS from /inventory/api/shelves #}
-          </select>
-        </td>
+{% if not selected_store_id %}
+  <p class="muted" style="margin-top:12px;">{{ t("inventory.hint_select_store") }}</p>
+{% elif not items %}
+  <p class="muted" style="margin-top:12px;">{{ t("common.no_data") }}</p>
+{% else %}
+  <table class="locations-table">
+    <thead>
+      <tr>
+        <th style="white-space:nowrap;">{{ t("inventory.item_code") }}</th>
+        <th style="min-width:280px;">{{ t("inventory.item_name") }}</th>
+
+        <th style="white-space:nowrap;">
+          {{ t("inventory.temp_zone") }}
+        </th>
+
+        <th style="white-space:nowrap;">
+          <span style="display:inline-flex; align-items:center; gap:8px;">
+            {{ t("inventory.shelf") }}
+            {# link to shelves master (literal URL to avoid BuildError) #}
+            <a href="/masters/shelves?store_id={{ selected_store_id }}" style="font-weight:normal;">
+              {{ t("inventory.shelf_master_link") }}
+            </a>
+          </span>
+        </th>
       </tr>
-    {% endfor %}
-  </tbody>
-</table>
+    </thead>
+
+    <tbody>
+      {% for it in items %}
+        <tr data-item-id="{{ it.item_id }}">
+          <td style="white-space:nowrap;">{{ it.item_code }}</td>
+          <td>{{ it.item_name }}</td>
+
+          <td>
+            <select class="temp-zone" data-item-id="{{ it.item_id }}">
+              <option value="">{{ t("common.select") }}</option>
+              {% for z in temp_zones %}
+                <option value="{{ z }}" {% if it.temp_zone == z %}selected{% endif %}>
+                  {{ z }}
+                </option>
+              {% endfor %}
+            </select>
+          </td>
+
+          <td>
+            <select class="shelf" data-item-id="{{ it.item_id }}">
+              <option value="">{{ t("common.select") }}</option>
+              {# shelves are loaded dynamically by locations.js after temp-zone change #}
+            </select>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endif %}
