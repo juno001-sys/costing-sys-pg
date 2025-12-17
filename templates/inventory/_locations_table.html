@@ -8,29 +8,15 @@
   <table class="locations-table">
     <thead>
       <tr>
-        <th style="white-space:nowrap;">{{ t("inventory.item_code") }}</th>
-        <th style="min-width:280px;">{{ t("inventory.item_name") }}</th>
-
-        <th style="white-space:nowrap;">
-          {{ t("inventory.temp_zone") }}
-        </th>
-
-        <th style="white-space:nowrap;">
-          <span style="display:inline-flex; align-items:center; gap:8px;">
-            {{ t("inventory.shelf") }}
-            {# link to shelves master (literal URL to avoid BuildError) #}
-            <a href="/masters/shelves?store_id={{ selected_store_id }}" style="font-weight:normal;">
-              {{ t("inventory.shelf_master_link") }}
-            </a>
-          </span>
-        </th>
+        <th style="min-width:320px;">{{ t("inventory.item_name") }}</th>
+        <th style="white-space:nowrap;">{{ t("inventory.temp_zone") }}</th>
+        <th style="white-space:nowrap;">{{ t("inventory.shelf") }}</th>
       </tr>
     </thead>
 
     <tbody>
       {% for it in items %}
         <tr data-item-id="{{ it.item_id }}">
-          <td style="white-space:nowrap;">{{ it.item_code }}</td>
           <td>{{ it.item_name }}</td>
 
           <td>
@@ -47,7 +33,7 @@
           <td>
             <select class="shelf" data-item-id="{{ it.item_id }}">
               <option value="">{{ t("common.select") }}</option>
-              {# shelves are loaded dynamically by locations.js after temp-zone change #}
+              {# loaded dynamically by locations.js #}
             </select>
           </td>
         </tr>
