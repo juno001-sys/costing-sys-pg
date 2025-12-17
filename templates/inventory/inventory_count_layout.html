@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ t("nav.inventory_count") }}{% endblock %}
+
+{% block head_extra %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='inventory/inventory_count.css') }}">
+{% endblock %}
+
+{% block content %}
+  <h2>{{ t("nav.inventory_count") }}</h2>
+
+  {% include "inventory/_count_header.html" %}
+
+  {% if not selected_store_id %}
+    <p class="muted" style="margin-top:12px;">{{ t("inventory.hint_select_store") }}</p>
+  {% endif %}
+
+  {% if groups %}
+    <form method="post" action="{{ url_for('inventory_count_save') }}">
+      <input type="hidden" name="store_id" value="{{ selected_store_id }}">
+      <input type="hidden" name="count_date" value="{{ count_date }}">
+
+      {% for g in groups %}
+        {% include "inventory/_count_section.html" %}
+      {% endfor %}
+
+      <div class="sticky-bar">
+        <button class="btn btn-primary" type="submit">{{ t("inventory.save") }}</button>
+      </div>
+    </form>
+
+    {% include "inventory/_reorder_modal.html" %}
+  {% endif %}
+{% endblock %}
+
+{% block body_extra %}
+  <script>
+    window.KURAJIKA = window.KURAJIKA || {};
+    window.KURAJIKA.INVENTORY = {
+      reorderUrl: "{{ url_for('inventory_reorder_items') }}",
+      storeId: {{ selected_store_id or 'null' }}
+    };
+  </script>
+  <script src="{{ url_for('static', filename='inventory/inventory_collapse.js') }}"></script>
+  <script src="{{ url_for('static', filename='inventory/inventory_reorder.js') }}"></script>
+{% endblock %}
