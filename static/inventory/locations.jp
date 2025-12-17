@@ -9,7 +9,9 @@
     url.searchParams.set("store_id", String(cfg.storeId));
     if (tempZone) url.searchParams.set("temp_zone", tempZone);
 
-    const res = await fetch(url.toString(), { headers: { "Accept": "application/json" } });
+    const res = await fetch(url.toString(), {
+      headers: { "Accept": "application/json" }
+    });
     const data = await res.json();
     if (!data.ok) return [];
     return data.shelves || [];
@@ -22,7 +24,7 @@
 
     const shelves = await loadShelves(tempSel.value);
 
-    // reset
+    // reset shelf select
     shelfSel.innerHTML = "";
     const opt0 = document.createElement("option");
     opt0.value = "";
