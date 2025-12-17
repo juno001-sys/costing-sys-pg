@@ -73,7 +73,7 @@ def inject_t():
     translations = get_translations(lang)
 
     def t(key: str, default: str | None = None) -> str:
-        return translations.get(key, default or key)
+    return translations.get(key, default or f"__{key}__")
 
     return {
         "t": t,
