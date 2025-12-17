@@ -1,45 +1,76 @@
+{# templates/inventory/inventory_locations.html #}
 {% extends "base.html" %}
-{% block title %}{{ t("nav.inventory_count") }}{% endblock %}
+
+{% block title %}{{ t("inventory.locations.title") }}{% endblock %}
 
 {% block head_extra %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='inventory/inventory_count.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='inventory/inventory_locations.css') }}">
 {% endblock %}
 
 {% block content %}
-  <h2>{{ t("nav.inventory_count") }}</h2>
+<h2>{{ t("inventory.locations.title") }}</h2>
 
-  {% include "inventory/_count_header.html" %}
+{# store selector header #}
+<form method="get" class="form-inline">
+  <label class="field-label">{{ t("form.store") }}</label>
+  <select name="store_id" onchange="this.form.submit()">
+    <option value="">{{ t("common.select") }}</option>
+    {% for s in stores %}
+      <option value="{{ s.id }}" {% if selected_store_id == s.id %}selected{% endif %}>
+        {{ s.name }}
+      </option>
+    {% endfor %}
+  </select>
+</form>
 
-  {% if not selected_store_id %}
-    <p class="muted" style="margin-top:12px;">{{ t("inventory.hint_select_store") }}</p>
-  {% endif %}
+{% if not selected_store_id %}
+  <p class="muted" style="margin-top:12px;">
+    {{ t("inventory.locations.hint_select_store") }}
+  </p>
+{% endif %}
 
-  {% if groups %}
-    <form method="post" action="{{ url_for('inventory_count_save') }}">
-      <input type="hidden" name="store_id" value="{{ selected_store_id }}">
-      <input type="hidden" name="count_date" value="{{ count_date }}">
+{% if groups %}
+  <div class="inventory-layout">
 
-      {% for g in groups %}
-        {% include "inventory/_count_section.html" %}
-      {% endfor %}
+    {% for g in groups %}
+      <section class="layout-section">
+        <h3>
+          {{ g.area_name }}
+          /
+          {{ g.temp_zone }}
+          /
+          {{ g.shelf_code }}
+          {% if g.shelf_name %}
+            ({{ g.shelf_name }})
+          {% endif %}
+        </h3>
 
-      <div class="sticky-bar">
-        <button class="btn btn-primary" type="submit">{{ t("inventory.save") }}</button>
-      </div>
-    </form>
+        <table class="layout-table">
+          <thead>
+            <tr>
+              <th>{{ t("inventory.item_code") }}</th>
+              <th>{{ t("inventory.item_name") }}</th>
+              <th class="num">{{ t("inventory.system_qty") }}</th>
+              <th class="num">{{ t("inventory.unit_price") }}</th>
+              <th class="num">{{ t("inventory.stock_amount") }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in g.rows %}
+              <tr>
+                <td>{{ r.code }}</td>
+                <td>{{ r.name }}</td>
+                <td class="num">{{ r.system_qty }}</td>
+                <td class="num">{{ "%.2f"|format(r.unit_price) }}</td>
+                <td class="num">{{ "%.2f"|format(r.stock_amount) }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+    {% endfor %}
 
-    {% include "inventory/_reorder_modal.html" %}
-  {% endif %}
-{% endblock %}
+  </div>
+{% endif %}
 
-{% block body_extra %}
-  <script>
-    window.KURAJIKA = window.KURAJIKA || {};
-    window.KURAJIKA.INVENTORY = {
-      reorderUrl: "{{ url_for('inventory_reorder_items') }}",
-      storeId: {{ selected_store_id or 'null' }}
-    };
-  </script>
-  <script src="{{ url_for('static', filename='inventory/inventory_collapse.js') }}"></script>
-  <script src="{{ url_for('static', filename='inventory/inventory_reorder.js') }}"></script>
 {% endblock %}
