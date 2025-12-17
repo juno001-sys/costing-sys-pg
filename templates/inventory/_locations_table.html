@@ -26,7 +26,17 @@
             {% endfor %}
           </select>
         </td>
-
+<th>
+  <a href="{{ url_for('zone_master', store_id=selected_store_id) }}">
+    {{ t("inventory.zone", "__inventory.zone__") }}
+  </a>
+</th>
+        <td>
+  <select class="zone" name="zone_id_{{ it.id }}">
+    <option value="">{{ t("common.select", "__common.select__") }}</option>
+    {# options filled by JS or server-side later #}
+  </select>
+</td>
         <td>
           <select class="shelf" name="shelf_id_{{ it.id }}">
             <option value="">{{ t("common.select", "__common.select__") }}</option>
