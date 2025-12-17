@@ -4,6 +4,7 @@ from .locations_page import init_inventory_locations_page
 from .locations_api import init_inventory_locations_api
 from .locations_actions import init_inventory_locations_actions
 from .shelves_page import init_inventory_locations_shelves_page 
+from .zones_page import init_inventory_locations_zones_page
 
 def init_inventory_location_views(app, get_db):
     """
@@ -16,3 +17,4 @@ def init_inventory_location_views(app, get_db):
     init_inventory_locations_api(app, get_db)
     init_inventory_locations_actions(app, get_db)
     init_inventory_locations_shelves_page(app, get_db) 
+    init_inventory_locations_zones_page(app, get_db)
