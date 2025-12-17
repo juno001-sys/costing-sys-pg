@@ -1,4 +1,4 @@
-# views/inventory_layout.py
+# views/inventory_locations.py
 
 from datetime import datetime
 from flask import (
@@ -8,7 +8,7 @@ from flask import (
 )
 
 
-def init_inventory_layout_views(app, get_db):
+def init_inventory_locations_views(app, get_db):
     """
     Physical-layout-based inventory count screen (shelf layout).
     Uses:
