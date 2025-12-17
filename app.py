@@ -161,6 +161,7 @@ init_purchase_views(app, get_db, log_purchase_change)
 init_report_views(app, get_db)
 init_master_views(app, get_db)
 init_inventory_views(app, get_db)
+init_inventory_layout_views(app, get_db)  
 
 
 # ----------------------------------------
