@@ -128,14 +128,8 @@
     {% block head_extra %}{% endblock %}
   </head>
 
-  <body
-    class="
-      {% if config.APP_ENV == 'prod' %}env-prod
-      {% elif config.APP_ENV == 'mail' %}env-mail
-      {% else %}env-dev
-      {% endif %}
-    "
-  >
+  <body class="env-{{ env }}">
+  
     <!-- language switch (operator-controlled) -->
     <div class="top-bar">
       <form method="post" action="{{ url_for('set_lang') }}">
