@@ -149,6 +149,24 @@
 
   "inventory.temp_zone": "温度帯",
   "inventory.shelf": "棚",
-  "inventory.zone": "ゾーン"
+  "inventory.zone": "ゾーン",
+  "masters.shelves": "棚マスタ",
+  "masters.area": "エリア",
+  "masters.temp_zone": "温度帯",
+  "masters.shelf_code": "棚コード",
+
+  "inventory.zone_master": "温度帯マスタ",
+  "inventory.locations_back": "棚卸ロケーション設定へ戻る",
+
+  "stores.inventory_locations_title": "棚卸ロケーション設定",
+
+  "inventory.temp_zone": "温度帯",
+  "inventory.zone": "ゾーン",
+  "inventory.shelf": "棚",
+  "inventory.location": "ロケーション",
+
+  "common.add": "追加",
+  "common.select": "（選択してください）",
+  "common.no_data": "データがありません。"
   
 }
