@@ -1,1 +1,20 @@
+<form method="get" class="toolbar">
+  <div>
+    <div class="muted">{{ t("form.store") }}</div>
+    <select name="store_id">
+      <option value="">{{ t("common.all_stores") }}</option>
+      {% for s in stores %}
+        <option value="{{ s.id }}" {% if selected_store_id == s.id %}selected{% endif %}>{{ s.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
 
+  <div>
+    <div class="muted">{{ t("inventory.count_date") }}</div>
+    <input type="date" name="count_date" value="{{ count_date or '' }}">
+  </div>
+
+  <div>
+    <button class="btn btn-primary" type="submit">{{ t("form.show") }}</button>
+  </div>
+</form>
