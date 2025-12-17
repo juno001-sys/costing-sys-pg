@@ -49,5 +49,22 @@
         {{ t("common.back") }}
       </a>
     </div>
+
+    <hr style="margin:24px 0;">
+
+<h3>{{ t("stores.inventory_layout_section") }}</h3>
+<p class="muted">{{ t("stores.inventory_layout_hint") }}</p>
+
+<div style="display:flex; gap:12px; flex-wrap:wrap;">
+  <a class="btn"
+     href="{{ url_for('inventory_count_layout', store_id=store.id) }}">
+    {{ t("stores.inventory_layout_open") }}
+  </a>
+
+  <a class="btn"
+     href="{{ url_for('inventory_count', store_id=store.id) }}">
+    {{ t("stores.inventory_count_open") }}
+  </a>
+</div>
   </form>
 {% endblock %}
