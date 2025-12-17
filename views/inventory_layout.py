@@ -164,7 +164,10 @@ def init_inventory_layout_views(app, get_db):
                 counted_qty = counted["counted_qty"] if counted else None
 
                 if end_qty > 0 or r["is_internal"] == 1:
-                    grouped[r["storage_type"]].append({
+                    z = r["storage_type"] or "その他"
+                    if z not in grouped:
+                        z = "その他"
+                    grouped[z].append({
                         "item_id": item_id,
                         "code": r["item_code"],
                         "name": r["item_name"],
