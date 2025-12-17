@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Shelf Master{% endblock %}
+
+{% block content %}
+  <h2>__inventory.shelf_master__</h2>
+
+  <form method="get" style="margin: 12px 0;">
+    <label>{{ t("form.store") }}</label>
+    <select name="store_id" onchange="this.form.submit()">
+      <option value="">{{ t("common.select") }}</option>
+      {% for s in stores %}
+        <option value="{{ s.id }}" {% if selected_store_id == s.id %}selected{% endif %}>
+          {{ s.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </form>
+
+  {% if selected_store_id %}
+    <p>
+      <a href="{{ url_for('inventory_locations', store_id=selected_store_id) }}">
+        __inventory.locations_back__
+      </a>
+    </p>
+
+    {% if shelves %}
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Area</th>
+            <th>Zone</th>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Sort</th>
+            <th>Active</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sh in shelves %}
+            <tr>
+              <td>{{ sh.id }}</td>
+              <td>{{ sh.area_id }}</td>
+              <td>{{ sh.temp_zone }}</td>
+              <td>{{ sh.code }}</td>
+              <td>{{ sh.name }}</td>
+              <td class="num">{{ sh.sort_order }}</td>
+              <td>{{ "Y" if sh.is_active else "N" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>__common.no_data__</p>
+    {% endif %}
+  {% endif %}
+{% endblock %}
