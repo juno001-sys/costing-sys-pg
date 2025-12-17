@@ -1,193 +1,89 @@
-<!DOCTYPE html>
-<html lang="ja">
-  <head>
-    <meta charset="utf-8" />
-    <title>品目マスタ</title>
-    <style>
-      body {
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-          sans-serif;
-        margin: 20px;
-      }
-      h1 {
-        font-size: 22px;
-        margin-bottom: 8px;
-      }
-      a {
-        text-decoration: none;
-        color: #0366d6;
-      }
-      a:hover {
-        text-decoration: underline;
-      }
-      form {
-        margin-bottom: 16px;
-        padding: 8px 12px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-      }
-      label {
-        display: inline-block;
-        width: 80px;
-        margin-right: 8px;
-      }
-      select,
-      input[type="text"],
-      input[type="number"] {
-        padding: 2px 4px;
-        font-size: 13px;
-      }
-      button {
-        padding: 4px 12px;
-        font-size: 13px;
-        margin-top: 8px;
-      }
-      table {
-        border-collapse: collapse;
-        width: 100%;
-        margin-top: 12px;
-        font-size: 13px;
-      }
-      th,
-      td {
-        border: 1px solid #ccc;
-        padding: 3px 4px;
-      }
-      th {
-        background: #f5f5f5;
-        white-space: nowrap;
-      }
-      td.right,
-      th.right {
-        text-align: right;
-      }
-      .flash {
-        color: darkred;
-        margin-bottom: 10px;
-      }
-      .col-code {
-        width: 8%;
-      }
-      .col-supplier {
-        width: 15%;
-      }
-      .col-name {
-        width: 40%;
-      }
-      .col-unit {
-        width: 8%;
-      }
-    </style>
-  </head>
-  <body>
-    <h1>品目マスタ</h1>
+{% extends "base.html" %}
 
-    <p>
-      <a href="{{ url_for('index') }}">← メニューへ戻る</a> |
-      <a href="{{ url_for('new_purchase') }}">仕入れ入力</a> |
-      <a href="{{ url_for('purchase_report') }}">仕入れ照会</a>
-    </p>
+{% block title %}{{ t("items.master.title") }}{% endblock %}
 
-    {% with messages = get_flashed_messages() %} {% if messages %}
-    <div class="flash">
-      {% for msg in messages %}
-      <div>{{ msg }}</div>
-      {% endfor %}
-    </div>
-    {% endif %} {% endwith %}
+{% block content %}
 
-    <!-- 登録フォーム -->
-    <form method="post" action="{{ url_for('items_master') }}">
-      <div>
-        <label>仕入先</label>
-        <select name="supplier_id" required>
-          <option value="">--選択--</option>
-          {% for sup in suppliers %}
-          <option value="{{ sup['id'] }}">
-            {{ sup['code'] }} : {{ sup['name'] }}
-          </option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div style="margin-top: 6px">
-        <label>品名</label>
-        <input type="text" name="name" size="40" required />
-      </div>
-
-      <div style="margin-top: 6px">
-        <label>ケース入数</label>
-        <input
-          type="number"
-          name="unit"
-          min="0"
-          step="1"
-          style="width: 80px; text-align: right"
-        />
-        <span style="font-size: 11px; color: #666"
-          >（数量の自動入力に使用）</span
-        >
-      </div>
-
-      <!-- ★ 追加：温度帯 -->
-      <div style="margin-top: 6px">
-        <label>温度帯</label>
-        <select name="temp_zone">
-          <option value="">--選択--</option>
-          <option value="冷凍">冷凍</option>
-          <option value="冷蔵">冷蔵</option>
-          <option value="常温">常温</option>
-          <option value="その他">その他</option>
-        </select>
-      </div>
-
-      <!-- ★ 追加：内製フラグ -->
-      <div style="margin-top: 6px">
-        <label>内製</label>
-        <input type="checkbox" name="is_internal" value="1" />
-        <span style="font-size: 11px; color: #666">
-          自社加工品の場合チェック
-        </span>
-      </div>
-
-      <button type="submit">登録</button>
-    </form>
-
-    <!-- 一覧 -->
-    <h2>登録済み品目</h2>
-    {% if items %}
-    <table>
-      <thead>
-        <tr>
-          <th class="col-code">コード</th>
-          <th class="col-supplier">仕入先</th>
-          <th class="col-name">品名</th>
-          <th class="col-unit">温度帯</th>
-          <th class="right col-unit">ケース入数</th>
-          <th class="col-unit">内製</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in items %}
-        <tr>
-          <td>
-            <a href="{{ url_for('edit_item', item_id=row['id']) }}">
-              {{ row["code"] }}
-            </a>
-          </td>
-          <td>{{ row["supplier_name"] or "" }}</td>
-          <td>{{ row["name"] }}</td>
-          <td>{{ row["temp_zone"] or "" }}</td>
-          <td class="right">
-            {% if row["unit"] is not none %} {{ row["unit"] }} {% endif %}
-          </td>
-          <td>{% if row["is_internal"] == 1 %} ◯ {% endif %}</td>
-        </tr>
+  <h3>{{ t("items.new.title") }}</h3>
+  <form method="post">
+    <div>
+      <label>{{ t("form.supplier") }}：</label>
+      <select name="supplier_id" required>
+        <option value="">{{ t("common.select") }}</option>
+        {% for s in suppliers %}
+          <option value="{{ s.id }}">{{ s.code }} {{ s.name }}</option>
         {% endfor %}
-      </tbody>
-    </table>
-    {% else %}
-    <p>まだ品目が登録されていません。</p>
-    {% endif %}
-  </body>
-</html>
+      </select>
+    </div>
+
+    <div style="margin-top: 4px;">
+      <label>{{ t("items.name") }}：</label>
+      <input type="text" name="name" size="30" required>
+    </div>
+
+    <div style="margin-top: 4px;">
+      <label>{{ t("items.case_size") }}：</label>
+      <input type="text" name="unit" size="6">
+    </div>
+
+    <div style="margin-top: 4px;">
+      <label>{{ t("items.temp_zone") }}：</label>
+      <select name="temp_zone">
+        <option value="">{{ t("common.unset") }}</option>
+        <option value="冷凍">冷凍</option>
+        <option value="冷蔵">冷蔵</option>
+        <option value="常温">常温</option>
+        <option value="その他">その他</option>
+      </select>
+    </div>
+
+    <div style="margin-top: 4px;">
+      <label>
+        <input type="checkbox" name="is_internal" value="1">
+        {{ t("items.is_internal") }}
+      </label>
+    </div>
+
+    <div style="margin-top: 8px;">
+      <button type="submit">{{ t("common.create") }}</button>
+    </div>
+  </form>
+
+  <hr>
+
+  <h3>{{ t("items.list.title") }}</h3>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>{{ t("items.code") }}</th>
+        <th>{{ t("items.name") }}</th>
+        <th>{{ t("form.supplier") }}</th>
+        <th>{{ t("items.case_size") }}</th>
+        <th>{{ t("items.temp_zone") }}</th>
+        <th>{{ t("items.is_internal") }}</th>
+        <th>{{ t("common.edit") }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for i in items %}
+        <tr>
+          <td>{{ i.id }}</td>
+          <td>{{ i.code }}</td>
+          <td>{{ i.name }}</td>
+          <td>{{ i.supplier_name }}</td>
+          <td style="text-align:right;">{{ i.unit or '' }}</td>
+          <td>{{ i.temp_zone or '' }}</td>
+          <td>{% if i.is_internal %}◯{% endif %}</td>
+          <td>
+            <a href="{{ url_for('edit_item', item_id=i.id) }}">{{ t("common.edit") }}</a>
+          </td>
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="8">{{ t("items.empty") }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

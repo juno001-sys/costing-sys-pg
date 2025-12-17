@@ -1,0 +1,846 @@
+{% extends "base.html" %}
+
+{% block title %}仕入れ（納品書）入力{% endblock %}
+
+{% block head_extra %}
+<style>
+  /* 金額欄は「表示専用」っぽく */
+  .amount-display {
+    border: none;
+    background: transparent;
+    text-align: right;
+    width: 120px;
+    padding-right: 4px;
+  }
+  .amount-display:focus {
+    outline: none;
+  }
+  /* 合計セル */
+  #total-amount-cell {
+    font-weight: bold;
+  }
+ 
+.item-combo{ position:relative; }
+.item-search{ width:210px; }
+.item-suggest{
+  position:absolute; z-index:1000;
+  top:100%; left:0; right:0;
+  max-height:260px; overflow:auto;
+  border:1px solid #ccc; background:#fff;
+  box-shadow:0 6px 16px rgba(0,0,0,.12);
+}
+.item-suggest .opt{
+  padding:6px 8px; cursor:pointer;
+  display:flex; gap:8px;
+}
+.item-suggest .opt.active{ background:#eef; }
+.item-suggest .code{ min-width:56px; font-weight:600; }
+.item-suggest .meta{ margin-left:auto; opacity:.65; font-size:12px; }
+
+.item-suggestions[hidden] { display: none; }
+.item-suggestions div {
+  padding: 6px 8px;
+  cursor: pointer;
+}
+
+.item-suggestions div:hover,
+.item-suggestions .active {
+  background: #e6f0ff;
+}
+
+
+.item-suggestions {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 2px);       /* dropdown just under the input */
+  width: 100%;
+  box-sizing: border-box;
+
+  z-index: 1000;
+  background: #fff;
+  border: 1px solid #ccc;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 2px 0;
+}
+
+.item-suggestions[hidden] { display: none; }
+  .item-suggest-item {
+    padding: 6px 8px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .item-suggest-item.active {
+    background: #e6f0ff;
+  }  
+
+ .item-cell {
+  position: relative;
+  padding-right: 8px;          /* optional: small breathing room */
+}
+
+.item-autocomplete {
+  width: 100%;
+  box-sizing: border-box;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<h2>仕入れ（納品書）入力</h2>
+
+<form method="post" id="purchase-form">
+<input type="hidden" id="focus_after_reload" name="focus_after_reload" value="">
+  <!-- 伝票ヘッダー -->
+    <div style="margin-bottom: 12px;">
+  <label style="margin-right: 16px;">
+    <span class="field-label">店舗：</span>
+    <select name="store_id"
+        id="store_id"
+        onchange="document.getElementById('focus_after_reload').value='supplier'; this.form.submit();">
+      <option value="">（店舗を選択）</option>
+      {% for st in stores %}
+        <option value="{{ st.id }}"
+          {% if selected_store_id == st.id %}selected{% endif %}>
+          {{ st.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </label>
+</div>
+  <div style="margin-bottom: 12px;">
+    <label style="margin-right: 16px;">
+      <span class="field-label">仕入先：</span>
+      <select name="supplier_id" id="supplier_id" required>
+        <option value="">（仕入先を選択）</option>
+        {% for sp in suppliers %}
+          <option value="{{ sp.id }}">{{ sp.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>
+      <span class="field-label">納品日：</span>
+      <input type="date" name="delivery_date" id="delivery_date" required />
+    </label>
+  </div>
+  <!-- 明細テーブル -->
+  <input type="hidden" id="row_count" name="row_count" value="8">
+
+  <table id="items-table" class="monthly-table">
+    <colgroup>
+  <col style="width:60px;">
+  <col style="width:360px;">  <!-- 品目 -->
+  <col style="width:120px;">
+  <col style="width:140px;">
+  <col style="width:140px;">
+  <col style="width:70px;">
+</colgroup>
+    <thead>
+      <tr>
+        <th style="width:40px;">No.</th>
+        <th style="width:320px;">品目</th>
+        <th class="num" style="width:90px;">数量</th>
+        <th class="num" style="width:110px;">単価</th>
+        <th class="num" style="width:120px;">金額</th>
+        <th style="width:50px;">削除</th>
+      </tr>
+    </thead>
+
+    <tbody id="item-rows">
+      {% for i in range(1, 9) %}
+      <tr>
+        <td class="row-no">{{ i }}</td>
+            
+      <td class="item-cell">
+        <input type="text"
+               class="item-autocomplete nav-input"
+               data-col="0"
+               placeholder="品名検索"
+               autocomplete="off"
+               >
+      
+        <!-- value actually submitted -->
+        <input type="hidden"
+               name="item_id_{{ i }}"
+               class="item-id">
+      
+        <div class="item-suggestions" hidden></div>
+      </td>
+        <td>
+  <input type="text"
+         name="quantity_{{ i }}"
+         class="num qty-input nav-input"
+         data-col="1"
+         style="width:80px;">
+</td>
+        <td>
+          <input type="text"
+                 name="unit_price_{{ i }}"
+                 class="num price-input nav-input"
+                 data-col="2"
+                 style="width:100px;">
+        </td>
+
+        <td>
+          <input type="text"
+                 name="amount_display_{{ i }}"
+                 class="amount-display"
+                 readonly
+                 tabindex="-1">
+        </td>
+
+        <td>
+          <button type="button" class="delete-row">✖</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+
+    <!-- 合計行 -->
+        <tfoot>
+      <tr class="total-row">
+        <td colspan="4" class="num">合計</td>
+        <td class="num" id="total_amount_display"></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <button type="button" id="add-row-btn" style="margin-top:12px;">
+    ＋ 行を追加
+  </button>
+
+  <div style="margin-top:16px;">
+    <button type="submit">登録</button>
+  </div>
+
+</form>
+
+<hr style="margin:32px 0;">
+
+
+<!-- ============================
+     直近50件（既存）
+============================ -->
+<h2>直近 50 件</h2>
+
+<form method="get" style="margin-bottom: 12px;">
+  <label style="margin-right: 12px;">
+    店舗：
+    <select name="store_id">
+      <option value="">（全店舗）</option>
+      {% for s in stores %}
+        <option value="{{ s.id }}"
+                {% if selected_store_id == s.id %}selected{% endif %}>
+          {{ s.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <label style="margin-right: 12px;">
+    期間：
+    <input type="date" name="from_date" value="{{ from_date or '' }}">
+    〜
+    <input type="date" name="to_date" value="{{ to_date or '' }}">
+  </label>
+
+  <label style="margin-right: 12px;">
+    キーワード：
+    <input type="text" name="q" value="{{ search_q or '' }}">
+  </label>
+
+  <button type="submit">検索</button>
+  <a href="{{ url_for('new_purchase', clear='1', store_id=selected_store_id) }}">
+    条件クリア
+  </a>
+</form>
+
+<table class="monthly-table">
+  <thead>
+    <tr>
+      <th>納品日</th>
+      <th>仕入先</th>
+      <th>品目</th>
+      <th class="num">数量</th>
+      <th class="num">単価</th>
+      <th class="num">金額</th>
+      <th>編集</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in purchases %}
+    <tr>
+      <td>{{ p.delivery_date }}</td>
+      <td>{{ p.supplier_name }}</td>
+      <td>{{ p.item_name }}</td>
+      <td class="num">{{ "{:,}".format(p.quantity) }}</td>
+      <td class="num">{{ "{:,}".format(p.unit_price) }}</td>
+      <td class="num">{{ "{:,}".format(p.amount) }}</td>
+      <td><a href="{{ url_for('edit_purchase', purchase_id=p.id) }}">編集</a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}
+
+
+{% block body_extra %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const supplierSelect = document.getElementById("supplier_id");
+  const tbody = document.getElementById("item-rows");
+
+  let baseItems = [];
+
+
+    const storeSelect = document.getElementById("store_id");
+  const dateInput   = document.getElementById("delivery_date");
+  const focusHidden = document.getElementById("focus_after_reload");
+
+  function focusFirstItemCell() {
+    const first = tbody.querySelector(".item-autocomplete");
+    if (first) first.focus();
+  }
+
+  // -------------------------------
+// Restore focus after refresh
+// -------------------------------
+let focused = false;
+
+const nextFocus = sessionStorage.getItem("nextFocus");
+if (nextFocus) {
+  sessionStorage.removeItem("nextFocus");
+
+  setTimeout(() => {
+    if (nextFocus === "supplier" && supplierSelect) supplierSelect.focus();
+    else if (nextFocus === "date" && dateInput) dateInput.focus();
+    else if (nextFocus === "firstItem") focusFirstItemCell();
+  }, 0);
+
+  focused = true;
+}
+
+// Fallback: hidden input (only if sessionStorage didn't do it)
+if (!focused) {
+  const focusAfter = document.getElementById("focus_after_reload")?.value;
+
+  if (focusAfter === "supplier") {
+    document.getElementById("supplier_id")?.focus();
+  } else {
+    document.getElementById("store_id")?.focus();
+  }
+}
+  // -------------------------------
+  // Enter key = move forward in header
+  // -------------------------------
+  function moveFocusByEnter(el, nextFn) {
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();  // stop form submit
+        nextFn();
+      }
+    });
+  }
+
+  // store -> supplier
+  if (storeSelect && supplierSelect) {
+    moveFocusByEnter(storeSelect, () => supplierSelect.focus());
+
+    // store change triggers refresh (and keeps focus on supplier after reload)
+    storeSelect.addEventListener("change", () => {
+      sessionStorage.setItem("nextFocus", "supplier");
+      // keep GET behavior by reloading with ?store_id=...
+      const url = new URL(window.location.href);
+      url.searchParams.set("store_id", storeSelect.value || "");
+      window.location.href = url.toString();
+    });
+  }
+
+  // supplier -> date
+  if (supplierSelect && dateInput) {
+    moveFocusByEnter(supplierSelect, () => dateInput.focus());
+  }
+
+  // date -> first item cell
+  if (dateInput) {
+    moveFocusByEnter(dateInput, () => focusFirstItemCell());
+  }
+  /* ===============================
+     Load items by supplier
+  =============================== */
+  async function loadItems(supplierId) {
+    baseItems = [];
+    if (!supplierId) return;
+
+    try {
+      const resp = await fetch(`/api/items/by_supplier/${supplierId}`);
+      const data = await resp.json();
+      baseItems = Array.isArray(data) ? data : [];
+      // console.log("Loaded items:", baseItems.length);
+    } catch (e) {
+      baseItems = [];
+      console.error("Failed to load items:", e);
+    }
+  }
+
+  if (supplierSelect) {
+    if (supplierSelect.value) loadItems(supplierSelect.value);
+
+    supplierSelect.addEventListener("change", (e) => {
+      loadItems(e.target.value);
+
+      // Optional: clear current inputs when supplier changes
+      tbody.querySelectorAll(".item-autocomplete").forEach(inp => inp.value = "");
+      tbody.querySelectorAll(".item-id").forEach(h => h.value = "");
+      tbody.querySelectorAll(".item-suggestions").forEach(box => {
+        box.hidden = true;
+        box.innerHTML = "";
+      });
+    });
+  }
+
+  /* ===============================
+     Helpers
+  =============================== */
+  function getText(it) {
+  return (it.name || "").trim();
+}
+  function closeBox(box) {
+    box.hidden = true;
+    box.innerHTML = "";
+  }
+
+  function openBox(box) {
+    box.hidden = false;
+  }
+
+  function setActive(items, index) {
+    items.forEach(el => el.classList.remove("active"));
+    if (items[index]) {
+      items[index].classList.add("active");
+      items[index].scrollIntoView({ block: "nearest" });
+    }
+  }
+
+  function getCellElements(input) {
+    const cell = input.closest(".item-cell");
+    if (!cell) return {};
+    return {
+      cell,
+      hidden: cell.querySelector(".item-id"),
+      box: cell.querySelector(".item-suggestions"),
+    };
+  }
+
+  function buildSuggestions(input, hidden, box, forceOpen = false) {
+    const q = (input.value || "").trim().toLowerCase();
+    box.innerHTML = "";
+
+    const shouldShow = forceOpen || q.length > 0;
+    if (!shouldShow || baseItems.length === 0) {
+      closeBox(box);
+      return;
+    }
+
+    const matched = baseItems
+      .filter(it => {
+        const text = getText(it).toLowerCase();
+        return forceOpen ? true : text.includes(q);
+      })
+      .slice(0, 30);
+
+    if (matched.length === 0) {
+      closeBox(box);
+      return;
+    }
+
+    matched.forEach((it) => {
+      const div = document.createElement("div");
+      div.className = "item-suggest-item";
+      div.textContent = getText(it);
+      div.dataset.id = it.id;
+      div.dataset.unit = (it.unit ?? "").toString();
+
+      div.addEventListener("mousedown", (ev) => {
+        ev.preventDefault();
+        selectItem(input, hidden, box, it);
+      });
+
+      box.appendChild(div);
+    });
+
+    openBox(box);
+    const items = Array.from(box.querySelectorAll(".item-suggest-item"));
+    if (items.length > 0) setActive(items, 0);
+  }
+
+  function selectItem(input, hidden, box, item) {
+    input.value = getText(item);
+    hidden.value = item.id;
+    closeBox(box);
+
+    const tr = input.closest("tr");
+    const qty = tr ? tr.querySelector(".qty-input") : null;
+    if (qty && !qty.value && item.unit != null && String(item.unit) !== "") {
+      qty.value = item.unit;
+    }
+    if (qty) qty.focus();
+  }
+
+  /* ===============================
+     Typing → filter suggestions
+  =============================== */
+  tbody.addEventListener("input", (e) => {
+    const input = e.target;
+    if (!input.classList.contains("item-autocomplete")) return;
+
+    const { hidden, box } = getCellElements(input);
+    if (!hidden || !box) return;
+
+    hidden.value = "";
+    buildSuggestions(input, hidden, box, false);
+  });
+
+  /* ===============================
+     Focus → open top list (optional)
+  =============================== */
+  tbody.addEventListener("focusin", (e) => {
+    const input = e.target;
+    if (!input.classList.contains("item-autocomplete")) return;
+
+    const { hidden, box } = getCellElements(input);
+    if (!hidden || !box) return;
+
+    buildSuggestions(input, hidden, box, true);
+  });
+
+  /* ===============================
+     Arrow/Enter inside dropdown
+  =============================== */
+  tbody.addEventListener("keydown", (e) => {
+    const input = e.target;
+    if (!input.classList.contains("item-autocomplete")) return;
+
+    const { hidden, box } = getCellElements(input);
+    if (!hidden || !box) return;
+
+    const isOpen = !box.hidden;
+
+    // ArrowDown: open or move
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!isOpen) {
+        buildSuggestions(input, hidden, box, true);
+        return;
+      }
+
+      const list = Array.from(box.querySelectorAll(".item-suggest-item"));
+      let idx = list.findIndex(el => el.classList.contains("active"));
+      idx = (idx < 0) ? 0 : Math.min(idx + 1, list.length - 1);
+      setActive(list, idx);
+      return;
+    }
+
+    // ArrowUp: move (only when open)
+    if (e.key === "ArrowUp" && isOpen) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const list = Array.from(box.querySelectorAll(".item-suggest-item"));
+      let idx = list.findIndex(el => el.classList.contains("active"));
+      idx = (idx < 0) ? 0 : Math.max(idx - 1, 0);
+      setActive(list, idx);
+      return;
+    }
+
+    // Enter selects (only when open)
+    if (e.key === "Enter" && isOpen) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const list = Array.from(box.querySelectorAll(".item-suggest-item"));
+      const idx = list.findIndex(el => el.classList.contains("active"));
+      if (idx >= 0) {
+        const id = list[idx].dataset.id || "";
+        const unit = list[idx].dataset.unit || "";
+        const text = list[idx].textContent || "";
+
+        input.value = text;
+        hidden.value = id;
+        closeBox(box);
+
+        const tr = input.closest("tr");
+        const qty = tr ? tr.querySelector(".qty-input") : null;
+        if (qty && !qty.value && unit) qty.value = unit;
+        if (qty) qty.focus();
+      }
+      return;
+    }
+
+    // Escape closes
+    if (e.key === "Escape" && isOpen) {
+      e.preventDefault();
+      e.stopPropagation();
+      closeBox(box);
+      return;
+    }
+  });
+
+  /* ===============================
+     Click outside cell → close
+  =============================== */
+  document.addEventListener("click", (e) => {
+    document.querySelectorAll(".item-cell").forEach((cell) => {
+      const box = cell.querySelector(".item-suggestions");
+      if (!box) return;
+      if (!cell.contains(e.target)) closeBox(box);
+    });
+  });
+});
+/* ===============================
+   STEP 1: Auto calculation ONLY (safe / collision-proof)
+=============================== */
+const calcTbody = document.getElementById("item-rows");
+
+function calc_parseIntSafe(v) {
+  if (!v) return 0;
+  return parseInt(String(v).replace(/,/g, ""), 10) || 0;
+}
+
+function calc_recalcRow(tr) {
+  const qty   = tr.querySelector(".qty-input");
+  const price = tr.querySelector(".price-input");
+  const amt   = tr.querySelector(".amount-display");
+  if (!qty || !price || !amt) return;
+
+  const total = calc_parseIntSafe(qty.value) * calc_parseIntSafe(price.value);
+  amt.value = total ? total.toLocaleString("ja-JP") : "";
+}
+
+function calc_recalcAll() {
+  if (!calcTbody) return;
+
+  calcTbody.querySelectorAll("tr").forEach(calc_recalcRow);
+
+  const totalCell = document.getElementById("total_amount_display");
+  if (!totalCell) return;
+
+  let sum = 0;
+  document.querySelectorAll(".amount-display").forEach(el => {
+    sum += calc_parseIntSafe(el.value);
+  });
+  totalCell.textContent = sum ? sum.toLocaleString("ja-JP") : "";
+}
+
+// IMPORTANT: capture=true so other handlers won't block it
+if (calcTbody) {
+  calcTbody.addEventListener(
+    "input",
+    (e) => {
+      if (
+        e.target.classList.contains("qty-input") ||
+        e.target.classList.contains("price-input")
+      ) {
+        const tr = e.target.closest("tr");
+        if (tr) calc_recalcRow(tr);
+        calc_recalcAll();
+      }
+    },
+    true
+  );
+}
+
+// Initial calc (in case values already exist)
+calc_recalcAll();
+
+/* ===============================
+   Step 2 + 5: Delete / Add rows (FIXED)
+=============================== */
+
+const tbody = document.getElementById("item-rows");   // ✅ define tbody
+const rowCountInput = document.getElementById("row_count");
+const addBtn = document.getElementById("add-row-btn");
+
+function renumberRowsAndNames() {
+  if (!tbody) return;
+
+  const rows = Array.from(tbody.querySelectorAll("tr"));
+  rows.forEach((tr, idx) => {
+    const n = idx + 1;
+
+    // row number
+    const noCell = tr.querySelector(".row-no");
+    if (noCell) noCell.textContent = String(n);
+
+    // keep POST loop consistent
+    const itemId = tr.querySelector("input.item-id");
+    if (itemId) itemId.name = `item_id_${n}`;
+
+    const qty = tr.querySelector("input.qty-input");
+    if (qty) qty.name = `quantity_${n}`;
+
+    const price = tr.querySelector("input.price-input");
+    if (price) price.name = `unit_price_${n}`;
+
+    const amount = tr.querySelector("input.amount-display");
+    if (amount) amount.name = `amount_display_${n}`;
+  });
+
+  if (rowCountInput) rowCountInput.value = String(rows.length);
+}
+
+/* ---- Delete row (event delegation) ---- */
+if (tbody) {
+  tbody.addEventListener("click", (e) => {
+    const btn = e.target.closest(".delete-row");
+    if (!btn) return;
+
+    const tr = btn.closest("tr");
+    if (!tr) return;
+
+    tr.remove();
+    renumberRowsAndNames();
+    calc_recalcAll(); // ✅ call Step1 calc directly
+  });
+}
+
+/* ---- Add row ---- */
+if (addBtn && tbody) {
+  addBtn.addEventListener("click", () => {
+    const currentRows = tbody.querySelectorAll("tr").length;
+    if (currentRows >= 30) {
+      alert("これ以上追加できません（上限30行）");
+      return;
+    }
+
+    const newIndex = currentRows + 1;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="row-no">${newIndex}</td>
+
+      <td class="item-cell">
+        <input type="text"
+               class="item-autocomplete nav-input"
+               data-col="0"
+               placeholder="品名検索"
+               autocomplete="off"
+               style="width:100%;">
+        <input type="hidden"
+               name="item_id_${newIndex}"
+               class="item-id">
+        <div class="item-suggestions" hidden></div>
+      </td>
+
+      <td>
+        <input type="text"
+               name="quantity_${newIndex}"
+               class="num qty-input nav-input"
+               data-col="1"
+               style="width:80px;">
+      </td>
+
+      <td>
+        <input type="text"
+               name="unit_price_${newIndex}"
+               class="num price-input nav-input"
+               data-col="2"
+               style="width:100px;">
+      </td>
+
+      <td>
+        <input type="text"
+               name="amount_display_${newIndex}"
+               class="amount-display"
+               readonly
+               tabindex="-1">
+      </td>
+
+      <td>
+        <button type="button" class="delete-row">✖</button>
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+
+    renumberRowsAndNames();
+    calc_recalcAll(); // ✅ recalc total after adding
+  });
+}
+
+// run once at startup
+renumberRowsAndNames();
+calc_recalcAll();  
+
+  /* ===============================
+   Step 3: Enter key = Tab (Shift+Enter = Shift+Tab)
+   - Only for inputs inside the detail table (#item-rows)
+   - Prevents form submit on Enter
+=============================== */
+
+const form = document.getElementById("purchase-form");
+
+function focusNextPrev(el, dir) {
+  // dir: +1 (next) / -1 (prev)
+  const focusables = Array.from(
+    form.querySelectorAll(
+      "#item-rows input, #item-rows select, #item-rows button"
+    )
+  ).filter(node => {
+    // skip readonly/disabled/hidden & skip amount display
+    if (node.disabled) return false;
+    if (node.type === "hidden") return false;
+    if (node.classList && node.classList.contains("amount-display")) return false;
+    return true;
+  });
+
+  const idx = focusables.indexOf(el);
+  if (idx < 0) return;
+
+  const next = focusables[idx + dir];
+  if (next) {
+    next.focus();
+    if (typeof next.select === "function" && next.tagName === "INPUT") {
+      next.select();
+    }
+  }
+}
+
+// Capture phase so Enter won't be stolen by other handlers
+tbody.addEventListener(
+  "keydown",
+  (e) => {
+    // Only handle Enter inside detail rows
+    const el = e.target;
+    if (!el.closest("#item-rows")) return;
+
+    if (e.key === "Enter") {
+      // If autocomplete dropdown is open, let Step4 handle selection later
+      const cell = el.closest(".item-cell");
+      const box = cell ? cell.querySelector(".item-suggestions") : null;
+      const dropdownOpen = box && !box.hidden && box.querySelector(".item-suggest-item");
+
+      if (dropdownOpen) {
+        return; // don't hijack Enter here
+      }
+
+      e.preventDefault(); // prevent form submit
+      e.stopPropagation();
+
+      // Shift+Enter = back
+      focusNextPrev(el, e.shiftKey ? -1 : 1);
+    }
+  },
+  true
+);
+</script>
+{% endblock %}

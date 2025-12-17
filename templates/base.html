@@ -1,71 +1,204 @@
 <!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <title>{% block title %}Kurajika CMS{% endblock %}</title>
+<html lang="{{ lang }}">
+  <head>
+    <meta charset="UTF-8" />
+    <title>{% block title %}TEST Dev{% endblock %}</title>
 
     <style>
-        /* --- 共通デザインここに書けば全ページ反映 --- */
-        body {
-            font-family: "Hiragino Sans", sans-serif;
-            margin: 0;
-            padding: 0 20px 40px;
-            background: #f9f9f9;
-        }
+      /* ============================
+         全体レイアウト / 環境別背景色
+      ============================ */
 
-        header {
-            background: #003366;
-            color: white;
-            padding: 10px 20px;
-            margin: 0 -20px 20px;
-        }
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        margin: 40px;
+      }
 
-        .env-banner {
-            background: {% if config.ENV == "production" %} #0066cc {% else %} #cc8800 {% endif %};
-            padding: 5px 10px;
-            color: white;
-            font-size: 14px;
-        }
+      body.env-dev { background: #f5fff8; }
+      body.env-mail { background: #fff8f0; }
+      body.env-prod { background: #ffffff; }
 
-        .version {
-            font-size: 12px;
-            color: #ddd;
-            float: right;
-        }
+      h1 { margin-bottom: 24px; }
 
-        footer {
-            text-align: center;
-            margin-top: 40px;
-            font-size: 12px;
-            color: #777;
-        }
+      /* ============================
+         Top bar (language switch)
+      ============================ */
+      .top-bar {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      .top-bar select {
+        font-size: 14px;
+      }
+
+      /* ============================
+         横タブメニュー
+      ============================ */
+
+      .nav-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 18px;
+        list-style: none;
+        padding: 0;
+        margin: 0 0 30px 0;
+        border-bottom: 2px solid #ddd;
+      }
+
+      .nav-tabs a {
+        padding: 8px 14px;
+        text-decoration: none;
+        color: #333;
+        font-weight: 600;
+        border-radius: 6px 6px 0 0;
+      }
+
+      .nav-tabs a:hover { background: #f0f0f0; }
+
+      .nav-tabs a.active {
+        background: #f0f4ff;
+        border-bottom: 2px solid #f0f4ff;
+      }
+
+      /* ============================
+         flash メッセージ
+      ============================ */
+
+      .flash {
+        background: #ffeebb;
+        border: 1px solid #e0c97f;
+        padding: 10px 16px;
+        margin: 20px 0;
+        border-radius: 6px;
+      }
+
+      /* ============================
+         テーブル共通
+      ============================ */
+
+      table {
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+
+      table th, table td {
+        padding: 6px 10px;
+        border: 1px solid #ddd;
+      }
+
+      table thead tr {
+        background: #f0f4ff;
+        font-weight: bold;
+      }
+
+      table tbody tr:nth-child(even) {
+        background: #f7f7f7;
+      }
+
+      table tbody tr:hover {
+        background: #e8f2ff;
+      }
+
+      td.num, input.num { text-align: right; }
     </style>
 
-    {% block head %}{% endblock %}
-</head>
+    <!-- 共通JS（数値正規化） -->
+    <script>
+      window.KURAJIKA = window.KURAJIKA || {};
 
-<body>
+      window.KURAJIKA.toHalfWidthNum = function (str) {
+        if (str == null) return "";
+        return String(str)
+          .replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+          .replace(/[，,]/g, "")
+          .replace(/[^\d\-]/g, "");
+      };
 
-<header>
-    <strong>Kurajika CMS</strong>
-    <span class="version">v {{ g.app_version }}</span>
-</header>
+      document.addEventListener("input", function (e) {
+        if (e.target.matches("input.num")) {
+          e.target.value = window.KURAJIKA.toHalfWidthNum(e.target.value);
+        }
+      });
+    </script>
 
-<div class="env-banner">
-    {% if config.ENV == "production" %}
-        本番環境
-    {% else %}
-        テスト環境
-    {% endif %}
+    {% block head_extra %}{% endblock %}
+  </head>
+
+  <body
+    class="
+      {% if config.APP_ENV == 'prod' %}env-prod
+      {% elif config.APP_ENV == 'mail' %}env-mail
+      {% else %}env-dev
+      {% endif %}
+    "
+  >
+    <!-- language switch (operator-controlled) -->
+    <div class="top-bar">
+      <form method="post" action="{{ url_for('set_lang') }}">
+        <input type="hidden" name="next" value="{{ request.full_path }}">
+        <select name="lang" onchange="this.form.submit()">
+          {% for code in supported_langs %}
+            <option value="{{ code }}" {% if lang == code %}selected{% endif %}>
+              {{ code.upper() }}
+            </option>
+          {% endfor %}
+        </select>
+      </form>
+    </div>
+
+    <h1>倉島事業開発 CMS – Postgres Dev</h1>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="flash">
+          {% for msg in messages %}
+            <div>{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Navigation -->
+    <nav>
+      <ul class="nav-tabs">
+        <li><a href="{{ url_for('new_purchase') }}" class="{% if request.endpoint in ['new_purchase','edit_purchase'] %}active{% endif %}">
+          {{ t("nav.purchase_form") }}</a></li>
+
+        <li><a href="{{ url_for('inventory_count') }}" class="{% if request.endpoint == 'inventory_count' %}active{% endif %}">
+          {{ t("nav.inventory_count") }}</a></li>
+
+        <li><a href="{{ url_for('reports.purchase_report') }}">
+          {{ t("nav.purchase_report") }}</a></li>
+
+        <li><a href="{{ url_for('reports.usage_report') }}">
+          {{ t("nav.usage_report") }}</a></li>
+
+        <li><a href="{{ url_for('reports.cost_report') }}">
+          {{ t("nav.cost_report") }}</a></li>
+
+        <li><a href="{{ url_for('suppliers_master') }}">
+          {{ t("nav.suppliers_master") }}</a></li>
+
+        <li><a href="{{ url_for('items_master') }}">
+          {{ t("nav.items_master") }}</a></li>
+
+        <li><a href="{{ url_for('stores_master') }}">
+          {{ t("nav.stores_master") }}</a></li>
+      </ul>
+    </nav>
+
+    {% block content %}{% endblock %}
+    {% block body_extra %}{% endblock %}
+  
+  <footer>
+<div style="margin-top:20px; font-size:12px; opacity:0.6;">
+  env={{ env }} / version={{ g.app_version }}
 </div>
-
-{% block content %}
-<!-- 各ページがここにコンテンツを挿入 -->
-{% endblock %}
-
-<footer>
-    &copy; 2025 Kurajika Inc.
-</footer>
-
-</body>
+    
+  </footer>
+  </body>
 </html>

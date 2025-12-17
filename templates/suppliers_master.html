@@ -1,107 +1,76 @@
-<!DOCTYPE html>
-<html lang="ja">
-  <head>
-    <meta charset="utf-8" />
-    <title>仕入先マスタ</title>
-    <style>
-      body {
-        font-family: system-ui, sans-serif;
-        margin: 20px;
-      }
-      table {
-        border-collapse: collapse;
-        width: 100%;
-        margin-top: 10px;
-      }
-      th,
-      td {
-        border: 1px solid #ccc;
-        padding: 4px 6px;
-        font-size: 13px;
-      }
-      th {
-        background: #f5f5f5;
-      }
-      input {
-        padding: 2px 4px;
-        font-size: 13px;
-      }
-      .flash {
-        color: darkred;
-        margin-bottom: 10px;
-      }
-    </style>
-  </head>
-  <body>
-    <h1>仕入先マスタ</h1>
+{% extends "base.html" %}
 
-    <!-- 共通ナビ -->
-    <p>
-      <a href="{{ url_for('index') }}">ホーム</a> |
-      <a href="{{ url_for('new_purchase') }}">取引入力</a> |
-      <a href="{{ url_for('items_master') }}">品目マスタ</a>
-    </p>
-    <hr />
+{% block title %}{{ t("suppliers.master.title") }}{% endblock %}
 
-    {% with messages = get_flashed_messages() %} {% if messages %}
-    <div class="flash">
-      {% for msg in messages %}
-      <div>{{ msg }}</div>
-      {% endfor %}
+{% block content %}
+
+  <h3>{{ t("suppliers.new.title") }}</h3>
+  <form method="post">
+    <div>
+      <label>{{ t("suppliers.code") }}：</label>
+      <input type="text" name="code" size="6">
     </div>
-    {% endif %} {% endwith %}
 
-    <form method="post" action="{{ url_for('suppliers_master') }}">
-      <fieldset>
-        <legend>新規登録</legend>
-        <p>
-          コード:
-          <input type="text" name="code" required style="width: 80px" />
-          仕入先名:
-          <input type="text" name="name" required style="width: 200px" />
-        </p>
-        <p>
-          電話:
-          <input type="text" name="phone" style="width: 140px" />
-          メール:
-          <input type="text" name="email" style="width: 200px" />
-        </p>
-        <p>
-          住所:
-          <input type="text" name="address" style="width: 400px" />
-        </p>
-        <p>
-          <button type="submit">登録</button>
-        </p>
-      </fieldset>
-    </form>
+    <div style="margin-top: 4px;">
+      <label>{{ t("suppliers.name") }}：</label>
+      <input type="text" name="name" size="30" required>
+    </div>
 
-    <h2>登録済み仕入先</h2>
-    <table>
-      <thead>
+    <div style="margin-top: 4px;">
+      <label>{{ t("suppliers.phone") }}：</label>
+      <input type="text" name="phone" size="20">
+    </div>
+
+    <div style="margin-top: 4px;">
+      <label>{{ t("suppliers.email") }}：</label>
+      <input type="email" name="email" size="30">
+    </div>
+
+    <div style="margin-top: 4px;">
+      <label>{{ t("suppliers.address") }}：</label>
+      <input type="text" name="address" size="50">
+    </div>
+
+    <div style="margin-top: 8px;">
+      <button type="submit">{{ t("common.create") }}</button>
+    </div>
+  </form>
+
+  <hr>
+
+  <h3>{{ t("suppliers.list.title") }}</h3>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>{{ t("common.code") }}</th>
+        <th>{{ t("suppliers.name") }}</th>
+        <th>{{ t("suppliers.phone") }}</th>
+        <th>{{ t("suppliers.email") }}</th>
+        <th>{{ t("suppliers.address") }}</th>
+        <th>{{ t("common.edit") }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in suppliers %}
         <tr>
-          <th>コード</th>
-          <th>仕入先名</th>
-          <th>電話</th>
-          <th>メール</th>
-          <th>住所</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in suppliers %}
-        <tr>
+          <td>{{ s.id }}</td>
+          <td>{{ s.code }}</td>
+          <td>{{ s.name }}</td>
+          <td>{{ s.phone }}</td>
+          <td>{{ s.email }}</td>
+          <td>{{ s.address }}</td>
           <td>
-            <a href="{{ url_for('edit_supplier', supplier_id=row['id']) }}">
-              {{ row["code"] }}
+            <a href="{{ url_for('edit_supplier', supplier_id=s.id) }}">
+              {{ t("common.edit") }}
             </a>
           </td>
-          <td>{{ row["name"] }}</td>
-          <td>{{ row["phone"] }}</td>
-          <td>{{ row["email"] }}</td>
-          <td>{{ row["address"] }}</td>
         </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </body>
-</html>
+      {% else %}
+        <tr>
+          <td colspan="7">{{ t("suppliers.empty") }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

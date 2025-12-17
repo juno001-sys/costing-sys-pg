@@ -1,293 +1,72 @@
-<!DOCTYPE html>
-<html lang="ja">
-  <head>
-    <meta charset="utf-8" />
-    <title>品目別月次推移（{{ supplier_name }}）</title>
-    <style>
-      body {
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-          sans-serif;
-        margin: 20px;
-      }
-      h1 {
-        font-size: 22px;
-        margin-bottom: 8px;
-      }
-      a {
-        text-decoration: none;
-        color: #0366d6;
-      }
-      a:hover {
-        text-decoration: underline;
-      }
-      .meta {
-        font-size: 12px;
-        color: #555;
-        margin-bottom: 8px;
-      }
-      .flash {
-        color: darkred;
-        margin-bottom: 10px;
-      }
+{% extends "base.html" %}
 
-      table {
-        border-collapse: collapse;
-        width: 100%;
-        font-size: 11px;
-        margin-top: 12px;
-      }
-      th,
-      td {
-        border: 1px solid #ccc;
-        padding: 3px 4px;
-      }
-      th {
-        background: #f5f5f5;
-        white-space: nowrap;
-      }
-      th.right,
-      td.right {
-        text-align: right;
-      }
+{% block title %}{{ t("report.purchase_supplier.title", "仕入れ照会") }}（{{ supplier_name }}）{% endblock %}
 
-      /* 行ごとに色分け */
-      tr.metric-amount td.metric-label {
-        background-color: #e3f0ff;
-        color: #1a4f8a;
-        font-weight: bold;
-      }
-      tr.metric-qty td.metric-label {
-        background-color: #e3f7ec;
-        color: #1d6b3c;
-        font-weight: bold;
-      }
-      tr.metric-unit td.metric-label {
-        background-color: #fff1da;
-        color: #8a5a12;
-        font-weight: bold;
-      }
+{% block content %}
 
-      tr.metric-amount td.metric-value {
-        background-color: #f5f9ff;
-      }
-      tr.metric-qty td.metric-value {
-        background-color: #f3faf5;
-      }
-      tr.metric-unit td.metric-value {
-        background-color: #fffaf0;
-      }
-        tbody tr.group-border td {
-        border-top: 3px solid #444;
-      }
-      tfoot tr th {
-        background: #ddd;
-      }
-      tfoot tr.total-amount {
-        background: #e3f0ff;
-      }
-      tfoot tr.total-qty {
-        background: #e3f7ec;
-      }
-      tfoot tr.total-unit {
-        background: #fff1da;
-      }
-      
-        /* すでに他の style があるところに足すだけでOK */
-        tbody tr.group-border td {
-            border-top: 2px solid #444;
-        }
-
-    </style>
-  </head>
-  <body>
-        <h1>品目別月次推移</h1>
-
-    <p>
-
-  <a href="{{ url_for('index') }}">← ホーム</a> |
-  <a href="{{ url_for('purchase_report') }}">仕入先一覧へ戻る</a>
-
-      |
-      <a href="{{ url_for('new_purchase') }}">仕入れ入力へ</a>
-    </p>
-
-    <!-- ★ 仕入先プルダウン -->
-    <form id="supplier-form" style="margin-bottom: 8px;">
-      <p>
-  <label>
-    仕入先：
-    <select id="supplier-selector">
-      <!-- 0 は「未選択」扱い -->
-      <option value="0"
-        {% if supplier_id == 0 %}selected{% endif %}
-      >--選択--</option>
-
-      {% for sup in suppliers %}
-      <option value="{{ sup.id }}"
-        {% if sup.id == supplier_id %}selected{% endif %}
-      >
-        {{ sup.name }}
-      </option>
+  <form method="get" action="{{ url_for('reports.purchase_report_supplier', supplier_id=supplier_id) }}">
+    <label>{{ t("form.store") }}：</label>
+    <select name="store_id" onchange="this.form.submit()">
+      <option value="">{{ t("common.all") }}</option>
+      {% for s in stores %}
+        <option value="{{ s.id }}" {% if selected_store_id == s.id %}selected{% endif %}>
+          {{ s.name }}
+        </option>
       {% endfor %}
     </select>
-  </label>
+    <noscript><button type="submit">{{ t("form.show") }}</button></noscript>
+  </form>
 
-  {% if selected_store_id %}
-    （店舗：{{ stores|selectattr("id","equalto",selected_store_id)|first.name }}）
-  {% endif %}
-</p>
-    </form>
-    <div class="meta">
-      対象期間：直近13ヶ月（月次） {% if selected_store_id %} ／ 店舗： {% for s
-      in stores %} {% if s["id"] == selected_store_id %} {{ s["name"] }} {%
-      endif %} {% endfor %} {% else %} ／ 店舗：全体 {% endif %}
-    </div>
+  <p style="margin-top: 8px;">
+    {{ t("form.supplier") }}：<strong>{{ supplier_name }}</strong>
+  </p>
 
-    {% with messages = get_flashed_messages() %} {% if messages %}
-    <div class="flash">
-      {% for msg in messages %}
-      <div>{{ msg }}</div>
-      {% endfor %}
-    </div>
-    {% endif %} {% endwith %} {% if item_rows and month_keys %}
-    <table>
-      <thead>
+  <table border="1" cellpadding="4" cellspacing="0" style="margin-top: 8px;">
+    <thead>
+      <tr>
+        <th>{{ t("common.code") }}</th>
+        <th>{{ t("usage.item") }}</th>
+        {% for ym in month_keys %}
+          <th>{{ ym }}<br>{{ t("purchase.amount") }}</th>
+        {% endfor %}
+        <th>{{ t("purchase.total_amount") }}</th>
+        <th>{{ t("purchase.total_qty") }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in item_rows %}
         <tr>
-          <th>品目コード</th>
-          <th>品目名</th>
-          <th>指標</th>
+          <td>{{ it.item_code }}</td>
+          <td>{{ it.item_name }}</td>
           {% for ym in month_keys %}
-          <th class="right">{{ ym }}</th>
+            <td style="text-align:right;">
+              {{ "{:,}".format(it.amount.get(ym, 0)) }}
+            </td>
           {% endfor %}
-          <th class="right">合計／平均</th>
+          <td style="text-align:right;">{{ "{:,}".format(it.total_amount) }}</td>
+          <td style="text-align:right;">{{ "{:,}".format(it.total_qty) }}</td>
         </tr>
-      </thead>
- <tbody>
-  {# 前回の品目コードを保存するための namespace #}
-  {% set ns = namespace(prev_code=None) %}
-
-  {% for row in item_rows %}
-    {# 品目コードが変わったタイミングでグループ境界フラグを立てる #}
-    {% set is_new_group = (ns.prev_code is not none and ns.prev_code != row["item_code"]) %}
-
-    {# ① 金額行 #}
-    <tr class="metric-amount{% if is_new_group %} group-border{% endif %}">
-      <td rowspan="3">{{ row["item_code"] }}</td>
-      <td rowspan="3">{{ row["item_name"] }}</td>
-      <td class="metric-label">金額（円）</td>
-      {% for ym in month_keys %}
-        {% set val = row["amount"][ym] %}
-        <td class="right metric-value">
-          {% if val %} {{ "{:,}".format(val|int) }} {% endif %}
-        </td>
-      {% endfor %}
-      <td class="right metric-value">
-        {% if row["total_amount"] %}
-          {{ "{:,}".format(row["total_amount"]|int) }}
-        {% endif %}
-      </td>
-    </tr>
-
-    {# ② 数量行 #}
-    <tr class="metric-qty">
-      <td class="metric-label">数量</td>
-      {% for ym in month_keys %}
-        {% set val = row["qty"][ym] %}
-        <td class="right metric-value">
-          {% if val %} {{ "{:,}".format(val|int) }} {% endif %}
-        </td>
-      {% endfor %}
-      <td class="right metric-value">
-        {% if row["total_qty"] %}
-          {{ "{:,}".format(row["total_qty"]|int) }}
-        {% endif %}
-      </td>
-    </tr>
-
-    {# ③ 平均単価行 #}
-    <tr class="metric-unit">
-      <td class="metric-label">平均単価（円）</td>
-      {% for ym in month_keys %}
-        {% set val = row["unit_price"][ym] %}
-        <td class="right metric-value">
-          {% if val %} {{ "{:,.1f}".format(val) }} {% endif %}
-        </td>
-      {% endfor %}
-      <td class="right metric-value">
-        {% if row["total_qty"] and row["total_amount"] %}
-          {% set avg = row["total_amount"] / row["total_qty"] %}
-          {{ "{:,.1f}".format(avg) }}
-        {% endif %}
-      </td>
-    </tr>
-
-    {# 次のループのために「今回の品目コード」を保存 #}
-    {% set ns.prev_code = row["item_code"] %}
-  {% endfor %}
-</tbody>
-      <tfoot>
-        <tr class="total-amount">
-          <th colspan="2">月合計</th>
-          <th>金額（円）</th>
-          {% for total in month_totals_amount %}
-          <th class="right">
-            {% if total %} {{ "{:,}".format(total|int) }} {% endif %}
-          </th>
-          {% endfor %}
-          <th></th>
+      {% else %}
+        <tr>
+          <td colspan="{{ month_keys|length + 4 }}">{{ t("common.no_data") }}</td>
         </tr>
-      </tfoot>
-    </table>
-    {% else %}
-    <p>該当するデータがありません。</p>
-    {% endif %}
-        <script>
-      (function () {
-        const sel = document.getElementById("supplier-select");
-        if (!sel) return;
-
-        sel.addEventListener("change", function () {
-          const sid = this.value;
-          if (!sid) return;  // 「--選択--」は無視
-
-          // 現在の URL から store_id を引き継ぐ
-          const url = new URL(window.location.href);
-          const storeId = url.searchParams.get("store_id");
-
-          // ベースとなる URL（supplier_id=0 をダミーにしておいて置換）
-          let base = "{{ url_for('purchase_report_supplier', supplier_id=0) }}";
-          base = base.replace("/0", "/" + encodeURIComponent(sid));
-
-          // store_id が付いていればクエリに引き継ぎ
-          if (storeId) {
-            base += "?store_id=" + encodeURIComponent(storeId);
-          }
-
-          window.location.href = base;
-        });
-      })();
-      
-  document.addEventListener("DOMContentLoaded", function () {
-    const sel = document.getElementById("supplier-selector");
-    if (!sel) return;
-
-    sel.addEventListener("change", function () {
-      const supId = this.value || 0;
-
-      // /purchases/report/supplier/<id> に遷移
-      const url = new URL(
-        window.location.origin + "/purchases/report/supplier/" + supId
-      );
-
-      // 店舗で絞り込み中なら store_id を引き継ぐ
-      {% if selected_store_id %}
-      url.searchParams.set("store_id", "{{ selected_store_id }}");
-      {% endif %}
-
-      window.location.href = url.toString();
-    });
-  });
-
-    </script>
-  </body>
-</html>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <th colspan="2">{{ t("report.monthly_total_amount") }}</th>
+        {% for amt in month_totals_amount %}
+          <th style="text-align:right;">{{ "{:,}".format(amt) }}</th>
+        {% endfor %}
+        <th colspan="2"></th>
+      </tr>
+      <tr>
+        <th colspan="2">{{ t("report.monthly_total_qty") }}</th>
+        {% for qty in month_totals_qty %}
+          <th style="text-align:right;">{{ "{:,}".format(qty) }}</th>
+        {% endfor %}
+        <th colspan="2"></th>
+      </tr>
+    </tfoot>
+  </table>
+{% endblock %}
