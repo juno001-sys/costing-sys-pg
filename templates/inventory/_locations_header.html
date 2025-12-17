@@ -1,30 +1,38 @@
 {# templates/inventory/_locations_header.html #}
 
-<form method="get" class="search-box">
-  <label class="field-label">{{ t("form.store", "__form.store__") }}：</label>
-  <select name="store_id" onchange="this.form.submit()">
-    <option value="">{{ t("common.all_stores", "__common.all_stores__") }}</option>
-    {% for s in stores %}
-      <option value="{{ s.id }}" {% if selected_store_id == s.id %}selected{% endif %}>
-        {{ s.name }}
-      </option>
-    {% endfor %}
-  </select>
-</form>
+<div class="search-box" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+  <form method="get" action="{{ url_for('inventory_locations') }}" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+    <label class="field-label">{{ t("form.store", "__form.store__") }}:</label>
 
-{% if selected_store_id %}
-  <div style="margin:10px 0;">
-    <a href="{{ url_for('inventory_count', store_id=selected_store_id) }}">
-      ← {{ t("nav.inventory_count", "__nav.inventory_count__") }}
-    </a>
-  </div>
+    <select name="store_id" onchange="this.form.submit()">
+      <option value="">{{ t("common.all_stores", "__common.all_stores__") }}</option>
+      {% for s in stores %}
+        <option value="{{ s.id }}" {% if selected_store_id == s.id %}selected{% endif %}>
+          {{ s.name }}
+        </option>
+      {% endfor %}
+    </select>
 
-  <div style="margin:8px 0; display:flex; gap:16px; flex-wrap:wrap;">
-    <a href="{{ url_for('shelves_master', store_id=selected_store_id) }}">
-      {{ t("inventory.shelf_master_open", "__inventory.shelf_master_open__") }}
-    </a>
-    <a href="{{ url_for('zone_master', store_id=selected_store_id) }}">
-      {{ t("inventory.zone_master_open", "__inventory.zone_master_open__") }}
-    </a>
+    <noscript>
+      <button type="submit">{{ t("form.show", "__form.show__") }}</button>
+    </noscript>
+  </form>
+
+  <div style="margin-left:auto; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+    {% if selected_store_id %}
+      <a class="btn" href="{{ url_for('inventory_count', store_id=selected_store_id) }}">
+        {{ t("stores.inventory_count_open", "__stores.inventory_count_open__") }}
+      </a>
+
+      {# use shelf_master (singular) #}
+      <a class="btn" href="{{ url_for('shelf_master', store_id=selected_store_id) }}">
+        {{ t("inventory.shelf_master_open", "__inventory.shelf_master_open__") }}
+      </a>
+
+      {#  This requires you to actually have a Flask endpoint named zone_master #}
+      <a class="btn" href="{{ url_for('zone_master', store_id=selected_store_id) }}">
+        {{ t("inventory.zone_master_open", "__inventory.zone_master_open__") }}
+      </a>
+    {% endif %}
   </div>
-{% endif %}
+</div>
