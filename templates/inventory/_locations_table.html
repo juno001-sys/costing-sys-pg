@@ -1,43 +1,49 @@
 {# templates/inventory/_locations_table.html #}
 
-{% if not selected_store_id %}
-  <p class="muted" style="margin-top:12px;">{{ t("inventory.hint_select_store") }}</p>
-{% elif not items %}
-  <p class="muted" style="margin-top:12px;">{{ t("common.no_data") }}</p>
-{% else %}
-  <table class="locations-table">
-    <thead>
-      <tr>
-        <th style="min-width:320px;">{{ t("inventory.item_name") }}</th>
-        <th style="white-space:nowrap;">{{ t("inventory.temp_zone") }}</th>
-        <th style="white-space:nowrap;">{{ t("inventory.shelf") }}</th>
-      </tr>
-    </thead>
+<table>
+  <thead>
+    <tr>
+      <th>{{ t("inventory.item_name", "__inventory.item_name__") }}</th>
+      <th>{{ t("inventory.temp_zone", "__inventory.temp_zone__") }}</th>
+      <th>{{ t("inventory.shelf", "__inventory.shelf__") }}</th>
+    </tr>
+  </thead>
 
-    <tbody>
-      {% for it in items %}
-        <tr data-item-id="{{ it.item_id }}">
-          <td>{{ it.item_name }}</td>
+  <tbody>
+    {% for it in items %}
+      <tr data-item-id="{{ it.id }}">
+        {# item name (this fixes “name not showing” when the template used wrong key) #}
+        <td>{{ it.name }}</td>
 
-          <td>
-            <select class="temp-zone" data-item-id="{{ it.item_id }}">
-              <option value="">{{ t("common.select") }}</option>
-              {% for z in temp_zones %}
-                <option value="{{ z }}" {% if it.temp_zone == z %}selected{% endif %}>
-                  {{ z }}
+        {#  temp zone dropdown #}
+        <td>
+          <select class="temp-zone" name="temp_zone_{{ it.id }}">
+            <option value="">{{ t("common.select", "__common.select__") }}</option>
+            {% for z in temp_zones %}
+              <option value="{{ z }}" {% if it.temp_zone == z %}selected{% endif %}>
+                {{ z }}
+              </option>
+            {% endfor %}
+          </select>
+        </td>
+
+        {#  shelf dropdown (loaded via JS from /inventory/api/shelves?store_id=...&temp_zone=...) #}
+        <td>
+          <select class="shelf" name="shelf_id_{{ it.id }}">
+            <option value="">{{ t("common.select", "__common.select__") }}</option>
+
+            {# If your backend already provides current_shelves per row, you can render them here.
+               Otherwise JS will repopulate after zone change. #}
+            {% if it.shelf_options %}
+              {% for sh in it.shelf_options %}
+                <option value="{{ sh.id }}" {% if it.shelf_id == sh.id %}selected{% endif %}>
+                  {{ sh.code }}{% if sh.name %} {{ sh.name }}{% endif %}
                 </option>
               {% endfor %}
-            </select>
-          </td>
-
-          <td>
-            <select class="shelf" data-item-id="{{ it.item_id }}">
-              <option value="">{{ t("common.select") }}</option>
-              {# loaded dynamically by locations.js #}
-            </select>
-          </td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-{% endif %}
+            {% endif %}
+          </select>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
