@@ -1,39 +1,30 @@
 {# templates/inventory/_locations_header.html #}
 
-<div class="page-header" style="margin-bottom: 12px;">
+<form method="get" class="search-box">
+  <label class="field-label">{{ t("form.store", "__form.store__") }}：</label>
+  <select name="store_id" onchange="this.form.submit()">
+    <option value="">{{ t("common.all_stores", "__common.all_stores__") }}</option>
+    {% for s in stores %}
+      <option value="{{ s.id }}" {% if selected_store_id == s.id %}selected{% endif %}>
+        {{ s.name }}
+      </option>
+    {% endfor %}
+  </select>
+</form>
 
-  {# Single title only (do NOT print another title in locations.html) #}
-  <h2 style="margin: 0 0 10px 0;">{{ t("stores.inventory_locations_title") }}</h2>
-
-  <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
-    <form method="get" action="{{ url_for('inventory_locations') }}">
-      <label class="field-label">{{ t("form.store") }}:</label>
-      <select name="store_id" onchange="this.form.submit()">
-        <option value="">{{ t("common.select") }}</option>
-        {% for s in stores %}
-          <option value="{{ s.id }}" {% if selected_store_id == s.id %}selected{% endif %}>
-            {{ s.name }}
-          </option>
-        {% endfor %}
-      </select>
-      <noscript><button type="submit">{{ t("form.show") }}</button></noscript>
-    </form>
-
-    {% if selected_store_id %}
-      <a href="{{ url_for('inventory_count', store_id=selected_store_id) }}">
-        ← {{ t("inventory.locations_back") }}
-      </a>
-    {% endif %}
+{% if selected_store_id %}
+  <div style="margin:10px 0;">
+    <a href="{{ url_for('inventory_count', store_id=selected_store_id) }}">
+      ← {{ t("nav.inventory_count", "__nav.inventory_count__") }}
+    </a>
   </div>
 
-  {% if selected_store_id %}
-    <div style="margin-top:10px; display:flex; gap:16px; flex-wrap:wrap;">
-      <a href="/masters/shelves?store_id={{ selected_store_id }}">
-        {{ t("inventory.shelf_master_open") }}
-      </a>
-      <a href="/inventory/zones?store_id={{ selected_store_id }}">
-        {{ t("inventory.zone_master_open") }}
-      </a>
-    </div>
-  {% endif %}
-</div>
+  <div style="margin:8px 0; display:flex; gap:16px; flex-wrap:wrap;">
+    <a href="{{ url_for('shelves_master', store_id=selected_store_id) }}">
+      {{ t("inventory.shelf_master_open", "__inventory.shelf_master_open__") }}
+    </a>
+    <a href="{{ url_for('zone_master', store_id=selected_store_id) }}">
+      {{ t("inventory.zone_master_open", "__inventory.zone_master_open__") }}
+    </a>
+  </div>
+{% endif %}
