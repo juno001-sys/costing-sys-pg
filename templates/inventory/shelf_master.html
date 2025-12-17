@@ -1,62 +1,48 @@
+{# templates/inventory/shelf_master.html #}
 {% extends "base.html" %}
-{% block title %}{{ t("masters.shelves") }}{% endblock %}
+{% block title %}{{ t("inventory.shelf_master_open", "__inventory.shelf_master_open__") }}{% endblock %}
 
 {% block content %}
-<h2>{{ t("masters.shelves") }}</h2>
+  <h2>{{ t("inventory.shelf_master_open", "__inventory.shelf_master_open__") }}</h2>
 
-<form method="post">
-  <input type="hidden" name="store_id" value="{{ selected_store_id }}">
+  <div style="margin: 8px 0 14px;">
+    <a class="btn" href="{{ url_for('inventory_locations', store_id=selected_store_id) }}">
+      ← {{ t("inventory.locations_back", "__inventory.locations_back__") }}
+    </a>
+  </div>
 
-  <table class="table">
-    <thead>
-      <tr>
-        <th>{{ t("masters.area") }}</th>
-        <th>{{ t("masters.temp_zone") }}</th>
-        <th>{{ t("masters.shelf_code") }}</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>
-          <select name="area_id" required>
-            {% for a in areas %}
-              <option value="{{ a.id }}">{{ a.name }}</option>
-            {% endfor %}
-          </select>
-        </td>
+  {% if not selected_store_id %}
+    <p class="muted">{{ t("inventory.hint_select_store", "__inventory.hint_select_store__") }}</p>
+  {% endif %}
 
-        <td>
-          <select name="temp_zone" required>
-            {% for z in temp_zones %}
-              <option value="{{ z }}">{{ z }}</option>
-            {% endfor %}
-          </select>
-        </td>
-
-        <td>
-          <input type="text"
-                 name="code"
-                 placeholder="A1"
-                 required>
-        </td>
-
-        <td>
-          <button class="btn btn-primary" type="submit">
-            {{ t("common.add") }}
-          </button>
-        </td>
-      </tr>
-
-      {% for sh in shelves %}
-      <tr>
-        <td>{{ sh.area_name }}</td>
-        <td>{{ sh.temp_zone }}</td>
-        <td>{{ sh.code }}</td>
-        <td></td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</form>
+  {% if selected_store_id %}
+    {% if shelves %}
+      <table>
+        <thead>
+          <tr>
+            <th>{{ t("form.store", "__form.store__") }}</th>
+            <th>{{ t("inventory.area", "__inventory.area__") }}</th>
+            <th>{{ t("inventory.shelf", "__inventory.shelf__") }}</th>
+            <th>{{ t("common.edit", "__common.edit__") }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sh in shelves %}
+            <tr>
+              <td>{{ store_name }}</td>
+              <td>{{ sh.area_name }}</td>
+              <td>{{ sh.code }}{% if sh.name %} {{ sh.name }}{% endif %}</td>
+              <td>
+                <a class="btn" href="{{ url_for('shelf_edit', shelf_id=sh.id, store_id=selected_store_id) }}">
+                  {{ t("common.edit", "__common.edit__") }}
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="muted">{{ t("common.no_data", "__common.no_data__") }}</p>
+    {% endif %}
+  {% endif %}
 {% endblock %}
