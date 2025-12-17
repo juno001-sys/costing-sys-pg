@@ -130,6 +130,6 @@
   "stores.inventory_locations_hint": "この店舗の品目がどこに置かれているか（場所・温度帯・棚）を確認・設定します。",
   "stores.inventory_locations_open": "品目配置一覧を開く",
   "stores.inventory_count_open": "棚卸入力を開く",
-  "inventory.locations_view": "品目配置一覧を開く"
+  "inventory.locations_view": "品目配置一覧を開く",
   "inventory.locations.title": "配置整理表"
 }
