@@ -1,28 +1,10 @@
 # views/inventory_locations.py
+from flask import render_template, request
 
-from flask import (
-    render_template,
-    request,
-    jsonify,
-)
-
+TEMP_LABEL = {"AMB": "AMB", "CHILL": "CHILL", "FREEZE": "FREEZE"}  # keep codes visible
 
 def init_inventory_location_views(app, get_db):
-    """
-    Inventory item locations (store -> area -> temp zone -> shelf).
 
-    Uses:
-      - stores.company_id
-      - store_areas
-      - temp_groups / temp_zones
-      - store_shelves
-      - item_shelf_map
-    """
-
-    # ----------------------------------------
-    # GET: Inventory Locations
-    # /inventory/locations
-    # ----------------------------------------
     @app.route("/inventory/locations", methods=["GET"])
     def inventory_locations():
         db = get_db()
@@ -34,79 +16,77 @@ def init_inventory_location_views(app, get_db):
         store_id = request.args.get("store_id") or ""
         selected_store_id = int(store_id) if store_id else None
 
-        items = []
+        if not selected_store_id:
+            return render_template(
+                "inventory/inventory_locations.html",
+                stores=stores,
+                selected_store_id=None,
+                items=[],
+            )
 
-        if selected_store_id:
-            # One row per (item x shelf). We'll group into item -> locations.
-            rows = db.execute(
-                """
-                SELECT
-                  i.id   AS item_id,
-                  i.code AS item_code,
-                  i.name AS item_name,
-                  i.is_internal,
-            
-                  a.name  AS area_name,
-                  tg.code AS temp_group_code,
-                  tz.name AS temp_zone_name,
-                  sh.code AS shelf_code,
-                  sh.name AS shelf_name,
-            
-                  a.sort_order  AS area_sort,
-                  tg.sort_order AS group_sort,
-                  tz.sort_order AS zone_sort,
-                  sh.sort_order AS shelf_sort,
-                  m.sort_order  AS item_sort
-                FROM item_shelf_map m
-                JOIN items i          ON i.id = m.item_id
-                JOIN store_shelves sh ON sh.id = m.shelf_id AND sh.store_id = m.store_id
-                JOIN stores s         ON s.id = sh.store_id
-                JOIN store_areas a    ON a.id = sh.area_id
-            
-                -- NOTE: sh.temp_zone is TEXT in your schema
-                JOIN temp_zones tz
-                  ON tz.company_id = s.company_id
-                 AND tz.name = sh.temp_zone
-            
-                JOIN temp_groups tg   ON tg.id = tz.group_id
-            
-                WHERE m.store_id = ?
-                  AND m.is_active = TRUE
-                  AND sh.is_active = TRUE
-                  AND a.is_active = TRUE
-                  AND tz.is_active = TRUE
-                ORDER BY
-                  i.code,
-                  a.sort_order, tg.sort_order, tz.sort_order, sh.sort_order,
-                  m.sort_order
-                """,
-                (selected_store_id,),
-            ).fetchall()
-            by_item = {}
+        # Item-centered query (items -> (optional) mapping -> shelf -> area)
+        rows = db.execute(
+            """
+            SELECT
+              i.id   AS item_id,
+              i.code AS item_code,
+              i.name AS item_name,
 
-            for r in rows:
-                item_id = r["item_id"]
+              a.name AS area_name,
+              sh.temp_zone AS temp_zone_code,
+              sh.code AS shelf_code,
+              sh.name AS shelf_name,
 
-                if item_id not in by_item:
-                    by_item[item_id] = {
-                        "item_id": item_id,
-                        "code": r["item_code"],
-                        "name": r["item_name"],
-                        "is_internal": r["is_internal"],
-                        "locations": [],
-                    }
+              a.sort_order  AS area_sort,
+              sh.sort_order AS shelf_sort,
+              m.sort_order  AS item_sort
+            FROM items i
+            LEFT JOIN item_shelf_map m
+              ON m.item_id = i.id
+             AND m.store_id = ?
+             AND m.is_active = TRUE
+            LEFT JOIN store_shelves sh
+              ON sh.id = m.shelf_id
+             AND sh.store_id = m.store_id
+             AND sh.is_active = TRUE
+            LEFT JOIN store_areas a
+              ON a.id = sh.area_id
+             AND a.is_active = TRUE
+            ORDER BY
+              i.code,
+              a.sort_order NULLS LAST,
+              sh.temp_zone NULLS LAST,
+              sh.sort_order NULLS LAST,
+              m.sort_order NULLS LAST
+            """,
+            (selected_store_id,),
+        ).fetchall()
 
-                by_item[item_id]["locations"].append(
+        # Build: one row per item, with locations list
+        items_by_id = {}
+        for r in rows:
+            item_id = r["item_id"]
+
+            if item_id not in items_by_id:
+                items_by_id[item_id] = {
+                    "id": item_id,
+                    "code": r["item_code"],
+                    "name": r["item_name"],
+                    "locations": [],
+                }
+
+            # If not mapped, shelf_code will be None -> skip location
+            if r["shelf_code"]:
+                items_by_id[item_id]["locations"].append(
                     {
-                        "area": r["area_name"],
-                        "temp_group": r["temp_group_code"],
-                        "temp_zone": r["temp_zone_name"],
+                        "area": r["area_name"] or "",
+                        "temp_zone": TEMP_LABEL.get(r["temp_zone_code"], r["temp_zone_code"] or ""),
                         "shelf_code": r["shelf_code"],
-                        "shelf_name": r["shelf_name"],
+                        "shelf_name": r["shelf_name"] or "",
                     }
                 )
 
-            items = list(by_item.values())
+        items = list(items_by_id.values())
 
         return render_template(
             "inventory/inventory_locations.html",
@@ -114,34 +94,3 @@ def init_inventory_location_views(app, get_db):
             selected_store_id=selected_store_id,
             items=items,
         )
-
-    # ----------------------------------------
-    # POST: Reorder items (per shelf)
-    # /inventory/reorder-items
-    # ----------------------------------------
-    @app.route("/inventory/reorder-items", methods=["POST"])
-    def inventory_reorder_items():
-        db = get_db()
-        payload = request.get_json(force=True)
-
-        store_id = payload.get("store_id")
-        shelf_id = payload.get("shelf_id")
-        item_ids = payload.get("item_ids") or []
-
-        if not store_id or not shelf_id or not isinstance(item_ids, list) or not item_ids:
-            return jsonify({"ok": False, "error": "missing params"}), 400
-
-        for idx, item_id in enumerate(item_ids, start=1):
-            db.execute(
-                """
-                UPDATE item_shelf_map
-                   SET sort_order = ?
-                 WHERE store_id = ?
-                   AND shelf_id = ?
-                   AND item_id = ?
-                """,
-                (idx, store_id, shelf_id, item_id),
-            )
-
-        db.commit()
-        return jsonify({"ok": True})
