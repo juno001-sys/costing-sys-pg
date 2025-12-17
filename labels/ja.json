@@ -131,4 +131,5 @@
   "stores.inventory_locations_open": "品目配置一覧を開く",
   "stores.inventory_count_open": "棚卸入力を開く",
   "inventory.locations_view": "品目配置一覧を開く"
+  "inventory.locations.title": "配置整理表"
 }
