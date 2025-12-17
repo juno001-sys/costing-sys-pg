@@ -1,1 +1,30 @@
-
+<table class="count-table">
+  <thead>
+    <tr>
+      <th>{{ t("inventory.item_code") }}</th>
+      <th>{{ t("inventory.item_name") }}</th>
+      <th class="num">{{ t("inventory.system_qty") }}</th>
+      <th class="num">{{ t("inventory.unit_price") }}</th>
+      <th class="num">{{ t("inventory.stock_amount") }}</th>
+      <th class="num">{{ t("inventory.count_qty_input") }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in g.rows %}
+      <tr>
+        <td>{{ r.code }}</td>
+        <td>{{ r.name }}</td>
+        <td class="num">{{ r.system_qty }}</td>
+        <td class="num">{{ r.unit_price }}</td>
+        <td class="num">{{ r.stock_amount }}</td>
+        <td class="num">
+          <input class="num count-input"
+                 type="text"
+                 name="qty_{{ g.shelf_id }}_{{ r.item_id }}"
+                 value="{{ r.count_qty or '' }}"
+                 inputmode="numeric">
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
