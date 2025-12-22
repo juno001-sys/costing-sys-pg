@@ -319,7 +319,13 @@ const calcTbody = document.getElementById("item-rows");
 
 function calc_parseIntSafe(v) {
   if (!v) return 0;
-  return parseInt(String(v).replace(/,/g, ""), 10) || 0;
+ // Keep digits only (removes commas, dots, spaces, etc.)
+  // "1.0" -> "10"
+  // "15,000" -> "15000"
+  const digits = String(v).replace(/[^\d]/g, "");
+  if (digits === "") return 0;
+
+  return parseInt(digits, 10) || 0;
 }
 
 function calc_recalcRow(tr) {
@@ -341,7 +347,7 @@ function calc_recalcAll() {
   if (!totalCell) return;
 
   let sum = 0;
-  document.querySelectorAll(".amount-display").forEach(el => {
+  calcTbody.querySelectorAll(".amount-display").forEach(el => {
     sum += calc_parseIntSafe(el.value);
   });
   totalCell.textContent = sum ? sum.toLocaleString("ja-JP") : "";
