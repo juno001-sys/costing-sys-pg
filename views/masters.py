@@ -531,7 +531,7 @@ def init_master_views(app, get_db):
             """
         ).fetchall()
     
-        return render_template("stores_master.html", mst_stores=mst_stores)
+        return render_template("stores_master.html", stores=mst_stores)
 
 
         # ----------------------------------------
