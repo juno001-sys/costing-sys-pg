@@ -404,21 +404,6 @@ function renumberRowsAndNames() {
   if (rowCountInput) rowCountInput.value = String(rows.length);
 }
 
-/* ---- Delete row (event delegation) ---- */
-if (tbody) {
-  tbody.addEventListener("click", (e) => {
-    const btn = e.target.closest(".delete-row");
-    if (!btn) return;
-
-    const tr = btn.closest("tr");
-    if (!tr) return;
-
-    tr.remove();
-    renumberRowsAndNames();
-    calc_recalcAll(); //  call Step1 calc directly
-  });
-}
-
 /* ---- Add row ---- */
 if (addBtn && tbody) {
   addBtn.addEventListener("click", () => {
