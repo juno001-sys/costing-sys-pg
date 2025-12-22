@@ -3,7 +3,7 @@
 from flask import render_template, request
 
 
-def init_inventory_locations_zones_page(app, get_db):
+def init_location_zones_page(app, get_db):
     """
     Temp zone master.
     Endpoint name must be 'zone_master' because templates call url_for('zone_master', ...)

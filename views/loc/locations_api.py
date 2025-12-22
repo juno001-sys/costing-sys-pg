@@ -3,7 +3,7 @@
 from flask import request, jsonify
 
 
-def init_inventory_locations_api(app, get_db):
+def init_location_api(app, get_db):
     @app.route("/inventory/api/shelves", methods=["GET"])
     def inventory_api_shelves():
         db = get_db()

@@ -3,7 +3,7 @@
 from flask import render_template, request
 
 
-def init_inventory_locations_shelves_page(app, get_db):
+def init_location_shelves_page(app, get_db):
     """
     Shelf master screen (per store).
     Endpoint name must be 'shelf_master' because templates call url_for('shelf_master', ...)

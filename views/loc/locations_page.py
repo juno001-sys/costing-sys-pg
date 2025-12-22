@@ -1,10 +1,10 @@
-# views/inventory_locations/locations_page.py
+# views/loc/locations_page.py
 
 from flask import render_template, request
 from db import get_db  # only if your pattern allows; otherwise remove and use injected get_db
 
 
-def init_inventory_locations_page(app, get_db):
+def init_location_page(app, get_db):
     @app.route("/inventory/locations", methods=["GET"])
     def inventory_locations():
         db = get_db()

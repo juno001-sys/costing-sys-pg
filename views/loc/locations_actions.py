@@ -3,7 +3,7 @@
 from flask import request, redirect, url_for, flash, jsonify
 
 
-def init_inventory_locations_actions(app, get_db):
+def init_location_actions(app, get_db):
     @app.route("/inventory/locations/save", methods=["POST"])
     def inventory_locations_save():
         db = get_db()
