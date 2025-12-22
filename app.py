@@ -12,7 +12,7 @@ from views.masters import init_master_views
 from views.purchases import init_purchase_views
 from views.reports import init_report_views
 from labels import label
-from views.inventory_locations import init_location_views
+from views.loc import init_location_views
 
 # ----------------------------------------
 # Flask app
