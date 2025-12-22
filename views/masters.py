@@ -341,7 +341,7 @@ def init_master_views(app, get_db):
               i.storage_cost,
               i.is_active
             FROM mst_items i
-            WHERE i.id = ?
+            WHERE i.id = %s
             """,
             (item_id,),
         ).fetchone()
@@ -513,7 +513,7 @@ def init_master_views(app, get_db):
                 db.execute(
                     """
                     INSERT INTO mst_stores (code, name, seats, opened_on)
-                    VALUES (?, ?, ?, ?)
+                    VALUES (%s, %s, %s, %s)
                     """,
                     (code or None, name, seats or None, opened_on or None)
                 )
