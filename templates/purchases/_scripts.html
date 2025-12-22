@@ -369,10 +369,10 @@ if (calcTbody) {
 calc_recalcAll();
 
 /* ===============================
-   Step 2 + 5: Delete / Add rows (FIXED)
+   Step 2 + 5: Add rows ONLY (Delete removed)
 =============================== */
 
-const tbody = document.getElementById("item-rows");   // define tbody
+const tbody = document.getElementById("item-rows");
 const rowCountInput = document.getElementById("row_count");
 const addBtn = document.getElementById("add-row-btn");
 
@@ -402,21 +402,6 @@ function renumberRowsAndNames() {
   });
 
   if (rowCountInput) rowCountInput.value = String(rows.length);
-}
-
-/* ---- Delete row (event delegation) ---- */
-if (tbody) {
-  tbody.addEventListener("click", (e) => {
-    const btn = e.target.closest(".delete-row");
-    if (!btn) return;
-
-    const tr = btn.closest("tr");
-    if (!tr) return;
-
-    tr.remove();
-    renumberRowsAndNames();
-    calc_recalcAll(); //  call Step1 calc directly
-  });
 }
 
 /* ---- Add row ---- */
@@ -470,23 +455,20 @@ if (addBtn && tbody) {
                readonly
                tabindex="-1">
       </td>
-
-      <td>
-        <button type="button" class="delete-row">✖</button>
-      </td>
     `;
 
     tbody.appendChild(tr);
 
     renumberRowsAndNames();
-    calc_recalcAll(); // recalc total after adding
+    calc_recalcAll(); // reuse your Step1 calc
   });
 }
 
 // run once at startup
 renumberRowsAndNames();
-calc_recalcAll();  
+calc_recalcAll();
 
+  
   /* ===============================
    Step 3: Enter key = Tab (Shift+Enter = Shift+Tab)
    - Only for inputs inside the detail table (#item-rows)
@@ -499,7 +481,7 @@ function focusNextPrev(el, dir) {
   // dir: +1 (next) / -1 (prev)
   const focusables = Array.from(
     form.querySelectorAll(
-      "#item-rows input, #item-rows select, #item-rows button"
+      "#item-rows input, #item-rows select
     )
   ).filter(node => {
     // skip readonly/disabled/hidden & skip amount display
