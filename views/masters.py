@@ -303,7 +303,7 @@ def init_master_views(app, get_db):
         return render_template(
             "items_master.html",
             suppliers=suppliers,
-            mst_items=mst_items,
+            items=mst_items,
         )
 
     # ----------------------------------------
