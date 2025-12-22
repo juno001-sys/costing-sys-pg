@@ -192,7 +192,7 @@ def init_master_views(app, get_db):
     # 仕入先ごとに SSIII（5桁）コード自動採番
     # ----------------------------------------
     @app.route("/mst_items", methods=["GET", "POST"], endpoint="items_master")
-    def items_master():
+    def mst_items():
         db = get_db()
 
         # 仕入先一覧（プルダウン用：有効なもののみ）
@@ -310,7 +310,7 @@ def init_master_views(app, get_db):
     # 品目編集・削除（実態は「無効化」）
     # /mst_items/<id>/edit
     # ----------------------------------------
-    @app.route("/mst_items/<int:item_id>/edit", methods=["GET", "POST"])
+    @app.route("/mst_items/<int:item_id>/edit", methods=["GET", "POST"], endpoint="edit_item")
     def edit_item(item_id):
         db = get_db()
 
@@ -497,8 +497,8 @@ def init_master_views(app, get_db):
     # 店舗マスタ
     # /mst_stores
     # ----------------------------------------
-    @app.route("/mst_stores", methods=["GET", "POST"])
-    def stores_master():
+    @app.route("/mst_stores", methods=["GET", "POST"], endpoint="stores_master")
+    def mst_stores():
         db = get_db()
     
         if request.method == "POST":
@@ -538,7 +538,7 @@ def init_master_views(app, get_db):
     # 店舗編集・無効化 ＋ 仕入れ先紐付け
     # /mst_stores/<id>/edit
     # ----------------------------------------
-    @app.route("/mst_stores/<int:store_id>/edit", methods=["GET", "POST"], endpoint="stores_master")
+    @app.route("/mst_stores/<int:store_id>/edit", methods=["GET", "POST"], endpoint="edit_store")
     def edit_store(store_id):
         db = get_db()
 
