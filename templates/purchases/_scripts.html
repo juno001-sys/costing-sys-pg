@@ -315,6 +315,20 @@ if (!focused) {
 /* ===============================
    STEP 1: Auto calculation ONLY (safe / collision-proof)
 =============================== */
+  // NOTE (EN):
+// This purchase form has its own numeric handling logic.
+// There is a global input.num normalizer defined in base.html
+// which may rewrite numeric input values on every keystroke.
+// Do NOT simplify or refactor this calculation/parser
+// without checking the behavior in base.html.
+
+// 注意（JP）:
+// この仕入入力フォームでは、数値入力を独自に処理しています。
+// base.html には input.num に対する「全体共通の数値正規化処理」があり、
+// 入力のたびに値を書き換える挙動があります。
+// この計算処理やパーサを安易に簡略化・変更すると、
+// 金額が誤計算される可能性があるため、必ず base.html の挙動を確認してください。
+  
 const calcTbody = document.getElementById("item-rows");
 
 function calc_parseIntSafe(v) {
