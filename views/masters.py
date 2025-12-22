@@ -12,7 +12,7 @@ from flask import (
 
 def init_master_views(app, get_db):
     """
-    マスタ系（suppliers/items など）のルートを登録する初期化関数。
+    マスタ系（suppliers/mst_items など）のルートを登録する初期化関数。
 
         from views.masters import init_master_views
         init_master_views(app, get_db)
@@ -98,7 +98,7 @@ def init_master_views(app, get_db):
             if "delete" in request.form:
 
                 # 1) 利用中チェック
-                # purchases / items のどちらかで使われていたら無効化禁止
+                # purchases / mst_items のどちらかで使われていたら無効化禁止
                 in_pur = db.execute(
                     """
                     SELECT COUNT(*) AS cnt
@@ -112,7 +112,7 @@ def init_master_views(app, get_db):
                 in_items = db.execute(
                     """
                     SELECT COUNT(*) AS cnt
-                    FROM items
+                    FROM mst_items
                     WHERE supplier_id = ?
                     """,
                     (supplier_id,),
@@ -188,10 +188,10 @@ def init_master_views(app, get_db):
 
     # ----------------------------------------
     # 品目マスタ
-    # /items
+    # /mst_items
     # 仕入先ごとに SSIII（5桁）コード自動採番
     # ----------------------------------------
-    @app.route("/items", methods=["GET", "POST"])
+    @app.route("/mst_items", methods=["GET", "POST"])
     def items_master():
         db = get_db()
 
@@ -206,7 +206,7 @@ def init_master_views(app, get_db):
         ).fetchall()
 
         # 登録済み品目一覧（有効なもののみ）
-        items = db.execute(
+        mst_items = db.execute(
             """
             SELECT
               i.id,
@@ -216,7 +216,7 @@ def init_master_views(app, get_db):
               i.temp_zone,
               i.is_internal,
               s.name AS supplier_name
-            FROM items i
+            FROM mst_items i
             LEFT JOIN suppliers s ON i.supplier_id = s.id
             WHERE i.is_active = 1
             ORDER BY i.code, i.name
@@ -239,7 +239,7 @@ def init_master_views(app, get_db):
                 return render_template(
                     "items_master.html",
                     suppliers=suppliers,
-                    items=items,
+                    mst_items=mst_items,
                 )
 
             # 仕入先コード2桁を取得（SS部分）
@@ -253,14 +253,14 @@ def init_master_views(app, get_db):
                 return render_template(
                     "items_master.html",
                     suppliers=suppliers,
-                    items=items,
+                    mst_items=mst_items,
                 )
 
             code2 = str(supplier["code"]).zfill(2)[:2]
 
             # 既存コードの最大値（SSIII の III 部分）を取得
             row = db.execute(
-                "SELECT MAX(code) AS max_code FROM items WHERE code LIKE ?",
+                "SELECT MAX(code) AS max_code FROM mst_items WHERE code LIKE ?",
                 (f"{code2}%",),
             ).fetchone()
 
@@ -285,7 +285,7 @@ def init_master_views(app, get_db):
             try:
                 db.execute(
                     """
-                    INSERT INTO items
+                    INSERT INTO mst_items
                         (code, name, unit, supplier_id, temp_zone, is_internal)
                     VALUES (?, ?, ?, ?, ?, ?)
                     """,
@@ -295,7 +295,7 @@ def init_master_views(app, get_db):
                 flash(f"品目を登録しました。（コード: {new_code}）")
             except sqlite3.Error as e:
                 db.rollback()
-                flash(f"items テーブルへの登録でエラーが発生しました: {e}")
+                flash(f"mst_items テーブルへの登録でエラーが発生しました: {e}")
 
             return redirect(url_for("items_master"))
 
@@ -303,14 +303,14 @@ def init_master_views(app, get_db):
         return render_template(
             "items_master.html",
             suppliers=suppliers,
-            items=items,
+            mst_items=mst_items,
         )
 
     # ----------------------------------------
     # 品目編集・削除（実態は「無効化」）
-    # /items/<id>/edit
+    # /mst_items/<id>/edit
     # ----------------------------------------
-    @app.route("/items/<int:item_id>/edit", methods=["GET", "POST"])
+    @app.route("/mst_items/<int:item_id>/edit", methods=["GET", "POST"])
     def edit_item(item_id):
         db = get_db()
 
@@ -340,7 +340,7 @@ def init_master_views(app, get_db):
               i.is_internal,
               i.storage_cost,
               i.is_active
-            FROM items i
+            FROM mst_items i
             WHERE i.id = ?
             """,
             (item_id,),
@@ -391,7 +391,7 @@ def init_master_views(app, get_db):
                 # 2) 利用されていなければ無効化
                 try:
                     db.execute(
-                        "UPDATE items SET is_active = 0 WHERE id = ?",
+                        "UPDATE mst_items SET is_active = 0 WHERE id = ?",
                         (item_id,),
                     )
                     db.commit()
@@ -451,7 +451,7 @@ def init_master_views(app, get_db):
             try:
                 db.execute(
                     """
-                    UPDATE items
+                    UPDATE mst_items
                     SET
                       name              = ?,
                       unit              = ?,
@@ -495,9 +495,9 @@ def init_master_views(app, get_db):
 
     # ----------------------------------------
     # 店舗マスタ
-    # /stores
+    # /mst_stores
     # ----------------------------------------
-    @app.route("/stores", methods=["GET", "POST"])
+    @app.route("/mst_stores", methods=["GET", "POST"])
     def stores_master():
         db = get_db()
     
@@ -512,7 +512,7 @@ def init_master_views(app, get_db):
             else:
                 db.execute(
                     """
-                    INSERT INTO stores (code, name, seats, opened_on)
+                    INSERT INTO mst_stores (code, name, seats, opened_on)
                     VALUES (?, ?, ?, ?)
                     """,
                     (code or None, name, seats or None, opened_on or None)
@@ -523,22 +523,22 @@ def init_master_views(app, get_db):
             return redirect(url_for("stores_master"))
     
         # GET
-        stores = db.execute(
+        mst_stores = db.execute(
             """
             SELECT id, code, name, seats, opened_on, closed_on, is_active
-            FROM stores
+            FROM mst_stores
             ORDER BY code, id
             """
         ).fetchall()
     
-        return render_template("stores_master.html", stores=stores)
+        return render_template("stores_master.html", mst_stores=mst_stores)
 
 
         # ----------------------------------------
     # 店舗編集・無効化 ＋ 仕入れ先紐付け
-    # /stores/<id>/edit
+    # /mst_stores/<id>/edit
     # ----------------------------------------
-    @app.route("/stores/<int:store_id>/edit", methods=["GET", "POST"])
+    @app.route("/mst_stores/<int:store_id>/edit", methods=["GET", "POST"])
     def edit_store(store_id):
         db = get_db()
 
@@ -546,7 +546,7 @@ def init_master_views(app, get_db):
         store = db.execute(
             """
             SELECT id, code, name, seats, opened_on, closed_on, is_active
-            FROM stores
+            FROM mst_stores
             WHERE id = ?
             """,
             (store_id,),
@@ -599,7 +599,7 @@ def init_master_views(app, get_db):
                     return redirect(url_for("stores_master"))
 
                 db.execute(
-                    "UPDATE stores SET is_active = 0 WHERE id = ?",
+                    "UPDATE mst_stores SET is_active = 0 WHERE id = ?",
                     (store_id,),
                 )
                 db.commit()
@@ -637,7 +637,7 @@ def init_master_views(app, get_db):
             # ---- 店舗情報の更新 ----
             db.execute(
                 """
-                UPDATE stores
+                UPDATE mst_stores
                 SET code = ?, name = ?, seats = ?, opened_on = ?, closed_on = ?
                 WHERE id = ?
                 """,

@@ -40,8 +40,8 @@ def init_purchase_views(app, get_db, log_purchase_change):
             selected_store_id = None
     
         # --- 2) 店舗一覧（固定） ---
-        stores = db.execute(
-            "SELECT id, name FROM stores WHERE is_active = 1 ORDER BY code"
+        mst_stores = db.execute(
+            "SELECT id, name FROM mst_stores WHERE is_active = 1 ORDER BY code"
         ).fetchall()
     
         # --- 3) 店舗に応じて仕入先を絞る ---
@@ -232,7 +232,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
               p.amount
             FROM purchases p
             LEFT JOIN suppliers s ON p.supplier_id = s.id
-            LEFT JOIN items     i ON p.item_id     = i.id
+            LEFT JOIN mst_items     i ON p.item_id     = i.id
             {where_sql}
             ORDER BY p.delivery_date DESC, p.id DESC
             LIMIT 50
@@ -241,7 +241,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
 
         return render_template(
             "purchase_form.html",
-            stores=stores,
+            mst_stores=mst_stores,
             suppliers=suppliers,
             purchases=purchases,
             selected_store_id=selected_store_id,
@@ -253,9 +253,9 @@ def init_purchase_views(app, get_db, log_purchase_change):
     
     # ----------------------------------------
     # API: 仕入先に紐づく品目一覧を返す
-    # /api/items/by_supplier/<supplier_id>
+    # /api/mst_items/by_supplier/<supplier_id>
     # ----------------------------------------
-    @app.route("/api/items/by_supplier/<int:supplier_id>")
+    @app.route("/api/mst_items/by_supplier/<int:supplier_id>")
     def api_items_by_supplier(supplier_id):
         db = get_db()
         rows = db.execute(
@@ -266,7 +266,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
                 i.name,
                 i.unit,
                 COALESCE(SUM(p.amount), 0) AS total_amount
-            FROM items i
+            FROM mst_items i
             LEFT JOIN purchases p 
                 ON p.item_id = i.id
                 AND p.supplier_id = i.supplier_id
@@ -305,8 +305,8 @@ def init_purchase_views(app, get_db, log_purchase_change):
         db = get_db()
 
         # 店舗・仕入先一覧（プルダウン用）
-        stores = db.execute(
-            "SELECT id, name FROM stores ORDER BY code"
+        mst_stores = db.execute(
+            "SELECT id, name FROM mst_stores ORDER BY code"
         ).fetchall()
 
         suppliers = db.execute(
@@ -328,7 +328,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
               i.code AS item_code,
               i.name AS item_name
             FROM purchases p
-            LEFT JOIN items i ON p.item_id = i.id
+            LEFT JOIN mst_items i ON p.item_id = i.id
             WHERE p.id = ?
               AND p.is_deleted = 0
             """,
@@ -394,7 +394,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
                 return render_template(
                     "purchase_edit.html",
                     purchase=purchase,
-                    stores=stores,
+                    mst_stores=mst_stores,
                     suppliers=suppliers,
                 )
 
@@ -463,6 +463,6 @@ def init_purchase_views(app, get_db, log_purchase_change):
         return render_template(
             "purchase_edit.html",
             purchase=purchase,
-            stores=stores,
+            mst_stores=mst_stores,
             suppliers=suppliers,
         )

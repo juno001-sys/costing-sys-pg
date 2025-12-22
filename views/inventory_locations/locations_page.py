@@ -9,23 +9,23 @@ def init_inventory_locations_page(app, get_db):
     def inventory_locations():
         db = get_db()
 
-        stores = db.execute(
-            "SELECT id, name FROM stores ORDER BY code"
+        mst_stores = db.execute(
+            "SELECT id, name FROM mst_stores ORDER BY code"
         ).fetchall()
 
         store_id = request.args.get("store_id") or ""
         selected_store_id = int(store_id) if store_id else None
 
-        items = []
+        mst_items = []
         if selected_store_id:
             # basic item list for the store (same logic style as your inventory_count)
-            items = db.execute(
+            mst_items = db.execute(
                 """
                 SELECT DISTINCT
                   i.id,
                   i.code,
                   i.name
-                FROM items i
+                FROM mst_items i
                 LEFT JOIN purchases p
                   ON p.item_id = i.id
                  AND p.store_id = ?
@@ -39,9 +39,9 @@ def init_inventory_locations_page(app, get_db):
 
         return render_template(
             "inventory/locations.html",
-            stores=stores,
+            mst_stores=mst_stores,
             selected_store_id=selected_store_id,
-            items=items,
+            mst_items=mst_items,
             # for dropdown options (temp zones)
             temp_zones=["AMB", "CHILL", "FREEZE"],
         )

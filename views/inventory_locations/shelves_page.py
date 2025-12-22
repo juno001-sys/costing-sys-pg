@@ -16,8 +16,8 @@ def init_inventory_locations_shelves_page(app, get_db):
         store_id = request.args.get("store_id")
         selected_store_id = int(store_id) if store_id else None
 
-        stores = db.execute(
-            "SELECT id, name FROM stores ORDER BY code"
+        mst_stores = db.execute(
+            "SELECT id, name FROM mst_stores ORDER BY code"
         ).fetchall()
 
         shelves = []
@@ -42,7 +42,7 @@ def init_inventory_locations_shelves_page(app, get_db):
 
         return render_template(
             "inventory/shelf_master.html",
-            stores=stores,
+            mst_stores=mst_stores,
             selected_store_id=selected_store_id,
             shelves=shelves,
         )

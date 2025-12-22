@@ -11,16 +11,16 @@ from . import reports_bp, get_db
 def cost_report():
     db = get_db()
 
-    # stores list
-    stores = db.execute(
-        "SELECT id, name FROM stores ORDER BY code"
+    # mst_stores list
+    mst_stores = db.execute(
+        "SELECT id, name FROM mst_stores ORDER BY code"
     ).fetchall()
 
     # store filter (optional)
     store_id = request.args.get("store_id") or ""
     selected_store_id = int(store_id) if store_id else None
 
-    # None means "all stores"
+    # None means "all mst_stores"
     store_id_param = None if store_id == "" else int(store_id)
 
     # last 13 months
@@ -179,7 +179,7 @@ def cost_report():
 
     return render_template(
         "cost_report.html",
-        stores=stores,
+        mst_stores=mst_stores,
         selected_store_id=selected_store_id,
         month_keys=month_keys,
         purchases_by_month=purchases_by_month,

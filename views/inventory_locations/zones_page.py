@@ -16,8 +16,8 @@ def init_inventory_locations_zones_page(app, get_db):
         store_id = request.args.get("store_id")
         selected_store_id = int(store_id) if store_id else None
 
-        stores = db.execute(
-            "SELECT id, name FROM stores ORDER BY code"
+        mst_stores = db.execute(
+            "SELECT id, name FROM mst_stores ORDER BY code"
         ).fetchall()
 
         # IMPORTANT:
@@ -38,7 +38,7 @@ def init_inventory_locations_zones_page(app, get_db):
 
         return render_template(
             "inventory/zone_master.html",
-            stores=stores,
+            mst_stores=mst_stores,
             selected_store_id=selected_store_id,
             zones=zones,
         )

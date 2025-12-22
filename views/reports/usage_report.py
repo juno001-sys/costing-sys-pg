@@ -12,8 +12,8 @@ def usage_report():
     db = get_db()
 
     # Stores
-    stores = db.execute(
-        "SELECT id, name FROM stores ORDER BY code"
+    mst_stores = db.execute(
+        "SELECT id, name FROM mst_stores ORDER BY code"
     ).fetchall()
 
     # Suppliers (dropdown)
@@ -135,7 +135,7 @@ def usage_report():
         placeholders = ",".join(["%s"] * len(item_ids))
         sql_items = f"""
             SELECT id, code, name, supplier_id
-            FROM items
+            FROM mst_items
             WHERE id IN ({placeholders})
         """
         params_items: list[object] = list(item_ids)
@@ -144,11 +144,11 @@ def usage_report():
             sql_items += " AND supplier_id = %s"
             params_items.append(int(supplier_id))
 
-        items = db.execute(sql_items, params_items).fetchall()
+        mst_items = db.execute(sql_items, params_items).fetchall()
     else:
-        items = []
+        mst_items = []
 
-    item_meta = {int(row["id"]): row for row in items}
+    item_meta = {int(row["id"]): row for row in mst_items}
 
     # ----------------------------------------
     # ④ Calculate begin/purchase/end/used
@@ -201,7 +201,7 @@ def usage_report():
 
     return render_template(
         "usage_report.html",
-        stores=stores,
+        mst_stores=mst_stores,
         selected_store_id=selected_store_id,
         suppliers=suppliers,
         selected_supplier_id=selected_supplier_id,

@@ -46,8 +46,8 @@ def init_inventory_views(app, get_db):
         db = get_db()
 
         # 店舗一覧
-        stores = db.execute(
-            "SELECT id, name FROM stores ORDER BY code"
+        mst_stores = db.execute(
+            "SELECT id, name FROM mst_stores ORDER BY code"
         ).fetchall()
 
         # 今日の日付をデフォルトに
@@ -115,7 +115,7 @@ def init_inventory_views(app, get_db):
         store_id = request.args.get("store_id") or ""
         count_date = request.args.get("count_date") or today
 
-        items = []
+        mst_items = []
         selected_store_id = int(store_id) if store_id else None
 
         # ★ 最新棚卸日（＋過去2回）を取得
@@ -140,7 +140,7 @@ def init_inventory_views(app, get_db):
                     i.name AS item_name,
                     COALESCE(i.temp_zone, 'その他') AS storage_type,
                     i.is_internal
-                FROM items i
+                FROM mst_items i
                 WHERE i.is_internal = 1
 
                 UNION
@@ -151,7 +151,7 @@ def init_inventory_views(app, get_db):
                     i.name AS item_name,
                     COALESCE(i.temp_zone, 'その他') AS storage_type,
                     i.is_internal
-                FROM items i
+                FROM mst_items i
                 JOIN purchases p
                   ON p.item_id = i.id
                  AND p.store_id = ?
@@ -259,7 +259,7 @@ def init_inventory_views(app, get_db):
                 is_internal = row["is_internal"] == 1
 
                 if end_qty > 0 or is_internal:
-                    items.append(
+                    mst_items.append(
                         {
                             "item_id": item_id,
                             "item_code": item_code,
@@ -273,8 +273,8 @@ def init_inventory_views(app, get_db):
                         }
                     )
 
-            # ★ items を温度帯ごとにグルーピング
-            for it in items:
+            # ★ mst_items を温度帯ごとにグルーピング
+            for it in mst_items:
                 z = it.get("storage_type") or "その他"
                 if z not in grouped_items:
                     grouped_items[z] = []
@@ -282,10 +282,10 @@ def init_inventory_views(app, get_db):
 
         return render_template(
             "inventory_count.html",
-            stores=stores,
+            mst_stores=mst_stores,
             selected_store_id=selected_store_id,
             count_date=count_date,
-            items=items,
+            mst_items=mst_items,
             latest_date=latest_date,
             latest_dates=latest_dates,
             zones=zones,

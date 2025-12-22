@@ -46,7 +46,7 @@ def init_inventory_locations_actions(app, get_db):
         flash("Saved inventory locations.")
         return redirect(url_for("inventory_locations", store_id=store_id))
 
-    @app.route("/inventory/reorder-items", methods=["POST"])
+    @app.route("/inventory/reorder-mst_items", methods=["POST"])
     def inventory_reorder_items():
         db = get_db()
         payload = request.get_json(force=True)
