@@ -2,7 +2,12 @@
 <html lang="{{ lang }}">
   <head>
     <meta charset="UTF-8" />
-    <title>{% block title %}TEST Dev{% endblock %}</title>
+<title>
+  {% if env == "prod" %}Kurajika CMS
+  {% elif env == "rft" %}[RFT] Kurajika CMS
+  {% else %}[DEV] Kurajika CMS
+  {% endif %}
+</title>
 
     <style>
       /* ============================
@@ -39,7 +44,8 @@ body.env-rft  { background: #fff5fb; }   /* light purple (refactor) */
   background: #8b2cff;
   color: #ffffff;
   box-shadow: 0 2px 6px rgba(139, 44, 255, 0.4);
-}     h1 { margin-bottom: 24px; }
+}   
+h1 { margin-bottom: 24px; }
 
       /* ============================
          Top bar (language switch)
@@ -147,38 +153,26 @@ body.env-rft  { background: #fff5fb; }   /* light purple (refactor) */
 
     {% block head_extra %}{% endblock %}
   </head>
+<body class="env-{{ env }}">
 
-  <body class="env-{{ env }}">
-  
-    <!-- language switch (operator-controlled) -->
-    <div class="top-bar">
-      <form method="post" action="{{ url_for('set_lang') }}">
-        <input type="hidden" name="next" value="{{ request.full_path }}">
-        <select name="lang" onchange="this.form.submit()">
-          {% for code in supported_langs %}
-            <option value="{{ code }}" {% if lang == code %}selected{% endif %}>
-              {{ code.upper() }}
-            </option>
-          {% endfor %}
-        </select>
-      </form>
+  {% if env == "rft" %}
+    <div class="env-banner rft">
+      ⚠ REFACTOR ENVIRONMENT (RFT) — Schema &amp; data may be destructively changed
     </div>
+  {% endif %}
 
-    {% if env == "prod" %}
-  <h1>倉島事業開発 CMS – Postgres</h1>
-{% else %}
-  <h1>TEST TST TEST</h1>
-{% endif %}
+  <!-- language switch (operator-controlled) -->
+  <div class="top-bar">
+    ...
+  </div>
 
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        <div class="flash">
-          {% for msg in messages %}
-            <div>{{ msg }}</div>
-          {% endfor %}
-        </div>
-      {% endif %}
-    {% endwith %}
+  {% if env == "prod" %}
+    <h1>倉島事業開発 CMS – Postgres</h1>
+  {% elif env == "rft" %}
+    <h1>⚠ RFT – Refactor Environment</h1>
+  {% else %}
+    <h1>DEV – Test Environment</h1>
+  {% endif %}
 
     <!-- Navigation -->
     <nav>
@@ -212,11 +206,10 @@ body.env-rft  { background: #fff5fb; }   /* light purple (refactor) */
     {% block content %}{% endblock %}
     {% block body_extra %}{% endblock %}
   
-  <footer>
-<div style="margin-top:20px; font-size:12px; opacity:0.6;">
-  env={{ env }} / version={{ g.app_version }}
-</div>
-    
+<footer>
+    <div style="margin-top:20px; font-size:12px; opacity:0.7;">
+      env=<strong>{{ env }}</strong> / version={{ g.app_version }}
+    </div>
   </footer>
-  </body>
+</body>
 </html>
