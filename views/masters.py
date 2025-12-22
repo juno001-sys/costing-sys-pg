@@ -191,7 +191,7 @@ def init_master_views(app, get_db):
     # /mst_items
     # 仕入先ごとに SSIII（5桁）コード自動採番
     # ----------------------------------------
-    @app.route("/mst_items", methods=["GET", "POST"])
+    @app.route("/mst_items", methods=["GET", "POST"], endpoint="items_master"))
     def items_master():
         db = get_db()
 
@@ -297,7 +297,7 @@ def init_master_views(app, get_db):
                 db.rollback()
                 flash(f"mst_items テーブルへの登録でエラーが発生しました: {e}")
 
-            return redirect(url_for("items_master"))
+            return redirect(url_for("items_master.html"))
 
         # --------- GET：表示 ----------
         return render_template(
@@ -538,7 +538,7 @@ def init_master_views(app, get_db):
     # 店舗編集・無効化 ＋ 仕入れ先紐付け
     # /mst_stores/<id>/edit
     # ----------------------------------------
-    @app.route("/mst_stores/<int:store_id>/edit", methods=["GET", "POST"])
+    @app.route("/mst_stores/<int:store_id>/edit", methods=["GET", "POST"], endpoint="stores_master"))
     def edit_store(store_id):
         db = get_db()
 
