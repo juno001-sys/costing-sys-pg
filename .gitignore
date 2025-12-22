@@ -1,2 +1,9 @@
 venv/
 .DS_Store
+# local dump files
+dev_dump_*.sql
+dev_dump_*.dump
+
+# local migration scripts (may contain secrets)
+migrate_dev_to_rft.sh
+01.start__dev_to_rft.sh
