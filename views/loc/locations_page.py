@@ -28,7 +28,7 @@ def init_location_page(app, get_db):
                 FROM mst_items i
                 LEFT JOIN purchases p
                   ON p.item_id = i.id
-                 AND p.store_id = ?
+                 AND p.store_id = %%s
                  AND p.is_deleted = 0
                 WHERE i.is_internal = 1
                    OR p.id IS NOT NULL

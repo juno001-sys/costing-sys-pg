@@ -117,7 +117,7 @@ def log_purchase_change(db, purchase_id, action, old_row, new_row, changed_by=No
         """
         INSERT INTO purchase_logs
           (purchase_id, action, old_data, new_data, changed_by, changed_at)
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (%%s, %%s, %%s, %%s, %%s, %%s)
         """,
         (
             purchase_id,

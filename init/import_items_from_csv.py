@@ -60,7 +60,7 @@ def main():
         if c2 in counters:
             continue
         cur.execute(
-            "SELECT MAX(code) AS max_code FROM mst_items WHERE code LIKE ?",
+            "SELECT MAX(code) AS max_code FROM mst_items WHERE code LIKE %%s",
             (f"{c2}%",),
         )
         row = cur.fetchone()
@@ -136,7 +136,7 @@ def main():
                  temp_zone, purchase_unit, inventory_unit,
                  standard_inventory_unit, min_purchase_unit,
                  is_internal, is_active)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (%%s, %%s, %%s, %%s, %%s, %%s, %%s, %%s, %%s, %%s, %%s, %%s, %%s, %%s, %%s)
             """,
             (
                 supplier_id,
