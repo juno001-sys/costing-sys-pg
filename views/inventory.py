@@ -46,13 +46,13 @@ def init_inventory_views(app, get_db):
         db = get_db()
 
         # 店舗一覧
-        mst_stores = db.execute(
+        stores = db.execute(
             """
-        SELECT id, code, name
-        FROM mst_stores
-        WHERE is_active = 1
-        ORDER BY code, id
-        """
+            SELECT id, code, name
+            FROM mst_stores
+            WHERE COALESCE(is_active, 1) = 1
+            ORDER BY code, id
+            """
         ).fetchall()
 
         # 今日の日付をデフォルトに
@@ -287,7 +287,7 @@ def init_inventory_views(app, get_db):
 
         return render_template(
             "inventory_count.html",
-            mst_stores=mst_stores,
+            stores=stores,
             selected_store_id=selected_store_id,
             count_date=count_date,
             mst_items=mst_items,
