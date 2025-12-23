@@ -47,7 +47,12 @@ def init_inventory_views(app, get_db):
 
         # 店舗一覧
         mst_stores = db.execute(
-            "SELECT id, name FROM mst_stores ORDER BY code"
+            """
+        SELECT id, code, name
+        FROM mst_stores
+        WHERE is_active = 1
+        ORDER BY code, id
+        """
         ).fetchall()
 
         # 今日の日付をデフォルトに
