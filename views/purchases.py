@@ -44,7 +44,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
             """
             SELECT id, code, name
             FROM mst_stores
-            WHERE is_active = 1
+            WHERE COALESCE(is_active, 1) = 1
             ORDER BY code, id
             """
         ).fetchall()
