@@ -469,5 +469,6 @@ def init_purchase_views(app, get_db, log_purchase_change):
             "purchase_edit.html",
             purchase=purchase,
             mst_stores=mst_stores,
+            stores=mst_stores,
             suppliers=suppliers,
         )

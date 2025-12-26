@@ -11,7 +11,7 @@
               id="store_id"
               onchange="document.getElementById('focus_after_reload').value='supplier'; this.form.submit();">
         <option value="">{{ t("inventory.select_store") }}</option>
-        {% for st in stores %}
+        {% for st in mst_stores %}
           <option value="{{ st.id }}"
                   {% if selected_store_id == st.id %}selected{% endif %}>
             {{ st.name }}
