@@ -9,15 +9,7 @@
     const tbody = document.getElementById("item-rows");
     const form = document.getElementById("purchase-form");
 
-    // Disable Enter default submit, but allow our own key handlers to run
-    if (form) {
-      form.addEventListener("keydown", (e) => {
-        if (e.key !== "Enter") return;
-        if (e.isComposing || isComposing || e.key === "Process") return;
-        e.preventDefault();
-      });
-    }
-
+    // 🚨 Critical guard: if detail table does not exist, stop here
     if (!tbody) return;
 
     // --- IME guard (Japanese input) ---
@@ -37,9 +29,26 @@
       true
     );
 
+    // Prevent Enter from submitting the form in HEADER fields only.
+    // Detail rows (#item-rows) are handled by tbody key handlers.
+    if (form) {
+      form.addEventListener(
+        "keydown",
+        (e) => {
+          if (e.key !== "Enter") return;
+          if (e.isComposing || isComposing || e.key === "Process") return;
+
+          // If Enter is pressed inside detail rows, let tbody handle it
+          if (e.target.closest("#item-rows")) return;
+
+          // Otherwise (store / supplier / date), block submit
+          e.preventDefault();
+        },
+        true
+      );
+    }
+
     let baseItems = [];
-
-
     // -------------------------------
     // Restore focus after refresh
     // -------------------------------
