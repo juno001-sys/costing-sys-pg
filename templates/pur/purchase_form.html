@@ -1,9 +1,6 @@
-{% extends "layout/base.html" %}
-
-{% block title %}{{ t("purchase.form.title") }}{% endblock %}
-
-{# Put the old CSS here so amount-display comes back #}
-{% block head_extra %}
+{% extends "layout/base.html" %} {% block title %}{{ t("purchase.form.title")
+}}{% endblock %} {# Put the old CSS here so amount-display comes back #} {%
+block head_extra %}
 <style>
   /* 金額欄は「表示専用」っぽく */
   .amount-display {
@@ -13,10 +10,15 @@
     width: 120px;
     padding-right: 4px;
   }
-  .amount-display:focus { outline: none; }
+  .amount-display:focus {
+    outline: none;
+  }
 
   /* (keep the rest of your old purchase_form.html CSS here) */
-  .item-cell { position: relative; padding-right: 8px; }
+  .item-cell {
+    position: relative;
+    padding-right: 8px;
+  }
   .item-autocomplete {
     width: 100%;
     box-sizing: border-box;
@@ -38,37 +40,40 @@
     overflow-y: auto;
     padding: 2px 0;
   }
-  .item-suggestions[hidden] { display: none; }
+  .item-suggestions[hidden] {
+    display: none;
+  }
 
   .item-suggest-item {
     padding: 6px 8px;
     cursor: pointer;
     white-space: nowrap;
   }
-  .item-suggest-item.active { background: #e6f0ff; }
+  .item-suggest-item.active {
+    background: #e6f0ff;
+  }
 </style>
-{% endblock %}
-
-{% block content %}
+{% endblock %} {% block content %}
 <h2>{{ t("purchase.form.title") }}</h2>
 
 <form method="post" id="purchase-form">
-  <input type="hidden" id="focus_after_reload" name="focus_after_reload" value="">
+  <input
+    type="hidden"
+    id="focus_after_reload"
+    name="focus_after_reload"
+    value=""
+  />
 
-  {% include "(pur/partials/_)header_form.html" %}
-  {% include "(pur/partials/_)detail_table.html" %}
+  {% include "(pur/partials/_header_form.html" %} {% include
+  "(pur/partials/_detail_table.html" %}
 
-  <div style="margin-top:16px;">
+  <div style="margin-top: 16px">
     <button type="submit">{{ t("common.create") }}</button>
   </div>
 </form>
 
-<hr style="margin:32px 0;">
+<hr style="margin: 32px 0" />
 
-{% include "(pur/partials/_)recent_list.html" %}
-{% endblock %}
-
-{#  Make sure scripts load at the very end of body #}
-{% block body_extra %}
-{% include "(pur/partials/_)scripts.html" %}
-{% endblock %}
+{% include "(pur/partials/_recent_list.html" %} {% endblock %} {# Make sure
+scripts load at the very end of body #} {% block body_extra %} {% include
+"(pur/partials/_scripts.html" %} {% endblock %}

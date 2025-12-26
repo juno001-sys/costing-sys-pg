@@ -42,7 +42,7 @@ def init_master_views(app, get_db):
                     db.execute(
                         """
                         INSERT INTO suppliers (code, name, phone, email, address)
-                        VALUES (%%s, %%s, %%s, %%s, %%s)
+                        VALUES (%s, %s, %s, %s, %s)
                         """,
                         (code if code else None, name, phone, email, address),
                     )
@@ -81,7 +81,7 @@ def init_master_views(app, get_db):
             """
             SELECT id, code, name, phone, email, address, is_active
             FROM suppliers
-            WHERE id = %%s
+            WHERE id = %s
             """,
             (supplier_id,),
         ).fetchone()
@@ -103,7 +103,7 @@ def init_master_views(app, get_db):
                     """
                     SELECT COUNT(*) AS cnt
                     FROM purchases
-                    WHERE supplier_id = %%s
+                    WHERE supplier_id = %s
                       AND is_deleted = 0
                     """,
                     (supplier_id,),
@@ -113,7 +113,7 @@ def init_master_views(app, get_db):
                     """
                     SELECT COUNT(*) AS cnt
                     FROM mst_items
-                    WHERE supplier_id = %%s
+                    WHERE supplier_id = %s
                     """,
                     (supplier_id,),
                 ).fetchone()
@@ -131,7 +131,7 @@ def init_master_views(app, get_db):
                 # 2) 利用されていなければ無効化
                 try:
                     db.execute(
-                        "UPDATE suppliers SET is_active = 0 WHERE id = %%s",
+                        "UPDATE suppliers SET is_active = 0 WHERE id = %s",
                         (supplier_id,),
                     )
                     db.commit()
@@ -163,12 +163,12 @@ def init_master_views(app, get_db):
                     """
                     UPDATE suppliers
                     SET
-                      code    = %%s,
-                      name    = %%s,
-                      phone   = %%s,
-                      email   = %%s,
-                      address = %%s
-                    WHERE id = %%s
+                      code    = %s,
+                      name    = %s,
+                      phone   = %s,
+                      email   = %s,
+                      address = %s
+                    WHERE id = %s
                     """,
                     (code if code else None, name, phone, email, address, supplier_id),
                 )
@@ -244,7 +244,7 @@ def init_master_views(app, get_db):
 
             # 仕入先コード2桁を取得（SS部分）
             supplier = db.execute(
-                "SELECT code FROM suppliers WHERE id = %%s",
+                "SELECT code FROM suppliers WHERE id = %s",
                 (supplier_id,),
             ).fetchone()
 
@@ -260,7 +260,7 @@ def init_master_views(app, get_db):
 
             # 既存コードの最大値（SSIII の III 部分）を取得
             row = db.execute(
-                "SELECT MAX(code) AS max_code FROM mst_items WHERE code LIKE %%s",
+                "SELECT MAX(code) AS max_code FROM mst_items WHERE code LIKE %s",
                 (f"{code2}%",),
             ).fetchone()
 
@@ -287,7 +287,7 @@ def init_master_views(app, get_db):
                     """
                     INSERT INTO mst_items
                         (code, name, unit, supplier_id, temp_zone, is_internal)
-                    VALUES (%%s, %%s, %%s, %%s, %%s, %%s)
+                    VALUES (%s, %s, %s, %s, %s, %s)
                     """,
                     (new_code, name, unit_val, supplier_id, temp_zone, is_internal),
                 )
@@ -363,7 +363,7 @@ def init_master_views(app, get_db):
                     """
                     SELECT COUNT(*) AS cnt
                     FROM purchases
-                    WHERE item_id = %%s
+                    WHERE item_id = %s
                       AND is_deleted = 0
                     """,
                     (item_id,),
@@ -373,7 +373,7 @@ def init_master_views(app, get_db):
                     """
                     SELECT COUNT(*) AS cnt
                     FROM stock_counts
-                    WHERE item_id = %%s
+                    WHERE item_id = %s
                     """,
                     (item_id,),
                 ).fetchone()
@@ -391,7 +391,7 @@ def init_master_views(app, get_db):
                 # 2) 利用されていなければ無効化
                 try:
                     db.execute(
-                        "UPDATE mst_items SET is_active = 0 WHERE id = %%s",
+                        "UPDATE mst_items SET is_active = 0 WHERE id = %s",
                         (item_id,),
                     )
                     db.commit()
@@ -453,16 +453,16 @@ def init_master_views(app, get_db):
                     """
                     UPDATE mst_items
                     SET
-                      name              = %%s,
-                      unit              = %%s,
-                      supplier_id       = %%s,
-                      temp_zone         = %%s,
-                      purchase_unit     = %%s,
-                      inventory_unit    = %%s,
-                      min_purchase_unit = %%s,
-                      is_internal       = %%s,
-                      storage_cost      = %%s
-                    WHERE id = %%s
+                      name              = %s,
+                      unit              = %s,
+                      supplier_id       = %s,
+                      temp_zone         = %s,
+                      purchase_unit     = %s,
+                      inventory_unit    = %s,
+                      min_purchase_unit = %s,
+                      is_internal       = %s,
+                      storage_cost      = %s
+                    WHERE id = %s
                     """,
                     (
                         name,
@@ -547,7 +547,7 @@ def init_master_views(app, get_db):
             """
             SELECT id, code, name, seats, opened_on, closed_on, is_active
             FROM mst_stores
-            WHERE id = %%s
+            WHERE id = %s
             """,
             (store_id,),
         ).fetchone()
@@ -571,7 +571,7 @@ def init_master_views(app, get_db):
             """
             SELECT supplier_id
             FROM store_suppliers
-            WHERE store_id = %%s
+            WHERE store_id = %s
               AND is_active = 1
             """,
             (store_id,),
@@ -588,7 +588,7 @@ def init_master_views(app, get_db):
                     """
                     SELECT COUNT(*) AS cnt
                     FROM purchases
-                    WHERE store_id = %%s
+                    WHERE store_id = %s
                       AND is_deleted = 0
                     """,
                     (store_id,),
@@ -599,7 +599,7 @@ def init_master_views(app, get_db):
                     return redirect(url_for("stores_master"))
 
                 db.execute(
-                    "UPDATE mst_stores SET is_active = 0 WHERE id = %%s",
+                    "UPDATE mst_stores SET is_active = 0 WHERE id = %s",
                     (store_id,),
                 )
                 db.commit()
@@ -638,8 +638,8 @@ def init_master_views(app, get_db):
             db.execute(
                 """
                 UPDATE mst_stores
-                SET code = %%s, name = %%s, seats = %%s, opened_on = %%s, closed_on = %%s
-                WHERE id = %%s
+                SET code = %s, name = %s, seats = %s, opened_on = %s, closed_on = %s
+                WHERE id = %s
                 """,
                 (code or None, name, seats_val, opened_on or None, closed_on or None, store_id),
             )
@@ -661,7 +661,7 @@ def init_master_views(app, get_db):
                 db.execute(
                     """
                     INSERT INTO store_suppliers (store_id, supplier_id, is_active)
-                    VALUES (%%s, %%s, 1)
+                    VALUES (%s, %s, 1)
                     ON CONFLICT (store_id, supplier_id)
                     DO UPDATE SET is_active = 1
                     """,
@@ -674,7 +674,7 @@ def init_master_views(app, get_db):
                     """
                     UPDATE store_suppliers
                     SET is_active = 0
-                    WHERE store_id = %%s AND supplier_id = %%s
+                    WHERE store_id = %s AND supplier_id = %s
                     """,
                     (store_id, sid),
                 )
