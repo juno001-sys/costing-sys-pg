@@ -245,7 +245,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
         purchases = db.execute(sql, params).fetchall()
 
         return render_template(
-            "purchase_form.html",
+            "pur/purchase_form.html",
             mst_stores=mst_stores,
             suppliers=suppliers,
             purchases=purchases,
@@ -397,7 +397,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
             if not delivery_date or not item_id:
                 flash("納品日と品目は必須です。")
                 return render_template(
-                    "purchase_edit.html",
+                    "pur/purchase_edit.html",
                     purchase=purchase,
                     mst_stores=mst_stores,
                     suppliers=suppliers,
@@ -466,7 +466,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
 
         # GET のとき：編集画面表示
         return render_template(
-            "purchase_edit.html",
+            "pur/purchase_edit.html",
             purchase=purchase,
             mst_stores=mst_stores,
             stores=mst_stores,

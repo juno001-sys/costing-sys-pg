@@ -178,7 +178,7 @@ def cost_report():
     cogs_total = sum(cogs_by_month.values())
 
     return render_template(
-        "cost_report.html",
+        "inv/cost_report.html",
         mst_stores=mst_stores,
         selected_store_id=selected_store_id,
         month_keys=month_keys,

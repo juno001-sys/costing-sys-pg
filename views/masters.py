@@ -64,7 +64,7 @@ def init_master_views(app, get_db):
         ).fetchall()
 
         return render_template(
-            "suppliers_master.html",
+            "mst/suppliers_master.html",
             suppliers=suppliers,
         )
 
@@ -154,7 +154,7 @@ def init_master_views(app, get_db):
             if not name:
                 flash("仕入先名は必須です。")
                 return render_template(
-                    "suppliers_edit.html",
+                    "mst/suppliers_edit.html",
                     supplier=supplier,
                 )
 
@@ -182,7 +182,7 @@ def init_master_views(app, get_db):
 
         # GET のとき：編集画面表示
         return render_template(
-            "suppliers_edit.html",
+            "mst/suppliers_edit.html",
             supplier=supplier,
         )
 
@@ -237,7 +237,7 @@ def init_master_views(app, get_db):
             if not supplier_id or not name:
                 flash("仕入先と品名は必須です。")
                 return render_template(
-                    "items_master.html",
+                    "mst/items_master.html",
                     suppliers=suppliers,
                     mst_items=mst_items,
                 )
@@ -251,7 +251,7 @@ def init_master_views(app, get_db):
             if supplier is None or supplier["code"] is None:
                 flash("仕入先コードが未設定です（仕入先マスタを確認してください）。")
                 return render_template(
-                    "items_master.html",
+                    "mst/items_master.html",
                     suppliers=suppliers,
                     mst_items=mst_items,
                 )
@@ -297,11 +297,11 @@ def init_master_views(app, get_db):
                 db.rollback()
                 flash(f"mst_items テーブルへの登録でエラーが発生しました: {e}")
 
-            return redirect(url_for("items_master.html"))
+            return redirect(url_for("mst/items_master.html"))
 
         # --------- GET：表示 ----------
         return render_template(
-            "items_master.html",
+            "mst/items_master.html",
             suppliers=suppliers,
             items=mst_items,
         )
@@ -443,7 +443,7 @@ def init_master_views(app, get_db):
             if not name:
                 flash("品目名は必須です。")
                 return render_template(
-                    "items_edit.html",
+                    "mst/items_edit.html",
                     item=item,
                     suppliers=suppliers,
                 )
@@ -487,7 +487,7 @@ def init_master_views(app, get_db):
 
         # GET のとき：編集画面表示
         return render_template(
-            "items_edit.html",
+            "mst/items_edit.html",
             item=item,
             suppliers=suppliers,
         )
@@ -531,7 +531,7 @@ def init_master_views(app, get_db):
             """
         ).fetchall()
     
-        return render_template("stores_master.html", stores=mst_stores)
+        return render_template("mst/stores_master.html", stores=mst_stores)
 
 
         # ----------------------------------------
@@ -628,7 +628,7 @@ def init_master_views(app, get_db):
             if not name:
                 flash("店舗名は必須です。")
                 return render_template(
-                    "stores_edit.html",
+                    "mst/stores_edit.html",
                     store=store,
                     suppliers=suppliers,
                     linked_supplier_ids=linked_supplier_ids,
@@ -686,7 +686,7 @@ def init_master_views(app, get_db):
 
         # GET のとき：編集画面表示
         return render_template(
-            "stores_edit.html",
+            "mst/stores_edit.html",
             store=store,
             suppliers=suppliers,
             linked_supplier_ids=linked_supplier_ids,

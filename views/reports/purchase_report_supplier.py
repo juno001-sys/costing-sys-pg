@@ -153,7 +153,7 @@ def purchase_report_supplier(supplier_id: int):
     selected_store_id = int(store_id) if store_id else None
 
     return render_template(
-        "purchase_report_supplier.html",
+        "pur/purchase_report_supplier.html",
         mst_stores=mst_stores,
         selected_store_id=selected_store_id,
         supplier_id=supplier_id,

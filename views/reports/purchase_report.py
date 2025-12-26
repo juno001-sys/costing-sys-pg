@@ -86,7 +86,7 @@ def purchase_report():
     ]
 
     return render_template(
-        "purchase_report.html",
+        "pur/purchase_report.html",
         mst_stores=mst_stores,
         selected_store_id=int(store_id) if store_id else None,
         rows=rows,

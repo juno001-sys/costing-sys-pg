@@ -200,7 +200,7 @@ def usage_report():
     item_rows.sort(key=lambda x: x["total_used"], reverse=True)
 
     return render_template(
-        "usage_report.html",
+        "inv/usage_report.html",
         mst_stores=mst_stores,
         selected_store_id=selected_store_id,
         suppliers=suppliers,

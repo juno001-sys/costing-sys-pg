@@ -286,7 +286,7 @@ def init_inventory_views(app, get_db):
                 grouped_items[z].append(it)
 
         return render_template(
-            "inventory_count.html",
+            "inv/inventory_count.html",
             stores=stores,
             selected_store_id=selected_store_id,
             count_date=count_date,
