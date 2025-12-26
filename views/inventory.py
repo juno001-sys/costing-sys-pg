@@ -18,9 +18,9 @@ def get_latest_stock_count_dates(db, store_id, limit=3):
         """
         SELECT DISTINCT count_date
         FROM stock_counts
-        WHERE store_id = %%s
+        WHERE store_id = %s
         ORDER BY count_date DESC
-        LIMIT %%s
+        LIMIT %s
         """,
         (store_id, limit),
     ).fetchall()
@@ -95,7 +95,7 @@ def init_inventory_views(app, get_db):
                     INSERT INTO stock_counts
                         (store_id, item_id, count_date,
                          system_qty, counted_qty, diff_qty, created_at)
-                    VALUES (%%s, %%s, %%s, %%s, %%s, %%s, %%s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
                         store_id,
@@ -159,8 +159,8 @@ def init_inventory_views(app, get_db):
                 FROM mst_items i
                 JOIN purchases p
                   ON p.item_id = i.id
-                 AND p.store_id = %%s
-                 AND p.delivery_date <= %%s
+                 AND p.store_id = %s
+                 AND p.delivery_date <= %s
                  AND p.is_deleted = 0
                 WHERE i.is_internal = 0
 
@@ -180,9 +180,9 @@ def init_inventory_views(app, get_db):
                     """
                     SELECT counted_qty, count_date
                     FROM stock_counts
-                    WHERE store_id = %%s
-                      AND item_id  = %%s
-                      AND count_date <= %%s
+                    WHERE store_id = %s
+                      AND item_id  = %s
+                      AND count_date <= %s
                     ORDER BY count_date DESC, id DESC
                     LIMIT 1
                     """,
@@ -197,10 +197,10 @@ def init_inventory_views(app, get_db):
                         """
                         SELECT COALESCE(SUM(quantity), 0) AS qty
                         FROM purchases
-                        WHERE store_id = %%s
-                          AND item_id  = %%s
-                          AND delivery_date > %%s
-                          AND delivery_date <= %%s
+                        WHERE store_id = %s
+                          AND item_id  = %s
+                          AND delivery_date > %s
+                          AND delivery_date <= %s
                           AND is_deleted = 0
                         """,
                         (store_id, item_id, start_date, count_date),
@@ -211,9 +211,9 @@ def init_inventory_views(app, get_db):
                         """
                         SELECT COALESCE(SUM(quantity), 0) AS qty
                         FROM purchases
-                        WHERE store_id = %%s
-                          AND item_id  = %%s
-                          AND delivery_date <= %%s
+                        WHERE store_id = %s
+                          AND item_id  = %s
+                          AND delivery_date <= %s
                           AND is_deleted = 0
                         """,
                         (store_id, item_id, count_date),
@@ -232,9 +232,9 @@ def init_inventory_views(app, get_db):
                         ELSE 0
                       END AS unit_price
                     FROM purchases
-                    WHERE store_id = %%s
-                      AND item_id  = %%s
-                      AND delivery_date <= %%s
+                    WHERE store_id = %s
+                      AND item_id  = %s
+                      AND delivery_date <= %s
                       AND is_deleted = 0
                     """,
                     (store_id, item_id, count_date),
@@ -248,9 +248,9 @@ def init_inventory_views(app, get_db):
                     """
                     SELECT counted_qty
                     FROM stock_counts
-                    WHERE store_id   = %%s
-                      AND item_id    = %%s
-                      AND count_date = %%s
+                    WHERE store_id   = %s
+                      AND item_id    = %s
+                      AND count_date = %s
                     ORDER BY id DESC
                     LIMIT 1
                     """,
