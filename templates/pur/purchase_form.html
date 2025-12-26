@@ -64,8 +64,9 @@ block head_extra %}
     value=""
   />
 
-  {% include "(pur/partials/_header_form.html" %} {% include
-  "(pur/partials/_detail_table.html" %}
+  {% include "pur/partials/_header_form.html" %} {% include
+  "pur/partials/_detail_table.html" %} {% include
+  "pur/partials/_recent_list.html" %} {% include "pur/partials/_scripts.html" %}
 
   <div style="margin-top: 16px">
     <button type="submit">{{ t("common.create") }}</button>
