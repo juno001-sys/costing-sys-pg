@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "layout/base.html" %}
 
 {% block title %}{{ t("purchase.form.title") }}{% endblock %}
 
@@ -55,8 +55,8 @@
 <form method="post" id="purchase-form">
   <input type="hidden" id="focus_after_reload" name="focus_after_reload" value="">
 
-  {% include "purchases/_header_form.html" %}
-  {% include "purchases/_detail_table.html" %}
+  {% include "(pur/partials/_)header_form.html" %}
+  {% include "(pur/partials/_)detail_table.html" %}
 
   <div style="margin-top:16px;">
     <button type="submit">{{ t("common.create") }}</button>
@@ -65,10 +65,10 @@
 
 <hr style="margin:32px 0;">
 
-{% include "purchases/_recent_list.html" %}
+{% include "(pur/partials/_)recent_list.html" %}
 {% endblock %}
 
 {#  Make sure scripts load at the very end of body #}
 {% block body_extra %}
-{% include "purchases/_scripts.html" %}
+{% include "(pur/partials/_)scripts.html" %}
 {% endblock %}
