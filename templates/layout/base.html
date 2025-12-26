@@ -2,12 +2,10 @@
 <html lang="{{ lang }}">
   <head>
     <meta charset="UTF-8" />
-<title>
-  {% if env == "prod" %}Kurajika CMS
-  {% elif env == "rft" %}[RFT] Kurajika CMS
-  {% else %}[DEV] Kurajika CMS
-  {% endif %}
-</title>
+    <title>
+      {% if env == "prod" %}Kurajika CMS {% elif env == "rft" %}[RFT] Kurajika
+      CMS {% else %}[DEV] Kurajika CMS {% endif %}
+    </title>
 
     <style>
       /* ============================
@@ -20,32 +18,42 @@
         margin: 40px;
       }
 
- /* ============================
+      /* ============================
    環境別背景色
 ============================ */
 
-body.env-dev  { background: #f5fff8; }   /* light green */
-body.env-mail { background: #fff8f0; }
-body.env-prod { background: #ffffff; }   /* white */
-body.env-rft  { background: #fff5fb; }   /* light purple (refactor) */
+      body.env-dev {
+        background: #f5fff8;
+      } /* light green */
+      body.env-mail {
+        background: #fff8f0;
+      }
+      body.env-prod {
+        background: #ffffff;
+      } /* white */
+      body.env-rft {
+        background: #fff5fb;
+      } /* light purple (refactor) */
 
-/* ============================
+      /* ============================
    環境バナー（RFT専用）
 ============================ */
 
-.env-banner {
-  padding: 8px 16px;
-  margin-bottom: 16px;
-  font-weight: 700;
-  border-radius: 6px;
-}
+      .env-banner {
+        padding: 8px 16px;
+        margin-bottom: 16px;
+        font-weight: 700;
+        border-radius: 6px;
+      }
 
-.env-banner.rft {
-  background: #8b2cff;
-  color: #ffffff;
-  box-shadow: 0 2px 6px rgba(139, 44, 255, 0.4);
-}   
-h1 { margin-bottom: 24px; }
+      .env-banner.rft {
+        background: #8b2cff;
+        color: #ffffff;
+        box-shadow: 0 2px 6px rgba(139, 44, 255, 0.4);
+      }
+      h1 {
+        margin-bottom: 24px;
+      }
 
       /* ============================
          Top bar (language switch)
@@ -83,7 +91,9 @@ h1 { margin-bottom: 24px; }
         border-radius: 6px 6px 0 0;
       }
 
-      .nav-tabs a:hover { background: #f0f0f0; }
+      .nav-tabs a:hover {
+        background: #f0f0f0;
+      }
 
       .nav-tabs a.active {
         background: #f0f4ff;
@@ -111,7 +121,8 @@ h1 { margin-bottom: 24px; }
         margin-top: 20px;
       }
 
-      table th, table td {
+      table th,
+      table td {
         padding: 6px 10px;
         border: 1px solid #ddd;
       }
@@ -129,7 +140,43 @@ h1 { margin-bottom: 24px; }
         background: #e8f2ff;
       }
 
-      td.num, input.num { text-align: right; }
+      td.num,
+      input.num {
+        text-align: right;
+      }
+
+      /* Autocomplete dropdown (purchase form) */
+      .item-cell {
+        position: relative; /* anchor for absolute dropdown */
+      }
+
+      .item-suggestions {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+
+        max-height: 260px; /* prevents huge list */
+        overflow-y: auto;
+
+        z-index: 9999; /* float above table */
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
+      }
+
+      .item-suggest-item {
+        padding: 8px 10px;
+        cursor: pointer;
+        line-height: 1.2;
+      }
+
+      .item-suggest-item:hover,
+      .item-suggest-item.active {
+        background: #f0f4ff;
+      }
     </style>
 
     <!-- 共通JS（数値正規化） -->
@@ -139,7 +186,9 @@ h1 { margin-bottom: 24px; }
       window.KURAJIKA.toHalfWidthNum = function (str) {
         if (str == null) return "";
         return String(str)
-          .replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+          .replace(/[０-９]/g, (c) =>
+            String.fromCharCode(c.charCodeAt(0) - 0xfee0)
+          )
           .replace(/[，,]/g, "")
           .replace(/[^\d\-]/g, "");
       };
@@ -153,63 +202,90 @@ h1 { margin-bottom: 24px; }
 
     {% block head_extra %}{% endblock %}
   </head>
-<body class="env-{{ env }}">
-
-  {% if env == "rft" %}
+  <body class="env-{{ env }}">
+    {% if env == "rft" %}
     <div class="env-banner rft">
-      ⚠ REFACTOR ENVIRONMENT (RFT) — Schema &amp; data may be destructively changed
+      ⚠ REFACTOR ENVIRONMENT (RFT) — Schema &amp; data may be destructively
+      changed
     </div>
-  {% endif %}
+    {% endif %}
 
-  <!-- language switch (operator-controlled) -->
-  <div class="top-bar">
-    ...
-  </div>
+    <!-- language switch (operator-controlled) -->
+    <div class="top-bar">...</div>
 
-  {% if env == "prod" %}
+    {% if env == "prod" %}
     <h1>倉島事業開発 CMS – Postgres</h1>
-  {% elif env == "rft" %}
+    {% elif env == "rft" %}
     <h1>⚠ RFT – Refactor Environment</h1>
-  {% else %}
+    {% else %}
     <h1>DEV – Test Environment</h1>
-  {% endif %}
+    {% endif %}
 
     <!-- Navigation -->
     <nav>
       <ul class="nav-tabs">
-        <li><a href="{{ url_for('new_purchase') }}" class="{% if request.endpoint in ['new_purchase','edit_purchase'] %}active{% endif %}">
-          {{ t("nav.purchase_form") }}</a></li>
+        <li>
+          <a
+            href="{{ url_for('new_purchase') }}"
+            class="{% if request.endpoint in ['new_purchase','edit_purchase'] %}active{% endif %}"
+          >
+            {{ t("nav.purchase_form") }}</a
+          >
+        </li>
 
-        <li><a href="{{ url_for('inventory_count') }}" class="{% if request.endpoint == 'inventory_count' %}active{% endif %}">
-          {{ t("nav.inventory_count") }}</a></li>
+        <li>
+          <a
+            href="{{ url_for('inventory_count') }}"
+            class="{% if request.endpoint == 'inventory_count' %}active{% endif %}"
+          >
+            {{ t("nav.inventory_count") }}</a
+          >
+        </li>
 
-        <li><a href="{{ url_for('reports.purchase_report') }}">
-          {{ t("nav.purchase_report") }}</a></li>
+        <li>
+          <a href="{{ url_for('reports.purchase_report') }}">
+            {{ t("nav.purchase_report") }}</a
+          >
+        </li>
 
-        <li><a href="{{ url_for('reports.usage_report') }}">
-          {{ t("nav.usage_report") }}</a></li>
+        <li>
+          <a href="{{ url_for('reports.usage_report') }}">
+            {{ t("nav.usage_report") }}</a
+          >
+        </li>
 
-        <li><a href="{{ url_for('reports.cost_report') }}">
-          {{ t("nav.cost_report") }}</a></li>
+        <li>
+          <a href="{{ url_for('reports.cost_report') }}">
+            {{ t("nav.cost_report") }}</a
+          >
+        </li>
 
-        <li><a href="{{ url_for('suppliers_master') }}">
-          {{ t("nav.suppliers_master") }}</a></li>
+        <li>
+          <a href="{{ url_for('suppliers_master') }}">
+            {{ t("nav.suppliers_master") }}</a
+          >
+        </li>
 
-        <li><a href="{{ url_for('items_master') }}">
-          {{ t("nav.items_master") }}</a></li>
+        <li>
+          <a href="{{ url_for('items_master') }}">
+            {{ t("nav.items_master") }}</a
+          >
+        </li>
 
-        <li><a href="{{ url_for('stores_master') }}">
-          {{ t("nav.stores_master") }}</a></li>
+        <li>
+          <a href="{{ url_for('stores_master') }}">
+            {{ t("nav.stores_master") }}</a
+          >
+        </li>
       </ul>
     </nav>
 
-    {% block content %}{% endblock %}
-    {% block body_extra %}{% endblock %}
-  
-<footer>
-    <div style="margin-top:20px; font-size:12px; opacity:0.7;">
-      env=<strong>{{ env }}</strong> / version={{ g.app_version }}
-    </div>
-  </footer>
-</body>
+    {% block content %}{% endblock %} {% block body_extra %}{% endblock %}
+
+    <footer>
+      <div style="margin-top: 20px; font-size: 12px; opacity: 0.7">
+        env=<strong>{{ env }}</strong> / version={{ g.app_version }}
+      </div>
+    </footer>
+  </body>
 </html>
