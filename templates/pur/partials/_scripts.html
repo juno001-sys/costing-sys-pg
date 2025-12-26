@@ -13,8 +13,7 @@
     if (form) {
       form.addEventListener("keydown", (e) => {
         if (e.key !== "Enter") return;
-
-        // Stop browser submit, but DO NOT stop propagation
+        if (e.isComposing || isComposing || e.key === "Process") return;
         e.preventDefault();
       });
     }
