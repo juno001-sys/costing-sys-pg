@@ -52,21 +52,15 @@ block head_extra %}
   .item-suggest-item.active {
     background: #e6f0ff;
   }
-</style>
-{% endblock %} {% block content %}
+{% block content %}
 <h2>{{ t("purchase.form.title") }}</h2>
 
 <form method="post" id="purchase-form">
-  <input
-    type="hidden"
-    id="focus_after_reload"
-    name="focus_after_reload"
-    value=""
-  />
+  <input type="hidden" id="focus_after_reload" name="focus_after_reload" value="" />
 
-  {% include "pur/partials/_header_form.html" %} {% include
-  "pur/partials/_detail_table.html" %} {% include
-  "pur/partials/_recent_list.html" %} {% include "pur/partials/_scripts.html" %}
+  {% include "pur/partials/_header_form.html" %}
+  {% include "pur/partials/_detail_table.html" %}
+  {% include "pur/partials/_recent_list.html" %}
 
   <div style="margin-top: 16px">
     <button type="submit">{{ t("common.create") }}</button>
@@ -74,7 +68,9 @@ block head_extra %}
 </form>
 
 <hr style="margin: 32px 0" />
+{% endblock %}
 
-{% include "(pur/partials/_recent_list.html" %} {% endblock %} {# Make sure
-scripts load at the very end of body #} {% block body_extra %} {% include
-"(pur/partials/_scripts.html" %} {% endblock %}
+{# Make sure scripts load at the very end of body #}
+{% block body_extra %}
+  {% include "pur/partials/_scripts.html" %}
+{% endblock %}
