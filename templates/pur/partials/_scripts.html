@@ -384,7 +384,23 @@
       true
     );
   }
-
+  // Recalc on blur (when focus moves away)
+  if (calcTbody) {
+    calcTbody.addEventListener(
+      "blur",
+      (e) => {
+        if (
+          e.target.classList.contains("qty-input") ||
+          e.target.classList.contains("price-input")
+        ) {
+          const tr = e.target.closest("tr");
+          if (tr) calc_recalcRow(tr);
+          calc_recalcAll();
+        }
+      },
+      true // capture so blur is caught
+    );
+  }
   // Initial calc (in case values already exist)
   calc_recalcAll();
 
@@ -473,7 +489,8 @@
                name="amount_display_${newIndex}"
                class="amount-display"
                readonly
-               tabindex="-1">
+               tabindex="-1"
+               aria-readonly="true">
       </td>
 
       <td>

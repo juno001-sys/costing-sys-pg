@@ -179,38 +179,54 @@
       }
 
       /* Purchase form autocomplete dropdown styling */
-.item-cell {
-  position: relative;
-}
+      .item-cell {
+        position: relative;
+      }
 
-.item-suggestions {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 9999;
+      .item-suggestions {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 9999;
 
-  background: #fff;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  box-shadow: 0 8px 18px rgba(0,0,0,0.15);
+        background: #fff;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
 
-  max-height: 260px;   /* keeps it from being huge */
-  overflow-y: auto;
-  overflow-x: hidden;
-}
+        max-height: 260px; /* keeps it from being huge */
+        overflow-y: auto;
+        overflow-x: hidden;
+      }
 
-.item-suggest-item {
-  padding: 6px 12px;
-  font-size: 14px;
-  cursor: pointer;
-  white-space: nowrap;
-}
+      .item-suggest-item {
+        padding: 6px 12px;
+        font-size: 14px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
 
-.item-suggest-item:hover,
-.item-suggest-item.active {
-  background-color: #eef5ff;
-}
+      .item-suggest-item:hover,
+      .item-suggest-item.active {
+        background-color: #eef5ff;
+      }
+      /* Amount field should feel like a label, not an input */
+      .amount-display {
+        background: transparent;
+        border: none;
+        outline: none;
+        pointer-events: none; /* cannot click/focus/select */
+        user-select: none; /* cannot highlight text */
+        /* Right-align numeric fields */
+        .qty-input,
+        .price-input,
+        .amount-display,
+        input.num,
+        td.num {
+          text-align: right !important;
+        }
+      }
     </style>
 
     <!-- 共通JS（数値正規化） -->
