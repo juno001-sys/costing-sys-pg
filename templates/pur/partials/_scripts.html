@@ -29,8 +29,8 @@
       true
     );
 
-    // Prevent Enter from submitting the form in HEADER fields only.
-    // Detail rows (#item-rows) are handled by tbody key handlers.
+    // Never submit the form with Enter anywhere.
+    // Submit should happen only by clicking the submit button.
     if (form) {
       form.addEventListener(
         "keydown",
@@ -38,11 +38,8 @@
           if (e.key !== "Enter") return;
           if (e.isComposing || isComposing || e.key === "Process") return;
 
-          // If Enter is pressed inside detail rows, let tbody handle it
-          if (e.target.closest("#item-rows")) return;
-
-          // Otherwise (store / supplier / date), block submit
-          e.preventDefault();
+          e.preventDefault(); // blocks browser submit globally
+          // DO NOT stopPropagation so tbody handler still runs
         },
         true
       );
