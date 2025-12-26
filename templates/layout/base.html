@@ -177,6 +177,40 @@
       .item-suggest-item.active {
         background: #f0f4ff;
       }
+
+      /* Purchase form autocomplete dropdown styling */
+.item-cell {
+  position: relative;
+}
+
+.item-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.15);
+
+  max-height: 260px;   /* keeps it from being huge */
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.item-suggest-item {
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.item-suggest-item:hover,
+.item-suggest-item.active {
+  background-color: #eef5ff;
+}
     </style>
 
     <!-- 共通JS（数値正規化） -->

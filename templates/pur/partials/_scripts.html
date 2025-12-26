@@ -117,7 +117,9 @@
      Helpers
   =============================== */
     function getText(it) {
-      return (it.name || "").trim();
+      const code = (it.code || "").trim();
+      const name = (it.name || "").trim();
+      return code ? `${code} ${name}` : name;
     }
     function closeBox(box) {
       box.hidden = true;
@@ -221,13 +223,10 @@
     tbody.addEventListener("focusin", (e) => {
       const input = e.target;
       if (!input.classList.contains("item-autocomplete")) return;
-
       const { hidden, box } = getCellElements(input);
       if (!hidden || !box) return;
-
       buildSuggestions(input, hidden, box, true);
     });
-
     /* ===============================
      Arrow/Enter inside dropdown
   =============================== */
