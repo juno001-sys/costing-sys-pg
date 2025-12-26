@@ -2,14 +2,15 @@
 <html lang="{{ lang }}">
   <head>
     <meta charset="UTF-8" />
+
     <title>
-      {% if env == "prod" %}Kurajika CMS {% elif env == "rft" %}[RFT] Kurajika
-      CMS {% else %}[DEV] Kurajika CMS {% endif %}
+      {% if env == "prod" %} Kurajika CMS {% elif env == "rft" %} [RFT] Kurajika
+      CMS {% else %} [DEV] Kurajika CMS {% endif %}
     </title>
 
     <style>
       /* ============================
-         全体レイアウト / 環境別背景色
+         Base layout
       ============================ */
 
       body {
@@ -19,25 +20,25 @@
       }
 
       /* ============================
-   環境別背景色
-============================ */
+         Environment background
+      ============================ */
 
       body.env-dev {
         background: #f5fff8;
-      } /* light green */
+      }
       body.env-mail {
         background: #fff8f0;
       }
       body.env-prod {
         background: #ffffff;
-      } /* white */
+      }
       body.env-rft {
         background: #fff5fb;
-      } /* light purple (refactor) */
+      }
 
       /* ============================
-   環境バナー（RFT専用）
-============================ */
+         RFT banner
+      ============================ */
 
       .env-banner {
         padding: 8px 16px;
@@ -51,13 +52,15 @@
         color: #ffffff;
         box-shadow: 0 2px 6px rgba(139, 44, 255, 0.4);
       }
+
       h1 {
         margin-bottom: 24px;
       }
 
       /* ============================
-         Top bar (language switch)
+         Top bar
       ============================ */
+
       .top-bar {
         display: flex;
         justify-content: flex-end;
@@ -70,7 +73,7 @@
       }
 
       /* ============================
-         横タブメニュー
+         Navigation tabs
       ============================ */
 
       .nav-tabs {
@@ -101,7 +104,7 @@
       }
 
       /* ============================
-         flash メッセージ
+         Flash messages
       ============================ */
 
       .flash {
@@ -113,7 +116,7 @@
       }
 
       /* ============================
-         テーブル共通
+         Tables
       ============================ */
 
       table {
@@ -140,45 +143,37 @@
         background: #e8f2ff;
       }
 
+      /* ============================
+         Numeric alignment
+      ============================ */
+
       td.num,
-      input.num {
-        text-align: right;
+      input.num,
+      .qty-input,
+      .price-input,
+      .amount-display {
+        text-align: right !important;
       }
 
-      /* Autocomplete dropdown (purchase form) */
-      .item-cell {
-        position: relative; /* anchor for absolute dropdown */
+      /* ============================
+         Amount display (readonly)
+      ============================ */
+
+      .amount-display {
+        width: 100%;
+        box-sizing: border-box;
+        background: transparent;
+        border: none;
+        outline: none;
+        pointer-events: none;
+        user-select: none;
+        padding-right: 10px;
       }
 
-      .item-suggestions {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
+      /* ============================
+         Purchase autocomplete
+      ============================ */
 
-        background: #fff;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-
-        max-height: 260px; /* prevents huge list */
-        overflow-y: auto;
-
-        z-index: 9999; /* float above table */
-        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
-      }
-
-      .item-suggest-item {
-        padding: 8px 10px;
-        cursor: pointer;
-        line-height: 1.2;
-      }
-
-      .item-suggest-item:hover,
-      .item-suggest-item.active {
-        background: #f0f4ff;
-      }
-
-      /* Purchase form autocomplete dropdown styling */
       .item-cell {
         position: relative;
       }
@@ -195,7 +190,7 @@
         border-radius: 6px;
         box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
 
-        max-height: 260px; /* keeps it from being huge */
+        max-height: 260px;
         overflow-y: auto;
         overflow-x: hidden;
       }
@@ -210,22 +205,6 @@
       .item-suggest-item:hover,
       .item-suggest-item.active {
         background-color: #eef5ff;
-      }
-      /* Amount field should feel like a label, not an input */
-      .amount-display {
-        background: transparent;
-        border: none;
-        outline: none;
-        pointer-events: none; /* cannot click/focus/select */
-        user-select: none; /* cannot highlight text */
-        /* Right-align numeric fields */
-        .qty-input,
-        .price-input,
-        .amount-display,
-        input.num,
-        td.num {
-          text-align: right !important;
-        }
       }
     </style>
 
@@ -252,6 +231,7 @@
 
     {% block head_extra %}{% endblock %}
   </head>
+
   <body class="env-{{ env }}">
     {% if env == "rft" %}
     <div class="env-banner rft">
@@ -260,8 +240,9 @@
     </div>
     {% endif %}
 
-    <!-- language switch (operator-controlled) -->
-    <div class="top-bar">...</div>
+    <div class="top-bar">
+      <!-- language switch here -->
+    </div>
 
     {% if env == "prod" %}
     <h1>倉島事業開発 CMS – Postgres</h1>
@@ -271,7 +252,6 @@
     <h1>DEV – Test Environment</h1>
     {% endif %}
 
-    <!-- Navigation -->
     <nav>
       <ul class="nav-tabs">
         <li>
@@ -293,38 +273,33 @@
         </li>
 
         <li>
-          <a href="{{ url_for('reports.purchase_report') }}">
-            {{ t("nav.purchase_report") }}</a
+          <a href="{{ url_for('reports.purchase_report') }}"
+            >{{ t("nav.purchase_report") }}</a
           >
         </li>
-
         <li>
-          <a href="{{ url_for('reports.usage_report') }}">
-            {{ t("nav.usage_report") }}</a
+          <a href="{{ url_for('reports.usage_report') }}"
+            >{{ t("nav.usage_report") }}</a
           >
         </li>
-
         <li>
-          <a href="{{ url_for('reports.cost_report') }}">
-            {{ t("nav.cost_report") }}</a
+          <a href="{{ url_for('reports.cost_report') }}"
+            >{{ t("nav.cost_report") }}</a
           >
         </li>
-
         <li>
-          <a href="{{ url_for('suppliers_master') }}">
-            {{ t("nav.suppliers_master") }}</a
+          <a href="{{ url_for('suppliers_master') }}"
+            >{{ t("nav.suppliers_master") }}</a
           >
         </li>
-
         <li>
-          <a href="{{ url_for('items_master') }}">
-            {{ t("nav.items_master") }}</a
+          <a href="{{ url_for('items_master') }}"
+            >{{ t("nav.items_master") }}</a
           >
         </li>
-
         <li>
-          <a href="{{ url_for('stores_master') }}">
-            {{ t("nav.stores_master") }}</a
+          <a href="{{ url_for('stores_master') }}"
+            >{{ t("nav.stores_master") }}</a
           >
         </li>
       </ul>
