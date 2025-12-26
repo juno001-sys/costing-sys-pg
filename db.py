@@ -14,7 +14,7 @@ class DBWrapper:
             params = []
 
         # Convert SQLite style placeholders
-        fixed_sql = sql.replace("?", "%s")
+        fixed_sql = sql.replace("?", "%s") if "?" in sql else sql
 
         # ---- Guard: placeholder count vs params count ----
         placeholder_count = fixed_sql.count("%s")
