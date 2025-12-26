@@ -57,7 +57,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
                 FROM suppliers s
                 JOIN store_suppliers ss
                   ON s.id = ss.supplier_id
-                 AND ss.store_id = %%s
+                 AND ss.store_id = %s
                  AND ss.is_active = 1
                 WHERE s.is_active = 1
                 ORDER BY s.code
@@ -137,7 +137,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
                     INSERT INTO purchases
                       (store_id, supplier_id, item_id,
                        delivery_date, quantity, unit_price, amount, created_at)
-                    VALUES (%%s, %%s, %%s, %%s, %%s, %%s, %%s, %%s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                     """,
                     (
@@ -157,7 +157,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
 
                 # ログ用に新レコードを読み直し
                 new_row = db.execute(
-                    "SELECT * FROM purchases WHERE id = %%s",
+                    "SELECT * FROM purchases WHERE id = %s",
                     (new_id,),
                 ).fetchone()
 
@@ -204,20 +204,20 @@ def init_purchase_views(app, get_db, log_purchase_change):
         params = []
 
         if store_id:
-            where_clauses.append("p.store_id = %%s")
+            where_clauses.append("p.store_id = %s")
             params.append(store_id)
 
         if from_date:
-            where_clauses.append("p.delivery_date >= %%s")
+            where_clauses.append("p.delivery_date >= %s")
             params.append(from_date)
 
         if to_date:
-            where_clauses.append("p.delivery_date <= %%s")
+            where_clauses.append("p.delivery_date <= %s")
             params.append(to_date)
 
         if search_q:
             where_clauses.append(
-                "(i.name LIKE %%s OR s.name LIKE %%s OR i.code LIKE %%s)"
+                "(i.name LIKE %s OR s.name LIKE %s OR i.code LIKE %s)"
             )
             like = f"%{search_q}%"
             params.extend([like, like, like])
@@ -334,7 +334,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
               i.name AS item_name
             FROM purchases p
             LEFT JOIN mst_items i ON p.item_id = i.id
-            WHERE p.id = %%s
+            WHERE p.id = %s
               AND p.is_deleted = 0
             """,
             (purchase_id,),
@@ -350,7 +350,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
             # -------------------------
             if "delete" in request.form:
                 old_row = db.execute(
-                    "SELECT * FROM purchases WHERE id = %%s",
+                    "SELECT * FROM purchases WHERE id = %s",
                     (purchase_id,),
                 ).fetchone()
 
@@ -358,13 +358,13 @@ def init_purchase_views(app, get_db, log_purchase_change):
                     """
                     UPDATE purchases
                     SET is_deleted = 1
-                    WHERE id = %%s
+                    WHERE id = %s
                     """,
                     (purchase_id,),
                 )
 
                 new_row = db.execute(
-                    "SELECT * FROM purchases WHERE id = %%s",
+                    "SELECT * FROM purchases WHERE id = %s",
                     (purchase_id,),
                 ).fetchone()
 
@@ -416,7 +416,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
             amount_val = qty_val * unit_price_val
 
             old_row = db.execute(
-                "SELECT * FROM purchases WHERE id = %%s",
+                "SELECT * FROM purchases WHERE id = %s",
                 (purchase_id,),
             ).fetchone()
 
@@ -424,14 +424,14 @@ def init_purchase_views(app, get_db, log_purchase_change):
                 """
                 UPDATE purchases
                 SET
-                  store_id     = %%s,
-                  supplier_id  = %%s,
-                  item_id      = %%s,
-                  delivery_date = %%s,
-                  quantity     = %%s,
-                  unit_price   = %%s,
-                  amount       = %%s
-                WHERE id = %%s
+                  store_id     = %s,
+                  supplier_id  = %s,
+                  item_id      = %s,
+                  delivery_date = %s,
+                  quantity     = %s,
+                  unit_price   = %s,
+                  amount       = %s
+                WHERE id = %s
                 """,
                 (
                     store_id,
@@ -446,7 +446,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
             )
 
             new_row = db.execute(
-                "SELECT * FROM purchases WHERE id = %%s",
+                "SELECT * FROM purchases WHERE id = %s",
                 (purchase_id,),
             ).fetchone()
 
