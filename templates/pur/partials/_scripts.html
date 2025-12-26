@@ -29,6 +29,12 @@
       true
     );
 
+    const submitBtn = document.getElementById("submit-btn");
+    if (submitBtn && form) {
+      submitBtn.addEventListener("click", () => {
+        form.submit(); // explicit submit only by click
+      });
+    }
     // Never submit the form with Enter anywhere.
     // Submit should happen only by clicking the submit button.
     if (form) {
