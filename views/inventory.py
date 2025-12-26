@@ -290,6 +290,7 @@ def init_inventory_views(app, get_db):
             stores=stores,
             selected_store_id=selected_store_id,
             count_date=count_date,
+            items=mst_items,   
             mst_items=mst_items,
             latest_date=latest_date,
             latest_dates=latest_dates,
