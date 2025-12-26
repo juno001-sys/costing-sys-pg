@@ -9,7 +9,7 @@
     <div>
       <label>{{ t("form.store") }}：</label>
       <select name="store_id">
-        {% for s in stores %}
+        {% for s in mst_stores %}
           <option value="{{ s.id }}" {% if purchase.store_id == s.id %}selected{% endif %}>
             {{ s.name }}
           </option>
