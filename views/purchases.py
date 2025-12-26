@@ -67,7 +67,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
         else:
             suppliers = db.execute(
                 """
-                SELECT id, name
+                SELECT id, code, name
                 FROM suppliers
                 WHERE is_active = 1
                 ORDER BY code
