@@ -79,9 +79,9 @@ def init_purchase_views(app, get_db, log_purchase_change):
         #   明細   ：item_id_i, quantity_i, unit_price_i (i=1..row_count)
         # ----------------------------------------------------
         if request.method == "POST":
-            store_id = request.form.get("store_id") or None
-            header_supplier_id = request.form.get("supplier_id") or None
-            delivery_date = request.form.get("delivery_date") or ""
+            store_id = request.form.get("store_id") 
+            header_supplier_id = request.form.get("supplier_id") 
+            delivery_date = request.form.get("delivery_date") 
 
             # 必須チェック（ブラウザ側でも required だが念のため）
             if not store_id or not header_supplier_id or not delivery_date:
@@ -228,16 +228,18 @@ def init_purchase_views(app, get_db, log_purchase_change):
 
         sql = f"""
             SELECT
-              p.id,
-              p.delivery_date,
-              s.name AS supplier_name,
-              i.name AS item_name,
-              p.quantity,
-              p.unit_price,
-              p.amount
+                p.id,
+                p.delivery_date,
+                st.name AS store_name,
+                s.name  AS supplier_name,
+                i.name  AS item_name,
+                p.quantity,
+                p.unit_price,
+                p.amount
             FROM purchases p
-            LEFT JOIN suppliers s ON p.supplier_id = s.id
-            LEFT JOIN mst_items     i ON p.item_id     = i.id
+            LEFT JOIN suppliers   s  ON p.supplier_id = s.id
+            LEFT JOIN mst_items   i  ON p.item_id     = i.id
+            LEFT JOIN mst_stores  st ON p.store_id    = st.id
             {where_sql}
             ORDER BY p.delivery_date DESC, p.id DESC
             LIMIT 50
