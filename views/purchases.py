@@ -79,9 +79,9 @@ def init_purchase_views(app, get_db, log_purchase_change):
         #   明細   ：item_id_i, quantity_i, unit_price_i (i=1..row_count)
         # ----------------------------------------------------
         if request.method == "POST":
-            store_id = request.form.get("store_id") 
-            header_supplier_id = request.form.get("supplier_id") 
-            delivery_date = request.form.get("delivery_date") 
+            store_id = (request.form.get("store_id") or "").strip()
+            header_supplier_id = (request.form.get("supplier_id") or "").strip()
+            delivery_date = (request.form.get("delivery_date") or "").strip()
 
             # 必須チェック（ブラウザ側でも required だが念のため）
             if not store_id or not header_supplier_id or not delivery_date:

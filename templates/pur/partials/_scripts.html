@@ -37,7 +37,7 @@
     const submitBtn = document.getElementById("submit-btn");
     if (submitBtn && form) {
       submitBtn.addEventListener("click", () => {
-        form.submit();
+        form.requestSubmit();
       });
     }
     // Never submit the form with Enter anywhere.
