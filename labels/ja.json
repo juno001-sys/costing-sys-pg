@@ -68,7 +68,7 @@
   "inventory.item_code": "コード",
   "inventory.item_name": "品目名",
   "inventory.system_qty": "システム在庫",
-  "inventory.unit_price": "単価",
+  "inventory.unit_price": "在庫金額/システム在庫",
   "inventory.stock_amount": "在庫金額",
   "inventory.count_qty_input": "棚卸数（入力）",
   "inventory.save": "棚卸結果を保存",
