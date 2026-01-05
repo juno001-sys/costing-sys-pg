@@ -188,6 +188,9 @@ def init_purchase_views(app, get_db, log_purchase_change):
         store_id = request.args.get("store_id") or ""
         selected_store_id = int(store_id) if store_id else None
 
+        supplier_id = request.args.get("supplier_id") or ""
+        selected_supplier_id = int(supplier_id) if supplier_id else None
+
         # 条件クリアボタン
         if request.args.get("clear") == "1":
             if store_id:
@@ -207,6 +210,10 @@ def init_purchase_views(app, get_db, log_purchase_change):
             where_clauses.append("p.store_id = %s")
             params.append(store_id)
 
+        if supplier_id:
+            where_clauses.append("p.supplier_id = %s")
+            params.append(supplier_id)
+
         if from_date:
             where_clauses.append("p.delivery_date >= %s")
             params.append(from_date)
@@ -216,15 +223,11 @@ def init_purchase_views(app, get_db, log_purchase_change):
             params.append(to_date)
 
         if search_q:
-            where_clauses.append(
-                "(i.name LIKE %s OR s.name LIKE %s OR i.code LIKE %s)"
-            )
+            where_clauses.append("(i.name LIKE %s OR s.name LIKE %s OR i.code LIKE %s)")
             like = f"%{search_q}%"
             params.extend([like, like, like])
 
-        where_sql = ""
-        if where_clauses:
-            where_sql = "WHERE " + " AND ".join(where_clauses)
+        where_sql = "WHERE " + " AND ".join(where_clauses)
 
         sql = f"""
             SELECT
@@ -249,14 +252,15 @@ def init_purchase_views(app, get_db, log_purchase_change):
         return render_template(
             "pur/purchase_form.html",
             mst_stores=mst_stores,
-            suppliers=suppliers,
+            stores=mst_stores,                 # for _recent_list.html
+            suppliers=suppliers,               # for supplier dropdown
             purchases=purchases,
             selected_store_id=selected_store_id,
+            selected_supplier_id=selected_supplier_id,
             from_date=from_date,
             to_date=to_date,
             search_q=search_q,
         )
-
     
     # ----------------------------------------
     # API: 仕入先に紐づく品目一覧を返す
@@ -390,7 +394,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
             # 更新処理
             # -------------------------
             store_id = request.form.get("store_id") or None
-            delivery_date = request.form.get("delivery_date") or ""
+            delivery_date = (request.form.get("delivery_date") or "").strip()
             supplier_id = request.form.get("supplier_id") or None
             item_id = request.form.get("item_id") or None
             quantity = (request.form.get("quantity") or "").replace(",", "")
