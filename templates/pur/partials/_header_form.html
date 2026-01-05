@@ -7,9 +7,7 @@
   <div style="margin-bottom: 12px;">
     <label style="margin-right: 16px;">
       <span class="field-label">{{ t("form.store") }}：</span>
-      <select name="store_id"
-              id="store_id"
-              onchange="document.getElementById('focus_after_reload').value='supplier'; this.form.submit();">
+      <select name="store_id" id="store_id">
         <option value="">{{ t("inventory.select_store") }}</option>
         {% for st in mst_stores %}
           <option value="{{ st.id }}"
