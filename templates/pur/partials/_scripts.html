@@ -1,7 +1,4 @@
 <script>
-  console.log("tbody:", !!document.getElementById("item-rows"));
-  console.log("addBtn:", !!document.getElementById("add-row-btn"));
-
   document.addEventListener("DOMContentLoaded", function () {
     const supplierSelect = document.getElementById("supplier_id");
     const storeSelect = document.getElementById("store_id");
@@ -9,9 +6,16 @@
     const tbody = document.getElementById("item-rows");
     const form = document.getElementById("purchase-form");
 
+    console.log("tbody:", !!document.getElementById("item-rows"));
+    console.log("addBtn:", !!document.getElementById("add-row-btn"));
+
     // 🚨 Critical guard: if detail table does not exist, stop here
     if (!tbody) return;
 
+    function focusFirstItemCell() {
+      const first = tbody.querySelector(".item-autocomplete");
+      if (first) first.focus();
+    }
     // --- IME guard (Japanese input) ---
     let isComposing = false;
     document.addEventListener(
@@ -437,6 +441,77 @@
       true
     );
 
+    /* ===============================
+   Add row (+ 行を追加)
+=============================== */
+    const addBtn = document.getElementById("add-row-btn");
+    const rowCountInput = document.getElementById("row_count");
+
+    if (addBtn && tbody) {
+      addBtn.addEventListener("click", () => {
+        const currentRows = tbody.querySelectorAll("tr").length;
+
+        if (currentRows >= 30) {
+          alert("これ以上追加できません（上限30行）");
+          return;
+        }
+
+        const newIndex = currentRows + 1;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+      <td class="row-no">${newIndex}</td>
+
+      <td class="item-cell">
+        <input type="text"
+               class="item-autocomplete nav-input"
+               data-col="0"
+               placeholder="品名検索"
+               autocomplete="off"
+               style="width:100%;">
+        <input type="hidden"
+               name="item_id_${newIndex}"
+               class="item-id">
+        <div class="item-suggestions" hidden></div>
+      </td>
+
+      <td>
+        <input type="text"
+               name="quantity_${newIndex}"
+               class="num qty-input nav-input"
+               data-col="1"
+               style="width:80px;">
+      </td>
+
+      <td>
+        <input type="text"
+               name="unit_price_${newIndex}"
+               class="num price-input nav-input"
+               data-col="2"
+               style="width:100px;">
+      </td>
+
+      <td>
+        <input type="text"
+               name="amount_display_${newIndex}"
+               class="amount-display"
+               readonly
+               tabindex="-1"
+               aria-readonly="true">
+      </td>
+    `;
+
+        tbody.appendChild(tr);
+
+        // keep POST loop consistent
+        if (rowCountInput) {
+          rowCountInput.value = String(newIndex);
+        }
+
+        // recalc totals after adding
+        calc_recalcAll();
+      });
+    }
     // initial calc
     calc_recalcAll();
   });
