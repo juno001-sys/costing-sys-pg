@@ -95,7 +95,7 @@
                        value="{{ it.system_qty }}">
               </td>
               <td class="num">
-                {{ "{:,.2f}".format(it.unit_price) if it.unit_price else "" }}
+                {{ "{:,.0f}".format(it.unit_price) if it.unit_price else "" }}
               </td>
               <td class="num">
                 {{ "{:,.0f}".format(it.stock_amount) if it.stock_amount else "" }}
