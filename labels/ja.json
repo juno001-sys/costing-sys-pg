@@ -30,6 +30,7 @@
 
   "common.all": "（全て）",
   "common.all_stores": "（全店舗）",
+  "common.all_suppliers": "（全仕入先）",
   "common.total": "合計",
   "common.unset": "（未設定）",
   "common.update": "更新する",
@@ -43,6 +44,7 @@
   "common.search": "検索",
   "common.clear_conditions": "条件クリア",
   "common.no_data": "データがありません。",
+  "common.add": "追加",
 
   "home.welcome": "ようこそ！CMS Dev 環境です。",
 
@@ -70,6 +72,31 @@
   "inventory.stock_amount": "在庫金額",
   "inventory.count_qty_input": "棚卸数（入力）",
   "inventory.save": "棚卸結果を保存",
+  "inventory.temp_zone": "温度帯",
+  "inventory.zone": "ゾーン",
+  "inventory.shelf": "棚",
+  "inventory.location": "ロケーション",
+  "inventory.item": "品目",
+  "inventory.shelf_master_open": "棚マスタを開く",
+  "inventory.zone_master": "温度帯マスタ",
+  "inventory.locations_back": "棚卸し場所設定に戻る",
+
+  "inventory.locations_view": "品目配置一覧を開く",
+  "inventory.locations.title": "棚卸配置",
+  "inventory.locations.hint_select_store": "店舗を選択すると、品目ごとの配置を設定できます。",
+  "inventory.locations.column": "配置",
+  "inventory.locations.current": "現在の配置",
+  "inventory.locations.assign": "配置を設定",
+  "inventory.locations.area": "場所",
+  "inventory.locations.zone": "温度帯",
+  "inventory.locations.shelf": "棚",
+  "inventory.locations.saved": "保存しました",
+  "inventory.locations.save_missing": "入力が不足しています",
+
+  "masters.shelves": "棚マスタ",
+  "masters.area": "エリア",
+  "masters.temp_zone": "温度帯",
+  "masters.shelf_code": "棚コード",
 
   "items.edit.title": "品目編集",
   "items.edit.heading": "品目編集",
@@ -114,6 +141,12 @@
   "stores.disable": "無効化",
   "stores.confirm_disable": "この店舗を無効化しますか？",
 
+  "stores.inventory_locations_section": "品目配置",
+  "stores.inventory_locations_hint": "この店舗の品目がどこに置かれているか（場所・温度帯・棚）を確認・設定します。",
+  "stores.inventory_locations_open": "品目配置一覧を開く",
+  "stores.inventory_count_open": "棚卸入力を開く",
+  "stores.inventory_locations_title": "棚卸ロケーション設定",
+
   "suppliers.master.title": "仕入先マスタ",
   "suppliers.new.title": "新規登録",
   "suppliers.list.title": "仕入先一覧",
@@ -124,54 +157,5 @@
   "suppliers.name": "仕入先名",
   "suppliers.phone": "電話",
   "suppliers.email": "Email",
-  "suppliers.address": "住所",
-
-  "stores.inventory_locations_section": "品目配置",
-  "stores.inventory_locations_hint": "この店舗の品目がどこに置かれているか（場所・温度帯・棚）を確認・設定します。",
-  "stores.inventory_locations_open": "品目配置一覧を開く",
-  "stores.inventory_count_open": "棚卸入力を開く",
-  "inventory.locations_view": "品目配置一覧を開く",
-  "inventory.locations.title": "棚卸配置整理表",
-  "inventory.locations.hint_select_store": "店舗を選択すると、品目ごとの配置（場所・温度帯・棚）が表示されます。",
-  "inventory.locations.column": "配置",
-  "inventory.locations.title": "棚卸配置",
-"inventory.locations.hint_select_store": "店舗を選択すると、品目ごとの配置を設定できます。",
-"inventory.locations.current": "現在の配置",
-"inventory.locations.assign": "配置を設定",
-"inventory.locations.area": "場所",
-"inventory.locations.zone": "温度帯",
-"inventory.locations.shelf": "棚",
-"inventory.locations.saved": "保存しました",
-"inventory.locations.save_missing": "入力が不足しています",
-  
-  "stores.inventory_locations_title": "棚卸ロケーション設定",
-  "stores.inventory_locations_hint": "店舗ごとの棚卸し場所（温度帯・棚など）を設定します。",
-
-  "inventory.temp_zone": "温度帯",
-  "inventory.shelf": "棚",
-  "inventory.zone": "ゾーン",
-  "masters.shelves": "棚マスタ",
-  "masters.area": "エリア",
-  "masters.temp_zone": "温度帯",
-  "masters.shelf_code": "棚コード",
-
-  "inventory.zone_master": "温度帯マスタ",
-  "inventory.locations_back": "棚卸ロケーション設定へ戻る",
-
-  "stores.inventory_locations_title": "棚卸ロケーション設定",
-
-  "inventory.temp_zone": "温度帯",
-  "inventory.zone": "ゾーン",
-  "inventory.shelf": "棚",
-  "inventory.location": "ロケーション",
-
-  "common.add": "追加",
-  "common.select": "（選択してください）",
-  "common.no_data": "データがありません。",
-  "inventory.shelf_master_open": "棚マスタを開く",
-  "inventory.zone_master": "温度帯マスタ",
-  "inventory.locations_back": "棚卸し場所設定に戻る",
-  "common.no_data": "データがありません。",
-  "inventory.item": "品目"
-  
+  "suppliers.address": "住所"
 }
