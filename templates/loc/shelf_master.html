@@ -33,9 +33,7 @@
               <td>{{ sh.area_name }}</td>
               <td>{{ sh.code }}{% if sh.name %} {{ sh.name }}{% endif %}</td>
               <td>
-                <a class="btn" href="{{ url_for('shelf_edit', shelf_id=sh.id, store_id=selected_store_id) }}">
-                  {{ t("common.edit", "__common.edit__") }}
-                </a>
+                
               </td>
             </tr>
           {% endfor %}
