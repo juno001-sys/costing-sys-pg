@@ -27,15 +27,19 @@ def init_location_shelves_page(app, get_db):
                 SELECT
                   sh.id,
                   sh.store_id,
-                  sh.area_id,
+                  sam.area_id,
+                  am.name AS area_name,
                   sh.temp_zone,
                   sh.code,
                   COALESCE(sh.name, '') AS name,
                   sh.sort_order,
                   sh.is_active
                 FROM store_shelves sh
+                LEFT JOIN store_area_map sam ON sam.id = sh.store_area_map_id
+                LEFT JOIN area_master am ON am.id = sam.area_id
                 WHERE sh.store_id = %s
-                ORDER BY sh.area_id, sh.temp_zone, sh.sort_order, sh.code
+                ORDER BY sam.area_id,
+                  am.name AS area_name, sh.temp_zone, sh.sort_order, sh.code
                 """,
                 (selected_store_id,),
             ).fetchall()
