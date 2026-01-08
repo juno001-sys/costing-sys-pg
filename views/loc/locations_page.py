@@ -31,7 +31,8 @@ def init_location_page(app, get_db):
                 SELECT DISTINCT
                   i.id,
                   i.code,
-                  i.name
+                  i.name,
+                  i.temp_zone AS temp_zone
                 FROM mst_items i
                 LEFT JOIN purchases p
                   ON p.item_id = i.id
