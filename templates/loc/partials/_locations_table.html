@@ -44,7 +44,7 @@
             <option value=""></option>
             {% for z in temp_zones %}
               <option value="{{ z }}"
-                {% if it.temp_zone == z %}selected{% endif %}>
+                {% if it.temp_zone_norm == z %}selected{% endif %}>
                 {{ z }}
               </option>
             {% endfor %}
