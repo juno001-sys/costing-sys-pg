@@ -1,4 +1,4 @@
-{# templates/inventory/locations.html #}
+{# templates/loc/locations.html #}
 {% extends "layout/base.html" %}
 {% block title %}{{ t("nav.inventory_count", "__nav.inventory_count__") }}{% endblock %}
 
@@ -9,7 +9,7 @@
 {% block content %}
   <h2>{{ t("stores.inventory_locations_title", "__stores.inventory_locations_title__") }}</h2>
 
-  {% include "(loc/partials/_)locations_header.html" %}
+  {% include "loc/partials/_locations_header.html" %}
 
   {% if not selected_store_id %}
     <p class="muted" style="margin-top:12px;">
@@ -21,7 +21,7 @@
     <form method="post" action="{{ url_for('inventory_locations_save') }}">
       <input type="hidden" name="store_id" value="{{ selected_store_id }}">
 
-      {% include "(loc/partials/_)locations_table.html" %}
+      {% include "loc/partials/_locations_table.html" %}
 
       <div class="sticky-bar">
         <button class="btn btn-primary" type="submit">
