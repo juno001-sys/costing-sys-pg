@@ -32,19 +32,24 @@
 
   <hr>
 
-  <h3>{{ t("stores.suppliers.title") }}</h3>
-  <div class="supplier-checkbox-list">
-    {% for s in suppliers %}
-      <label style="display:block; margin-bottom:4px;">
-        <input
-          type="checkbox"
-          name="supplier_ids"
-          value="{{ s.id }}"
-          {% if s.id in linked_supplier_ids %}checked{% endif %}
-        >
-        {{ s.code }} - {{ s.name }}
-      </label>
-    {% endfor %}
+  <h3>{{ t("stores.config.title", "__stores.config.title__") }}</h3>
+
+  <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+    <a class="btn" href="{{ url_for('store_temp_zones_admin', store_id=store.id) }}">
+      {{ t("stores.config.temp_zones", "__stores.config.temp_zones__") }}
+    </a>
+
+    <a class="btn" href="{{ url_for('store_areas_admin', store_id=store.id) }}">
+      {{ t("stores.config.areas", "__stores.config.areas__") }}
+    </a>
+
+    <a class="btn" href="{{ url_for('shelf_master', store_id=store.id) }}">
+      {{ t("stores.config.shelves", "__stores.config.shelves__") }}
+    </a>
+
+    <a class="btn" href="{{ url_for('inventory_locations', store_id=store.id) }}">
+      {{ t("stores.config.item_locations", "__stores.config.item_locations__") }}
+    </a>
   </div>
 
   <hr>

@@ -127,6 +127,12 @@
   "purchase.total_amount": "合計金額",
   "purchase.total_qty": "合計数量",
 
+  "stores.config.title": "設定",
+  "stores.config.temp_zones": "温度帯名称",
+  "stores.config.areas": "エリア設定",
+  "stores.config.shelves": "棚設定",
+  "stores.config.item_locations": "品目配置"
+
   "stores.master.title": "店舗マスタ",
   "stores.edit.title": "店舗編集",
   "stores.edit.heading": "店舗編集",
