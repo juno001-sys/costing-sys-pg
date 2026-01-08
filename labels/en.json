@@ -9,10 +9,8 @@
   "nav.suppliers_master": "Suppliers",
   "nav.items_master": "Items",
   "nav.stores_master": "Stores & Supplier Links",
-
   "report.usage.title": "Monthly Usage Report",
   "report.cost.title": "Monthly Cost of Sales",
-
   "form.store": "Store",
   "form.supplier": "Supplier",
   "form.show": "Show",
@@ -22,7 +20,6 @@
   "form.amount": "Amount",
   "form.period": "Period",
   "form.keyword": "Keyword",
-
   "common.all": "(All)",
   "common.all_stores": "(All Stores)",
   "common.total": "Total",
@@ -38,22 +35,18 @@
   "common.search": "Search",
   "common.clear_conditions": "Clear Filters",
   "common.no_data": "No data available.",
-
   "home.welcome": "Welcome! This is the CMS development environment.",
-
   "usage.item": "Item",
   "usage.metric": "Metric",
   "usage.total": "Total",
   "usage.purchased_qty": "Purchased Quantity",
   "usage.used_qty": "Used Quantity (Net)",
   "usage.ending_stock": "Ending Stock (Carried Forward)",
-
   "cost.category": "Category",
   "cost.begin_inventory": "Beginning Inventory",
   "cost.purchase_amount": "Purchase Amount",
   "cost.cogs": "Cost of Goods Sold",
   "cost.ending_inventory": "Ending Inventory",
-
   "inventory.count_date": "Inventory Date",
   "inventory.select_store": "(Select store)",
   "inventory.latest_count_dates": "Recent Inventory Dates",
@@ -65,7 +58,6 @@
   "inventory.stock_amount": "Stock Value",
   "inventory.count_qty_input": "Counted Quantity",
   "inventory.save": "Save Inventory Results",
-
   "items.edit.title": "Edit Item",
   "items.edit.heading": "Edit Item",
   "items.master.title": "Item Master",
@@ -81,7 +73,6 @@
   "items.min_purchase_unit": "Minimum Purchase Unit",
   "items.storage_cost": "Storage Cost (per month, etc.)",
   "items.is_internal": "In-house Item",
-
   "purchase.form.title": "Purchase Entry (Delivery Note)",
   "purchase.edit.title": "Edit Purchase",
   "purchase.edit.heading": "Edit Purchase",
@@ -94,13 +85,11 @@
   "purchase.amount": "Amount",
   "purchase.total_amount": "Total Amount",
   "purchase.total_qty": "Total Quantity",
-
   "report.purchase.title": "Purchase Report (Monthly / by Supplier)",
   "report.purchase_supplier.title": "Purchase Report",
   "report.monthly_total": "Monthly Total",
   "report.monthly_total_amount": "Monthly Total Amount",
   "report.monthly_total_qty": "Monthly Total Quantity",
-
   "stores.edit.title": "Edit Store",
   "stores.edit.heading": "Edit Store",
   "stores.name": "Store Name",
@@ -114,7 +103,6 @@
   "stores.status": "Status",
   "stores.active": "Active",
   "stores.inactive": "Inactive",
-
   "suppliers.edit.title": "Edit Supplier",
   "suppliers.edit.heading": "Edit Supplier",
   "suppliers.code": "Supplier Code",
@@ -125,5 +113,8 @@
   "suppliers.master.title": "Supplier Master",
   "suppliers.new.title": "New Supplier",
   "suppliers.list.title": "Supplier List",
-  "suppliers.empty": "No suppliers registered."
+  "suppliers.empty": "No suppliers registered.",
+  "common.use": "Use",
+  "common.name": "Name",
+  "common.sort_order": "Sort order"
 }
