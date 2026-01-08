@@ -42,9 +42,17 @@
           {{ it.name }}
         </td>
 
-        <!-- Area (read-only) -->
+        <!-- Area -->
         <td>
-          {{ it.area_name or '' }}
+          <select name="area_{{ it.id }}" class="form-select area">
+            <option value=""></option>
+            {% for a in areas %}
+              <option value="{{ a.store_area_map_id }}"
+                {% if it.area_store_area_map_id == a.store_area_map_id %}selected{% endif %}>
+                {{ a.area_name }}
+              </option>
+            {% endfor %}
+          </select>
         </td>
 
         <!-- Zone -->
