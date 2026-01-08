@@ -198,7 +198,13 @@
     {% endif %}
 
     <div class="top-bar">
-      <!-- language switch here -->
+      <form method="post" action="{{ url_for('set_lang') }}" style="display:flex; justify-content:flex-end; gap:8px; align-items:center;">
+        <input type="hidden" name="next" value="{{ request.full_path }}">
+        <select name="lang" onchange="this.form.submit()">
+          <option value="ja" {% if lang == 'ja' %}selected{% endif %}>日本語</option>
+          <option value="en" {% if lang == 'en' %}selected{% endif %}>English</option>
+        </select>
+      </form>
     </div>
 
     {% if env == "prod" %}
