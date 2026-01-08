@@ -21,6 +21,23 @@ def init_location_actions(app, get_db):
         for item_id in item_ids:
             shelf_id = request.form.get(f"shelf_id_{item_id}") or None
 
+            # save preferences (temp_zone + area) even if shelf is blank
+            temp_zone = request.form.get(f"zone_{item_id}") or None
+            area_map_id = request.form.get(f"area_{item_id}") or None
+
+            db.execute(
+                """
+                INSERT INTO item_location_prefs (store_id, item_id, temp_zone, store_area_map_id, updated_at)
+                VALUES (%s, %s, %s, %s, NOW())
+                ON CONFLICT (store_id, item_id)
+                DO UPDATE SET
+                  temp_zone = EXCLUDED.temp_zone,
+                  store_area_map_id = EXCLUDED.store_area_map_id,
+                  updated_at = NOW()
+                """,
+                (store_id, item_id, temp_zone, area_map_id),
+            )
+
             # deactivate current mappings for this item in this store
             db.execute(
                 """
