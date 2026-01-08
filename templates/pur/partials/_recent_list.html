@@ -22,7 +22,7 @@
   <label style="margin-right: 12px;">
     {{ t("form.supplier") }}：
     <select name="supplier_id">
-      <option value="">{{ t("common.all_suppliers") }}</option>
+      <option value="">{{ t("purchase.select_supplier") }}</option>
       {% for sup in suppliers %}
         <option value="{{ sup.id }}"
                 {% if selected_supplier_id == sup.id %}selected{% endif %}>

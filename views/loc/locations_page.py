@@ -38,10 +38,11 @@ def init_location_page(app, get_db):
             ).fetchall()
 
         return render_template(
-            "inventory/locations.html",
+            "loc/locations.html",
             mst_stores=mst_stores,
             selected_store_id=selected_store_id,
             mst_items=mst_items,
+            items=mst_items, 
             # for dropdown options (temp zones)
             temp_zones=["AMB", "CHILL", "FREEZE"],
         )
