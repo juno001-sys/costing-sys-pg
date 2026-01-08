@@ -157,7 +157,8 @@ def init_location_page(app, get_db):
 
                 # 2) area: preference -> derived -> blank
                 # keep as "" (empty string) for template comparison with <option value="">
-                final_area_map_id = pref_area_map_id or derived_area_map_id or ""
+                default_area_map_id = str(areas[0]["store_area_map_id"]) if areas else ""
+                final_area_map_id = pref_area_map_id or derived_area_map_id or default_area_map_id
 
                 # Optional display name (for read-only display or debugging)
                 area_name = _get(it, "shelf_area_name") or ""
