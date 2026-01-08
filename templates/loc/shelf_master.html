@@ -25,12 +25,14 @@
   <table class="table table-bordered">
     <thead>
       <tr>
-        <th style="width:90px;">{{ t("common.use", "__common.use__") }}</th>
+        
         <th style="width:160px;">{{ t("masters.area", "__masters.area__") }}</th>
         <th style="width:140px;">{{ t("inventory.zone_master", "__inventory.zone_master__") }}</th>
         <th style="width:120px;">{{ t("common.code", "__common.code__") }}</th>
         <th>{{ t("common.name", "__common.name__") }}</th>
         <th style="width:120px;">{{ t("common.sort_order", "__common.sort_order__") }}</th>
+        <th style="width:90px;">{{ t("common.use", "__common.use__") }}</th>
+    
       </tr>
     </thead>
     <tbody>
@@ -42,15 +44,10 @@
 
       {% for sh in shelves %}
         <tr>
-          <td>
-            <input type="checkbox" name="use_shelf_{{ sh.id }}" {% if sh.is_active %}checked{% endif %}>
-            <input type="hidden" name="shelf_ids" value="{{ sh.id }}">
-          </td>
-
+          
           <td>{{ sh.area_name }}</td>
 
           <td>
-            {# show label if store temp zones exist; fallback to code #}
             {% set tz_label = sh.temp_zone %}
             {% for z in temp_zones %}
               {% if z.code == sh.temp_zone %}
@@ -69,6 +66,12 @@
           <td>
             <input type="number" name="sort_{{ sh.id }}" value="{{ sh.sort_order }}" style="width:100%;">
           </td>
+
+          <td>
+            <input type="checkbox" name="use_shelf_{{ sh.id }}" {% if sh.is_active %}checked{% endif %}>
+            <input type="hidden" name="shelf_ids" value="{{ sh.id }}">
+          </td>
+    
         </tr>
       {% endfor %}
     </tbody>
