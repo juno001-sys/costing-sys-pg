@@ -131,7 +131,7 @@
   "stores.config.temp_zones": "温度帯名称",
   "stores.config.areas": "エリア設定",
   "stores.config.shelves": "棚設定",
-  "stores.config.item_locations": "品目配置"
+  "stores.config.item_locations": "品目配置",
 
   "stores.master.title": "店舗マスタ",
   "stores.edit.title": "店舗編集",
