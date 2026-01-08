@@ -1,0 +1,55 @@
+{% extends "layout/base.html" %}
+{% block title %}{{ t("masters.area", "__masters.area__") }}{% endblock %}
+
+{% block content %}
+<h2>{{ t("masters.area", "__masters.area__") }}</h2>
+
+<form method="get" action="{{ url_for('store_areas_admin') }}" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+  <label class="field-label">{{ t("form.store", "__form.store__") }}:</label>
+  <select name="store_id" onchange="this.form.submit()">
+    <option value="">{{ t("common.all_stores", "__common.all_stores__") }}</option>
+    {% for s in stores %}
+      <option value="{{ s.id }}" {% if selected_store_id == s.id %}selected{% endif %}>{{ s.name }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+{% if selected_store_id %}
+<form method="post" action="{{ url_for('store_areas_admin_save') }}" style="margin-top:12px;">
+  <input type="hidden" name="store_id" value="{{ selected_store_id }}">
+
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th style="width:90px;">{{ t("common.use", "__common.use__") }}</th>
+        <th>{{ t("masters.area", "__masters.area__") }}</th>
+        <th style="width:260px;">{{ t("common.name", "__common.name__") }}</th>
+        <th style="width:120px;">{{ t("common.sort_order", "__common.sort_order__") }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in areas_master %}
+        {% set m = map_by_area.get(a.id) %}
+        <tr>
+          <td>
+            <input type="checkbox" name="use_area_{{ a.id }}" {% if m and m.is_active %}checked{% endif %}>
+          </td>
+          <td>
+            {{ a.name }}
+            <input type="hidden" name="area_ids" value="{{ a.id }}">
+          </td>
+          <td>
+            <input type="text" name="display_name_{{ a.id }}" value="{{ m.display_name if m else '' }}" style="width:100%;">
+          </td>
+          <td>
+            <input type="number" name="sort_order_{{ a.id }}" value="{{ m.sort_order if m else 100 }}" style="width:100%;">
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <button class="btn btn-primary" type="submit">{{ t("common.update", "__common.update__") }}</button>
+</form>
+{% endif %}
+{% endblock %}
