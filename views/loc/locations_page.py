@@ -109,17 +109,9 @@ def init_location_page(app, get_db):
             #   it["area_name"] (optional display label)
             # ------------------------------------------------------------
 
-            ZONE_MAP = {
-                "常温": "AMB",
-                "冷蔵": "CHILL",
-                "冷凍": "FREEZE",
-                "その他": "AMB",
-                None: None,
-                "": None,
-            }
-
+            # normalize + defaulting for UI
+            
             def _get(it, key, default=None):
-                # Works for both dict rows and sqlite Row-like objects
                 try:
                     return it.get(key, default)
                 except AttributeError:
@@ -129,50 +121,34 @@ def init_location_page(app, get_db):
                         return default
 
             def _set(it, key, value):
-                # Some row types are immutable; this returns True/False
                 try:
                     it[key] = value
                     return True
                 except Exception:
                     return False
 
-            for it in mst_items:
-                # ----- A) read raw master temp_zone (could be JP or already code) -----
-                raw_master_zone = _get(it, "temp_zone")
+                for it in mst_items:
+                 raw_master_zone = _get(it, "temp_zone")
+                 master_norm = ZONE_MAP.get(raw_master_zone, raw_master_zone)
 
-                # normalize master zone into AMB/CHILL/FREEZE
-                master_norm = ZONE_MAP.get(raw_master_zone, raw_master_zone)
+                 pref_tz = _get(it, "pref_temp_zone")
+                 pref_area_map_id = _get(it, "pref_store_area_map_id")
+                 derived_area_map_id = _get(it, "shelf_store_area_map_id")
 
-                # ----- B) read saved preferences (may be NULL if never configured) -----
-                pref_tz = _get(it, "pref_temp_zone")                 # ex: "AMB"
-                pref_area_map_id = _get(it, "pref_store_area_map_id") # ex: 12
+                  # Temp zone: preference → master → AMB
+                 final_tz = pref_tz or master_norm or "AMB"
 
-                # ----- C) derive area from shelf (if shelf already selected) -----
-                # This comes from the joined store_area_map sam.id AS shelf_store_area_map_id
-                derived_area_map_id = _get(it, "shelf_store_area_map_id")
+                  # Area: preference → derived from shelf → BLANK
+                 final_area_map_id = pref_area_map_id or derived_area_map_id or ""
 
-                # ----- D) decide final defaults (your required rules) -----
-                # 1) temp zone: preference -> master -> AMB
-                final_tz = pref_tz or master_norm or "AMB"
+                 ok1 = _set(it, "temp_zone_norm", final_tz)
+                 ok2 = _set(it, "area_store_area_map_id", final_area_map_id)
+                 ok3 = _set(it, "area_name", _get(it, "shelf_area_name") or "")
 
-                # 2) area: preference -> derived -> blank
-                # keep as "" (empty string) for template comparison with <option value="">
-                default_area_map_id = str(areas[0]["store_area_map_id"]) if areas else ""
-                final_area_map_id = pref_area_map_id or derived_area_map_id or default_area_map_id
-
-                # Optional display name (for read-only display or debugging)
-                area_name = _get(it, "shelf_area_name") or ""
-
-                # ----- E) write back for template use -----
-                ok1 = _set(it, "temp_zone_norm", final_tz)
-                ok2 = _set(it, "area_store_area_map_id", final_area_map_id)
-                ok3 = _set(it, "area_name", area_name)
-
-                # If rows are immutable, you must normalize in SQL instead.
-                if not (ok1 and ok2 and ok3):
-                    # keep a visible hint in logs if you want
-                    # print("Row is immutable; move normalization into SQL.")
-                    pass
+                  # If your cursor returns immutable rows, you must normalize in SQL instead.
+                 if not (ok1 and ok2 and ok3):
+                      # optional: print("Row immutable; move normalization into SQL.")
+                      pass
 
             
 
