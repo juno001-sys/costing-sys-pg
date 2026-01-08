@@ -8,6 +8,10 @@
 </th>
 
       <th>
+        {{ t("masters.area", "__masters.area__") }}
+      </th>
+
+      <th>
         
           {{ t("inventory.zone_master", "__inventory.zone_master__") }}
         
@@ -24,7 +28,7 @@
   <tbody>
     {% if not items %}
       <tr>
-        <td colspan="3" class="muted">
+        <td colspan="4" class="muted">
           {{ t("common.no_data", "__common.no_data__") }}
         </td>
       </tr>
@@ -36,6 +40,11 @@
         <!-- Item name -->
         <td>
           {{ it.name }}
+        </td>
+
+        <!-- Area (read-only) -->
+        <td>
+          {{ it.area_name or '' }}
         </td>
 
         <!-- Zone -->
