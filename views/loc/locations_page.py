@@ -48,7 +48,18 @@ def init_location_page(app, get_db):
               i.id,
               i.code,
               i.name,
+
+              -- raw temp zone (optional)
               i.temp_zone AS temp_zone,
+
+              -- FINAL temp zone for UI
+              CASE
+                WHEN pref.temp_zone IS NOT NULL AND pref.temp_zone <> '' THEN pref.temp_zone
+                WHEN i.temp_zone IN ('常温','AMB') THEN 'AMB'
+                WHEN i.temp_zone IN ('冷蔵','CHILL') THEN 'CHILL'
+                WHEN i.temp_zone IN ('冷凍','FREEZE') THEN 'FREEZE'
+                ELSE 'AMB'
+              END AS temp_zone_norm,
 
               pref.temp_zone         AS pref_temp_zone,
               pref.store_area_map_id AS pref_store_area_map_id,
@@ -57,34 +68,35 @@ def init_location_page(app, get_db):
               sh.name    AS shelf_name,
 
               am.name AS shelf_area_name,
-              sam.id  AS shelf_store_area_map_id
+              sam.id  AS shelf_store_area_map_id,
 
+              COALESCE(pref.store_area_map_id, sam.id, '') AS area_store_area_map_id
             FROM mst_items i
-            LEFT JOIN purchases p
-              ON p.item_id = i.id
-             AND p.store_id = %s
-             AND p.is_deleted = 0
+                LEFT JOIN purchases p
+                  ON p.item_id = i.id
+                AND p.store_id = %s
+                AND p.is_deleted = 0
 
-            LEFT JOIN item_location_prefs pref
-              ON pref.store_id = %s
-             AND pref.item_id  = i.id
+                LEFT JOIN item_location_prefs pref
+                  ON pref.store_id = %s
+                AND pref.item_id  = i.id
 
-            LEFT JOIN item_shelf_map m
-              ON m.store_id = %s
-             AND m.item_id  = i.id
-             AND m.is_active = TRUE
+                LEFT JOIN item_shelf_map m
+                  ON m.store_id = %s
+                AND m.item_id  = i.id
+                AND m.is_active = TRUE
 
-            LEFT JOIN store_shelves sh
-              ON sh.id = m.shelf_id
+                LEFT JOIN store_shelves sh
+                  ON sh.id = m.shelf_id
 
-            LEFT JOIN store_area_map sam
-              ON sam.id = sh.store_area_map_id
-            LEFT JOIN area_master am
-              ON am.id = sam.area_id
+                LEFT JOIN store_area_map sam
+                  ON sam.id = sh.store_area_map_id
+                LEFT JOIN area_master am
+                  ON am.id = sam.area_id
 
-            WHERE i.is_internal = 1
-               OR p.id IS NOT NULL
-            ORDER BY i.code
+                WHERE i.is_internal = 1
+                  OR p.id IS NOT NULL
+                ORDER BY i.code
             """,
             (selected_store_id, selected_store_id, selected_store_id),
             ).fetchall()
