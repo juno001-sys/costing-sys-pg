@@ -70,7 +70,7 @@ def init_location_page(app, get_db):
               am.name AS shelf_area_name,
               sam.id  AS shelf_store_area_map_id,
 
-              COALESCE(pref.store_area_map_id, sam.id, '') AS area_store_area_map_id
+              COALESCE(pref.store_area_map_id, sam.id) AS area_store_area_map_id
             FROM mst_items i
                 LEFT JOIN purchases p
                   ON p.item_id = i.id
