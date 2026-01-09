@@ -22,7 +22,7 @@ def init_location_page(app, get_db):
                 """
                 SELECT
                   sam.id  AS store_area_map_id,
-                  am.name AS area_name
+                  COALESCE(sam.display_name, am.name) AS area_name
                 FROM store_area_map sam
                 JOIN area_master am ON am.id = sam.area_id
                 WHERE sam.store_id = %s
