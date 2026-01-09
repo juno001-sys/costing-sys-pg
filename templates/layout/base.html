@@ -17,6 +17,83 @@
       .env-banner.rft {
         background: #d9534f;
       }
+    
+      /* ---- nav tabs (shared layout) ---- */
+      .nav-tabs {
+        list-style: none;
+        padding: 0;
+        margin: 10px 0 18px 0;
+        display: flex;
+        gap: 18px;
+        border-bottom: 1px solid #ddd;
+      }
+      .nav-tabs li { margin: 0; padding: 0; }
+      .nav-tabs a {
+        text-decoration: none;
+        padding: 8px 6px;
+        display: inline-block;
+        color: #111;
+      }
+      .nav-tabs a:hover { text-decoration: underline; }
+      .nav-tabs a.active {
+        font-weight: bold;
+        border-bottom: 2px solid #111;
+      }
+
+      /* ---- basic layout spacing ---- */
+      body { margin: 0; padding: 14px 18px; font-family: system-ui, -apple-system, sans-serif; }
+      h1 { margin: 12px 0 8px 0; }
+
+    
+      /* ---- footer (one-line) ---- */
+      .app-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: nowrap;
+        white-space: nowrap;
+      }
+      .footer-left, .footer-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: nowrap;
+        white-space: nowrap;
+      }
+      .footer-right form {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+      }
+      .footer-right select {
+        font-size: 12px;
+      }
+      .version {
+        opacity: 0.85;
+      }
+
+    
+      /* ---- footer separation ---- */
+      .app-footer {
+        margin-top: 30px;
+        padding-top: 12px;
+        border-top: 1px solid #ddd;
+      }
+
+    
+      /* ---- flash messages ---- */
+      .flash-messages { margin: 12px 0; }
+      .flash {
+        padding: 8px 12px;
+        border-radius: 4px;
+        margin-bottom: 6px;
+        border: 1px solid #ddd;
+      }
+      .flash.success { background: #e6f4ea; color: #0f5132; border-color: #badbcc; }
+      .flash.error { background: #f8d7da; color: #842029; border-color: #f5c2c7; }
+
     </style>
 
     {% block head_extra %}{% endblock %}
@@ -31,16 +108,7 @@
       <div class="env-banner rft">⚠ RFT — Refactor Environment</div>
     {% endif %}
 
-    <div class="top-bar">
-      <form method="post" action="{{ url_for('set_lang') }}"
-            style="display:flex; justify-content:flex-end; gap:8px; align-items:center;">
-        <input type="hidden" name="next" value="{{ request.full_path }}">
-        <select name="lang" onchange="this.form.submit()">
-          <option value="ja" {% if lang == 'ja' %}selected{% endif %}>日本語</option>
-          <option value="en" {% if lang == 'en' %}selected{% endif %}>English</option>
-        </select>
-      </form>
-    </div>
+    <div class="top-bar"></div>
 
     {% if env == "prod" %}
       <h1>倉島事業開発 CMS – Postgres</h1>
@@ -65,13 +133,45 @@
       </ul>
     </nav>
 
-    {% block content %}{% endblock %}
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-messages">
+          {% for category, key in messages %}
+            <div class="flash {{ category }}">{{ t(key, key) }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+{% block content %}{% endblock %}
     {% block body_extra %}{% endblock %}
 
-    <footer>
-      <div style="margin-top:20px; font-size:12px; opacity:0.7;">
-        env=<strong>{{ env }}</strong>
+    
+    <footer class="app-footer">
+      <div class="footer-left">
+        {% if env == "local" %}
+          <span class="env-badge local">LOCAL</span>
+        {% elif env == "rft" %}
+          <span class="env-badge rft">RFT</span>
+        {% elif env == "prod" %}
+          <span class="env-badge prod">PROD</span>
+        {% else %}
+          <span class="env-badge dev">DEV</span>
+        {% endif %}
+        <span class="version">version={{ app_version }}</span>
+      </div>
+
+      <div class="footer-right">
+        <form method="post" action="{{ url_for('set_lang') }}">
+          <input type="hidden" name="next" value="{{ request.full_path }}">
+          <select name="lang" onchange="this.form.submit()">
+            <option value="ja" {% if lang == 'ja' %}selected{% endif %}>日本語</option>
+            <option value="en" {% if lang == 'en' %}selected{% endif %}>English</option>
+          </select>
+        </form>
       </div>
     </footer>
+
   </body>
 </html>
