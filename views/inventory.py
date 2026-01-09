@@ -278,7 +278,141 @@ def init_inventory_views(app, get_db):
                         }
                     )
 
-            # ★ mst_items を温度帯ごとにグルーピング
+            
+            # ------------------------------------------------------------
+            # Enrich mst_items with location info (temp_zone/area/shelf)
+            # and sort by temp_zone -> area -> shelf
+            # ------------------------------------------------------------
+            item_ids = [it["item_id"] for it in mst_items]
+            if item_ids:
+                # temp zone order per store (store-specific)
+                tz_rows = db.execute(
+                    """
+                    SELECT code, sort_order
+                    FROM store_temp_zones
+                    WHERE store_id = %s
+                      AND COALESCE(is_active, TRUE) = TRUE
+                    ORDER BY sort_order, code
+                    """,
+                    (store_id,),
+                ).fetchall()
+                tz_order = {r["code"]: r["sort_order"] for r in tz_rows}
+
+                # prefs: temp_zone + preferred area
+                pref_rows = db.execute(
+                    """
+                    SELECT item_id, temp_zone AS pref_temp_zone, store_area_map_id AS pref_area_map_id
+                    FROM item_location_prefs
+                    WHERE store_id = %s
+                      AND item_id = ANY(%s)
+                    """,
+                    (store_id, item_ids),
+                ).fetchall()
+                pref_by_item = {r["item_id"]: r for r in pref_rows}
+
+                # active shelf mapping
+                map_rows = db.execute(
+                    """
+                    SELECT item_id, shelf_id
+                    FROM item_shelf_map
+                    WHERE store_id = %s
+                      AND is_active = TRUE
+                      AND item_id = ANY(%s)
+                    """,
+                    (store_id, item_ids),
+                ).fetchall()
+                shelf_by_item = {r["item_id"]: r["shelf_id"] for r in map_rows if r["shelf_id"]}
+
+                shelf_ids = list({sid for sid in shelf_by_item.values()})
+                shelf_info = {}
+                area_map_ids = set()
+
+                if shelf_ids:
+                    sh_rows = db.execute(
+                        """
+                        SELECT id,
+                               store_area_map_id,
+                               temp_zone,
+                               sort_order,
+                               COALESCE(name,'') AS shelf_name
+                        FROM store_shelves
+                        WHERE store_id = %s
+                          AND id = ANY(%s)
+                        """,
+                        (store_id, shelf_ids),
+                    ).fetchall()
+
+                    for r in sh_rows:
+                        shelf_info[r["id"]] = r
+                        if r["store_area_map_id"]:
+                            area_map_ids.add(r["store_area_map_id"])
+
+                # area display name + sort order
+                area_info = {}
+                if area_map_ids:
+                    am_rows = db.execute(
+                        """
+                        SELECT sam.id AS store_area_map_id,
+                               sam.sort_order AS area_sort_order,
+                               COALESCE(sam.display_name, am.name) AS area_name
+                        FROM store_area_map sam
+                        JOIN area_master am ON am.id = sam.area_id
+                        WHERE sam.store_id = %s
+                          AND sam.id = ANY(%s)
+                        """,
+                        (store_id, list(area_map_ids)),
+                    ).fetchall()
+
+                    for r in am_rows:
+                        area_info[r["store_area_map_id"]] = r
+
+                # normalize JP zone -> code
+                ZONE_MAP = {"常温":"AMB","冷蔵":"CHILL","冷凍":"FREEZE","その他":"AMB", None:"AMB", "":"AMB"}
+
+                for it in mst_items:
+                    iid = it["item_id"]
+
+                    # temp zone: pref -> item master -> default
+                    pref = pref_by_item.get(iid) or {}
+                    pref_tz = pref.get("pref_temp_zone")
+                    master_raw = it.get("storage_type")  # in your inventory_count, storage_type is JP label
+                    # your storage_type is JP (冷凍/冷蔵/常温/その他). convert:
+                    tz_code = pref_tz or ZONE_MAP.get(master_raw, "AMB")
+
+                    # shelf
+                    sid = shelf_by_item.get(iid)
+                    sh = shelf_info.get(sid) if sid else None
+
+                    # area: pref -> derived from shelf -> None
+                    pref_area = pref.get("pref_area_map_id")
+                    area_map_id = pref_area or (sh.get("store_area_map_id") if sh else None)
+
+                    area = area_info.get(area_map_id) if area_map_id else None
+
+                    it["tz_code"] = tz_code
+                    it["tz_sort"] = tz_order.get(tz_code, 999)
+
+                    it["area_name"] = area["area_name"] if area else ""
+                    it["area_sort"] = area["area_sort_order"] if area else 999
+
+                    it["shelf_name"] = sh["shelf_name"] if sh else ""
+                    it["shelf_sort"] = sh["sort_order"] if sh else 999
+
+                # sort list: temp -> area -> shelf -> item_name
+                mst_items.sort(key=lambda x: (x.get("tz_sort",999), x.get("area_sort",999), x.get("shelf_sort",999), x.get("item_name","")))
+
+            # ------------------------------------------------------------
+            # Rebuild grouped_items based on sorted list (keep existing zone headings)
+            # ------------------------------------------------------------
+            grouped_items = {z: [] for z in zones}
+            for it in mst_items:
+                z = it.get("storage_type") or "その他"
+                if z not in grouped_items:
+                    grouped_items[z] = []
+                grouped_items[z].append(it)
+
+
+# ★ mst_items を温度帯ごとにグルーピング
             for it in mst_items:
                 z = it.get("storage_type") or "その他"
                 if z not in grouped_items:

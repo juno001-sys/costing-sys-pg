@@ -71,7 +71,6 @@
         <table class="monthly-table">
           <thead>
             <tr>
-              <th>{{ t("inventory.item_code") }}</th>
               <th>{{ t("inventory.item_name") }}</th>
               <th class="num">{{ t("inventory.system_qty") }}</th>
               <th class="num">{{ t("inventory.unit_price") }}</th>
@@ -83,7 +82,6 @@
           {% for it in zone_items %}
             {% set ns.row_index = ns.row_index + 1 %}
             <tr>
-              <td>{{ it.item_code }}</td>
               <td>{{ it.item_name }}</td>
               <td class="num">
                 {{ "{:,}".format(it.system_qty) }}
