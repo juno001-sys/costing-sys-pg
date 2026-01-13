@@ -18,9 +18,9 @@ def get_latest_stock_count_dates(db, store_id, limit=3):
         """
         SELECT DISTINCT count_date
         FROM stock_counts
-        WHERE store_id = ?
+        WHERE store_id = %s
         ORDER BY count_date DESC
-        LIMIT ?
+        LIMIT %s
         """,
         (store_id, limit),
     ).fetchall()
@@ -47,7 +47,12 @@ def init_inventory_views(app, get_db):
 
         # 店舗一覧
         stores = db.execute(
-            "SELECT id, name FROM stores ORDER BY code"
+            """
+            SELECT id, code, name
+            FROM mst_stores
+            WHERE COALESCE(is_active, 1) = 1
+            ORDER BY code, id
+            """
         ).fetchall()
 
         # 今日の日付をデフォルトに
@@ -90,7 +95,7 @@ def init_inventory_views(app, get_db):
                     INSERT INTO stock_counts
                         (store_id, item_id, count_date,
                          system_qty, counted_qty, diff_qty, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
                         store_id,
@@ -115,7 +120,7 @@ def init_inventory_views(app, get_db):
         store_id = request.args.get("store_id") or ""
         count_date = request.args.get("count_date") or today
 
-        items = []
+        mst_items = []
         selected_store_id = int(store_id) if store_id else None
 
         # ★ 最新棚卸日（＋過去2回）を取得
@@ -140,7 +145,7 @@ def init_inventory_views(app, get_db):
                     i.name AS item_name,
                     COALESCE(i.temp_zone, 'その他') AS storage_type,
                     i.is_internal
-                FROM items i
+                FROM mst_items i
                 WHERE i.is_internal = 1
 
                 UNION
@@ -151,11 +156,11 @@ def init_inventory_views(app, get_db):
                     i.name AS item_name,
                     COALESCE(i.temp_zone, 'その他') AS storage_type,
                     i.is_internal
-                FROM items i
+                FROM mst_items i
                 JOIN purchases p
                   ON p.item_id = i.id
-                 AND p.store_id = ?
-                 AND p.delivery_date <= ?
+                 AND p.store_id = %s
+                 AND p.delivery_date <= %s
                  AND p.is_deleted = 0
                 WHERE i.is_internal = 0
 
@@ -175,9 +180,9 @@ def init_inventory_views(app, get_db):
                     """
                     SELECT counted_qty, count_date
                     FROM stock_counts
-                    WHERE store_id = ?
-                      AND item_id  = ?
-                      AND count_date <= ?
+                    WHERE store_id = %s
+                      AND item_id  = %s
+                      AND count_date <= %s
                     ORDER BY count_date DESC, id DESC
                     LIMIT 1
                     """,
@@ -192,10 +197,10 @@ def init_inventory_views(app, get_db):
                         """
                         SELECT COALESCE(SUM(quantity), 0) AS qty
                         FROM purchases
-                        WHERE store_id = ?
-                          AND item_id  = ?
-                          AND delivery_date > ?
-                          AND delivery_date <= ?
+                        WHERE store_id = %s
+                          AND item_id  = %s
+                          AND delivery_date > %s
+                          AND delivery_date <= %s
                           AND is_deleted = 0
                         """,
                         (store_id, item_id, start_date, count_date),
@@ -206,9 +211,9 @@ def init_inventory_views(app, get_db):
                         """
                         SELECT COALESCE(SUM(quantity), 0) AS qty
                         FROM purchases
-                        WHERE store_id = ?
-                          AND item_id  = ?
-                          AND delivery_date <= ?
+                        WHERE store_id = %s
+                          AND item_id  = %s
+                          AND delivery_date <= %s
                           AND is_deleted = 0
                         """,
                         (store_id, item_id, count_date),
@@ -227,9 +232,9 @@ def init_inventory_views(app, get_db):
                         ELSE 0
                       END AS unit_price
                     FROM purchases
-                    WHERE store_id = ?
-                      AND item_id  = ?
-                      AND delivery_date <= ?
+                    WHERE store_id = %s
+                      AND item_id  = %s
+                      AND delivery_date <= %s
                       AND is_deleted = 0
                     """,
                     (store_id, item_id, count_date),
@@ -243,9 +248,9 @@ def init_inventory_views(app, get_db):
                     """
                     SELECT counted_qty
                     FROM stock_counts
-                    WHERE store_id   = ?
-                      AND item_id    = ?
-                      AND count_date = ?
+                    WHERE store_id   = %s
+                      AND item_id    = %s
+                      AND count_date = %s
                     ORDER BY id DESC
                     LIMIT 1
                     """,
@@ -259,7 +264,7 @@ def init_inventory_views(app, get_db):
                 is_internal = row["is_internal"] == 1
 
                 if end_qty > 0 or is_internal:
-                    items.append(
+                    mst_items.append(
                         {
                             "item_id": item_id,
                             "item_code": item_code,
@@ -273,19 +278,20 @@ def init_inventory_views(app, get_db):
                         }
                     )
 
-            # ★ items を温度帯ごとにグルーピング
-            for it in items:
+            # ★ mst_items を温度帯ごとにグルーピング
+            for it in mst_items:
                 z = it.get("storage_type") or "その他"
                 if z not in grouped_items:
                     grouped_items[z] = []
                 grouped_items[z].append(it)
 
         return render_template(
-            "inventory_count.html",
+            "inv/inventory_count.html",
             stores=stores,
             selected_store_id=selected_store_id,
             count_date=count_date,
-            items=items,
+            items=mst_items,   
+            mst_items=mst_items,
             latest_date=latest_date,
             latest_dates=latest_dates,
             zones=zones,

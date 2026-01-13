@@ -15,8 +15,8 @@ def purchase_report_supplier(supplier_id: int):
     db = get_db()
 
     # 店舗一覧
-    stores = db.execute(
-        "SELECT id, name FROM stores ORDER BY code"
+    mst_stores = db.execute(
+        "SELECT id, name FROM mst_stores ORDER BY code"
     ).fetchall()
 
     # 仕入先一覧
@@ -95,7 +95,7 @@ def purchase_report_supplier(supplier_id: int):
                 SUM(p.quantity) AS total_qty,
                 SUM(p.amount)   AS total_amount
             FROM purchases p
-            LEFT JOIN items i ON p.item_id = i.id
+            LEFT JOIN mst_items i ON p.item_id = i.id
             WHERE {where_sql}
             GROUP BY i.id, i.code, i.name, ym
             ORDER BY i.code, ym
@@ -153,8 +153,8 @@ def purchase_report_supplier(supplier_id: int):
     selected_store_id = int(store_id) if store_id else None
 
     return render_template(
-        "purchase_report_supplier.html",
-        stores=stores,
+        "pur/purchase_report_supplier.html",
+        mst_stores=mst_stores,
         selected_store_id=selected_store_id,
         supplier_id=supplier_id,
         supplier_name=supplier_name,

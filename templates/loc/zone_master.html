@@ -1,0 +1,40 @@
+{# templates/inventory/zone_master.html #}
+{% extends "layout/base.html" %}
+{% block title %}{{ t("inventory.zone_master", "__inventory.zone_master__") }}{% endblock %}
+
+{% block content %}
+  <h2>{{ t("inventory.zone_master", "__inventory.zone_master__") }}</h2>
+
+  <div style="margin: 8px 0 14px;">
+    <a class="btn" href="{{ url_for('inventory_locations', store_id=selected_store_id) }}">
+      ← {{ t("inventory.locations_back", "__inventory.locations_back__") }}
+    </a>
+  </div>
+
+  <p class="muted" style="margin: 8px 0 14px;">
+    ※ 現在の構造ではゾーンは固定（AMB / CHILL / FREEZE）です。追加・削除はできません。
+  </p>
+
+  {% if selected_store_id %}
+    {% if zones %}
+      <table>
+        <thead>
+          <tr>
+            <th>{{ t("inventory.zone", "__inventory.zone__") }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for z in zones %}
+            <tr>
+              <td>{{ z.temp_zone }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="muted">{{ t("common.no_data", "__common.no_data__") }}</p>
+    {% endif %}
+  {% else %}
+    <p class="muted">{{ t("inventory.hint_select_store", "__inventory.hint_select_store__") }}</p>
+  {% endif %}
+{% endblock %}

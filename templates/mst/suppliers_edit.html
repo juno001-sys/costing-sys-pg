@@ -1,0 +1,60 @@
+{% extends "layout/base.html" %}
+
+{% block title %}{{ t("suppliers.edit.title") }}{% endblock %}
+
+{% block content %}
+  <h2>
+    {{ t("suppliers.edit.heading") }} (ID: {{ supplier.id }})
+  </h2>
+
+  <form method="post">
+    <div>
+      <label>{{ t("suppliers.code") }}：</label>
+      <input type="text" name="code" value="{{ supplier.code or '' }}">
+    </div>
+
+    <div style="margin-top: 4px;">
+      <label>{{ t("suppliers.name") }}：</label>
+      <input type="text" name="name" value="{{ supplier.name or '' }}" required>
+    </div>
+
+    <div style="margin-top: 4px;">
+      <label>{{ t("suppliers.phone") }}：</label>
+      <input type="text" name="phone" value="{{ supplier.phone or '' }}">
+    </div>
+
+    <div style="margin-top: 4px;">
+      <label>{{ t("suppliers.email") }}：</label>
+      <input type="email" name="email" value="{{ supplier.email or '' }}">
+    </div>
+
+    <div style="margin-top: 4px;">
+      <label>{{ t("suppliers.address") }}：</label>
+      <input type="text" name="address" value="{{ supplier.address or '' }}">
+    </div>
+
+    <div style="margin-top: 12px;">
+      <button type="submit">{{ t("common.update") }}</button>
+
+      <button
+        type="submit"
+        name="delete"
+        value="1"
+        onclick="return confirm('{{ t("common.confirm_delete") }}');"
+      >
+        {{ t("common.delete") }}
+      </button>
+
+      <a href="{{ url_for('suppliers_master') }}">
+        {{ t("common.back") }}
+      </a>
+    </div>
+
+    <hr style="margin:24px 0;">
+
+<h3>{{ t("stores.inventory_layout_section") }}</h3>
+<p class="muted">{{ t("stores.inventory_layout_hint") }}</p>
+
+
+  </form>
+{% endblock %}

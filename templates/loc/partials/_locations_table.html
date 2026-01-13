@@ -1,0 +1,75 @@
+{# templates/loc/partials/_locations_table.html #}
+
+<table class="table table-bordered inventory-locations">
+  <thead>
+    <tr>
+      <th>{{ t("inventory.item", "__inventory.item__") }}</th>
+
+      <!-- Temp zone -->
+      <th>{{ t("inventory.zone_master", "__inventory.zone_master__") }}</th>
+
+      <!-- Area -->
+      <th>{{ t("masters.area", "__masters.area__") }}</th>
+
+      <!-- Shelf -->
+      <th>{{ t("inventory.shelf_master_open", "__inventory.shelf_master_open__") }}</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    {% if not items %}
+      <tr>
+        <td colspan="4" class="muted">
+          {{ t("common.no_data", "__common.no_data__") }}
+        </td>
+      </tr>
+    {% endif %}
+
+    {% for it in items %}
+      <tr data-item-id="{{ it.id }}">
+        <input type="hidden" name="item_ids" value="{{ it.id }}">
+
+        <!-- Item -->
+        <td>{{ it.name }}</td>
+
+        <!-- Temp zone -->
+        <td>
+          <select name="zone_{{ it.id }}" class="form-select temp-zone">
+            <option value=""></option>
+            {% for z in temp_zones %}
+              <option value="{{ z }}"
+                {% if it.temp_zone_norm == z %}selected{% endif %}>
+                {{ z }}
+              </option>
+            {% endfor %}
+          </select>
+        </td>
+
+        <!-- Area -->
+        <td>
+          <select name="area_{{ it.id }}" class="form-select area">
+            <option value=""></option>
+            {% for a in areas %}
+              <option value="{{ a.store_area_map_id }}"
+                {% if (it.area_store_area_map_id|string) == (a.store_area_map_id|string) %}selected{% endif %}>
+                {{ a.area_name }}
+              </option>
+            {% endfor %}
+          </select>
+        </td>
+
+        <!-- Shelf -->
+        <td>
+          <select name="shelf_id_{{ it.id }}" class="form-select shelf">
+            <option value=""></option>
+            {% if it.shelf_id %}
+              <option value="{{ it.shelf_id }}" selected>
+                {{ it.shelf_name }}
+              </option>
+            {% endif %}
+          </select>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>

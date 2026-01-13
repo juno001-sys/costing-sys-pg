@@ -1,0 +1,68 @@
+{% extends "layout/base.html" %}
+
+{% block title %}{{ t("purchase.edit.title") }}{% endblock %}
+
+{% block content %}
+  <h2>{{ t("purchase.edit.heading") }} (ID: {{ purchase.id }})</h2>
+
+  <form method="post">
+    <div>
+      <label>{{ t("form.store") }}：</label>
+      <select name="store_id">
+        {% for s in mst_stores %}
+          <option value="{{ s.id }}" {% if purchase.store_id == s.id %}selected{% endif %}>
+            {{ s.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="margin-top: 8px;">
+      <label>{{ t("purchase.delivery_date") }}：</label>
+      <input type="date" name="delivery_date" value="{{ purchase.delivery_date }}">
+    </div>
+
+    <div style="margin-top: 8px;">
+      <label>{{ t("form.supplier") }}：</label>
+      <select name="supplier_id">
+        <option value="">{{ t("common.unset") }}</option>
+        {% for s in suppliers %}
+          <option value="{{ s.id }}" {% if purchase.supplier_id == s.id %}selected{% endif %}>
+            {{ s.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="margin-top: 8px;">
+      <label>{{ t("form.item") }}：</label>
+      <!-- とりあえず名称のみ表示（本格対応するならセレクト化も可） -->
+      <input type="text" value="{{ purchase.item_name }}" readonly>
+      <span style="font-size: 12px; color: #666;">{{ t("common.code") }}: {{ purchase.item_code }}</span>
+      <input type="hidden" name="item_id" value="{{ purchase.item_id }}">
+    </div>
+
+    <div style="margin-top: 8px;">
+      <label>{{ t("form.quantity") }}：</label>
+      <input type="text" name="quantity" value="{{ purchase.quantity }}">
+    </div>
+
+    <div style="margin-top: 8px;">
+      <label>{{ t("form.unit_price") }}：</label>
+      <input type="text" name="unit_price" value="{{ purchase.unit_price }}">
+    </div>
+
+    <div style="margin-top: 12px;">
+      <button type="submit">{{ t("common.update") }}</button>
+      <button
+        type="submit"
+        name="delete"
+        value="1"
+        onclick="return confirm('{{ t("purchase.delete_confirm_soft") }}');"
+      >
+        {{ t("common.delete") }}
+      </button>
+      <a href="{{ url_for('new_purchase', store_id=purchase.store_id) }}">{{ t("common.back") }}</a>
+    </div>
+  </form>
+{% endblock %}

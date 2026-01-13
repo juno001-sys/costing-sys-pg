@@ -1,0 +1,68 @@
+{% extends "layout/base.html" %}
+{% block title %}{{ t("stores.edit.title") }}{% endblock %}
+
+{% block content %}
+<h2>{{ t("stores.edit.heading") }}</h2>
+
+<form method="post">
+  <div class="form-group">
+    <label>{{ t("common.code") }}：</label>
+    <input type="text" name="code" value="{{ store.code or '' }}">
+  </div>
+
+  <div class="form-group">
+    <label>{{ t("stores.name") }}：</label>
+    <input type="text" name="name" value="{{ store.name or '' }}" required>
+  </div>
+
+  <div class="form-group">
+    <label>{{ t("stores.seats") }}：</label>
+    <input type="text" name="seats" value="{{ store.seats or '' }}">
+  </div>
+
+  <div class="form-group">
+    <label>{{ t("stores.opened_on") }}：</label>
+    <input type="date" name="opened_on" value="{{ store.opened_on or '' }}">
+  </div>
+
+  <div class="form-group">
+    <label>{{ t("stores.closed_on") }}：</label>
+    <input type="date" name="closed_on" value="{{ store.closed_on or '' }}">
+  </div>
+
+  <hr>
+
+  <h3>{{ t("stores.config.title", "__stores.config.title__") }}</h3>
+
+  <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+    <a class="btn" href="{{ url_for('store_temp_zones_admin', store_id=store.id) }}">
+      {{ t("stores.config.temp_zones", "__stores.config.temp_zones__") }}
+    </a>
+
+    <a class="btn" href="{{ url_for('store_areas_admin', store_id=store.id) }}">
+      {{ t("stores.config.areas", "__stores.config.areas__") }}
+    </a>
+
+    <a class="btn" href="{{ url_for('shelf_master', store_id=store.id) }}">
+      {{ t("stores.config.shelves", "__stores.config.shelves__") }}
+    </a>
+
+    <a class="btn" href="{{ url_for('inventory_locations', store_id=store.id) }}">
+      {{ t("stores.config.item_locations", "__stores.config.item_locations__") }}
+    </a>
+  </div>
+
+  <hr>
+
+  <button type="submit">{{ t("common.update") }}</button>
+
+  <button
+    type="submit"
+    name="delete"
+    value="1"
+    onclick="return confirm('{{ t("stores.confirm_disable") }}');"
+  >
+    {{ t("stores.disable") }}
+  </button>
+</form>
+{% endblock %}

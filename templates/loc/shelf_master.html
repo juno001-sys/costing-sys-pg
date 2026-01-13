@@ -1,0 +1,83 @@
+{% extends "layout/base.html" %}
+{% block title %}{{ t("inventory.shelf_master_open", "__inventory.shelf_master_open__") }}{% endblock %}
+
+{% block content %}
+<h2>{{ t("inventory.shelf_master_open", "__inventory.shelf_master_open__") }}</h2>
+
+<div style="margin: 8px 0;">
+  <a href="{{ url_for('inventory_locations', store_id=selected_store_id) }}">← {{ t("inventory.locations_back", "__inventory.locations_back__") }}</a>
+</div>
+
+<form method="get" action="{{ url_for('shelf_master') }}" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+  <label class="field-label">{{ t("form.store", "__form.store__") }}:</label>
+  <select name="store_id" onchange="this.form.submit()">
+    <option value="">{{ t("common.all_stores", "__common.all_stores__") }}</option>
+    {% for s in mst_stores %}
+      <option value="{{ s.id }}" {% if selected_store_id == s.id %}selected{% endif %}>{{ s.name }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+{% if selected_store_id %}
+<form method="post" action="{{ url_for('shelf_master') }}" style="margin-top:12px;">
+  <input type="hidden" name="store_id" value="{{ selected_store_id }}">
+
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        
+        <th style="width:160px;">{{ t("masters.area", "__masters.area__") }}</th>
+        <th style="width:140px;">{{ t("inventory.zone_master", "__inventory.zone_master__") }}</th>
+        <th style="width:120px;">{{ t("common.code", "__common.code__") }}</th>
+        <th>{{ t("common.name", "__common.name__") }}</th>
+        <th style="width:120px;">{{ t("common.sort_order", "__common.sort_order__") }}</th>
+        <th style="width:90px;">{{ t("common.use", "__common.use__") }}</th>
+    
+      </tr>
+    </thead>
+    <tbody>
+      {% if not shelves %}
+        <tr>
+          <td colspan="6" class="muted">{{ t("common.no_data", "__common.no_data__") }}</td>
+        </tr>
+      {% endif %}
+
+      {% for sh in shelves %}
+        <tr>
+          
+          <td>{{ sh.area_name }}</td>
+
+          <td>
+            {% set tz_label = sh.temp_zone %}
+            {% for z in temp_zones %}
+              {% if z.code == sh.temp_zone %}
+                {% set tz_label = z.name %}
+              {% endif %}
+            {% endfor %}
+            {{ tz_label }}
+          </td>
+
+          <td>{{ sh.code }}</td>
+
+          <td>
+            <input type="text" name="name_{{ sh.id }}" value="{{ sh.name }}" style="width:100%;">
+          </td>
+
+          <td>
+            <input type="number" name="sort_{{ sh.id }}" value="{{ sh.sort_order }}" style="width:100%;">
+          </td>
+
+          <td>
+            <input type="checkbox" name="use_shelf_{{ sh.id }}" {% if sh.is_active %}checked{% endif %}>
+            <input type="hidden" name="shelf_ids" value="{{ sh.id }}">
+          </td>
+    
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <button class="btn btn-primary" type="submit">{{ t("common.update", "__common.update__") }}</button>
+</form>
+{% endif %}
+{% endblock %}

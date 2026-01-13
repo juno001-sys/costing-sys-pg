@@ -1,0 +1,72 @@
+{% extends "layout/base.html" %}
+
+{% block title %}{{ t("report.purchase_supplier.title", "仕入れ照会") }}（{{ supplier_name }}）{% endblock %}
+
+{% block content %}
+
+  <form method="get" action="{{ url_for('reports.purchase_report_supplier', supplier_id=supplier_id) }}">
+    <label>{{ t("form.store") }}：</label>
+    <select name="store_id" onchange="this.form.submit()">
+      <option value="">{{ t("common.all") }}</option>
+      {% for s in stores %}
+        <option value="{{ s.id }}" {% if selected_store_id == s.id %}selected{% endif %}>
+          {{ s.name }}
+        </option>
+      {% endfor %}
+    </select>
+    <noscript><button type="submit">{{ t("form.show") }}</button></noscript>
+  </form>
+
+  <p style="margin-top: 8px;">
+    {{ t("form.supplier") }}：<strong>{{ supplier_name }}</strong>
+  </p>
+
+  <table border="1" cellpadding="4" cellspacing="0" style="margin-top: 8px;">
+    <thead>
+      <tr>
+        <th>{{ t("common.code") }}</th>
+        <th>{{ t("usage.item") }}</th>
+        {% for ym in month_keys %}
+          <th>{{ ym }}<br>{{ t("purchase.amount") }}</th>
+        {% endfor %}
+        <th>{{ t("purchase.total_amount") }}</th>
+        <th>{{ t("purchase.total_qty") }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in item_rows %}
+        <tr>
+          <td>{{ it.item_code }}</td>
+          <td>{{ it.item_name }}</td>
+          {% for ym in month_keys %}
+            <td style="text-align:right;">
+              {{ "{:,}".format(it.amount.get(ym, 0)) }}
+            </td>
+          {% endfor %}
+          <td style="text-align:right;">{{ "{:,}".format(it.total_amount) }}</td>
+          <td style="text-align:right;">{{ "{:,}".format(it.total_qty) }}</td>
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="{{ month_keys|length + 4 }}">{{ t("common.no_data") }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <th colspan="2">{{ t("report.monthly_total_amount") }}</th>
+        {% for amt in month_totals_amount %}
+          <th style="text-align:right;">{{ "{:,}".format(amt) }}</th>
+        {% endfor %}
+        <th colspan="2"></th>
+      </tr>
+      <tr>
+        <th colspan="2">{{ t("report.monthly_total_qty") }}</th>
+        {% for qty in month_totals_qty %}
+          <th style="text-align:right;">{{ "{:,}".format(qty) }}</th>
+        {% endfor %}
+        <th colspan="2"></th>
+      </tr>
+    </tfoot>
+  </table>
+{% endblock %}

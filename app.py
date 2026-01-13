@@ -12,6 +12,7 @@ from views.masters import init_master_views
 from views.purchases import init_purchase_views
 from views.reports import init_report_views
 from labels import label
+from views.loc import init_location_views
 
 # ----------------------------------------
 # Flask app
@@ -72,7 +73,7 @@ def inject_t():
     translations = get_translations(lang)
 
     def t(key: str, default: str | None = None) -> str:
-        return translations.get(key, default or key)
+        return translations.get(key, default or f"__{key}__")
 
     return {
         "t": t,
@@ -116,7 +117,7 @@ def log_purchase_change(db, purchase_id, action, old_row, new_row, changed_by=No
         """
         INSERT INTO purchase_logs
           (purchase_id, action, old_data, new_data, changed_by, changed_at)
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s, %s)
         """,
         (
             purchase_id,
@@ -160,7 +161,7 @@ init_purchase_views(app, get_db, log_purchase_change)
 init_report_views(app, get_db)
 init_master_views(app, get_db)
 init_inventory_views(app, get_db)
-
+init_location_views(app, get_db)
 
 # ----------------------------------------
 # Run

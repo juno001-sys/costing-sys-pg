@@ -53,14 +53,14 @@ def main():
         print("Suppliers is empty.")
         return
 
-    # 既存 items の最大連番
+    # 既存 mst_items の最大連番
     counters = {}
     for info in name_to_info.values():
         c2 = info["code2"]
         if c2 in counters:
             continue
         cur.execute(
-            "SELECT MAX(code) AS max_code FROM items WHERE code LIKE ?",
+            "SELECT MAX(code) AS max_code FROM mst_items WHERE code LIKE %s",
             (f"{c2}%",),
         )
         row = cur.fetchone()
@@ -73,7 +73,7 @@ def main():
             counters[c2] = 0
 
     print("[INFO] Existing prefix counters:")
-    for c2, n in counters.items():
+    for c2, n in counters.mst_items():
         print(f"  Supplier {c2} → {n}")
 
     # TSV 読み込み（重要：delimiter="\t"）
@@ -130,13 +130,13 @@ def main():
 
         cur.execute(
             """
-            INSERT INTO items
+            INSERT INTO mst_items
                 (supplier_id, code, name, unit, category,
                  account_title, tax_category, department,
                  temp_zone, purchase_unit, inventory_unit,
                  standard_inventory_unit, min_purchase_unit,
                  is_internal, is_active)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 supplier_id,

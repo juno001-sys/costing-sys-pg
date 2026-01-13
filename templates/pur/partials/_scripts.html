@@ -1,0 +1,518 @@
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const supplierSelect = document.getElementById("supplier_id");
+    const storeSelect = document.getElementById("store_id");
+    const dateInput = document.getElementById("delivery_date");
+    const tbody = document.getElementById("item-rows");
+    const form = document.getElementById("purchase-form");
+
+    //  console.log("tbody:", !!document.getElementById("item-rows"));
+    //  console.log("addBtn:", !!document.getElementById("add-row-btn"));
+
+    // 🚨 Critical guard: if detail table does not exist, stop here
+    if (!tbody) return;
+
+    function focusFirstItemCell() {
+      const first = tbody.querySelector(".item-autocomplete");
+      if (first) first.focus();
+    }
+    // --- IME guard (Japanese input) ---
+    let isComposing = false;
+    document.addEventListener(
+      "compositionstart",
+      () => {
+        isComposing = true;
+      },
+      true
+    );
+    document.addEventListener(
+      "compositionend",
+      () => {
+        isComposing = false;
+      },
+      true
+    );
+
+    // Click-only submit (Enter should never submit)
+    const submitBtn = document.getElementById("submit-btn");
+    if (submitBtn && form) {
+      submitBtn.addEventListener("click", () => {
+        form.requestSubmit();
+      });
+    }
+    // Never submit the form with Enter anywhere.
+    // Submit should happen only by clicking the submit button.
+    if (form) {
+      form.addEventListener(
+        "keydown",
+        (e) => {
+          if (e.key !== "Enter") return;
+          if (e.isComposing || isComposing || e.key === "Process") return;
+
+          e.preventDefault(); // blocks browser submit globally
+          // DO NOT stopPropagation so tbody handler still runs
+        },
+        true
+      );
+    }
+
+    let baseItems = [];
+    // -------------------------------
+    // Restore focus after refresh
+    // -------------------------------
+    let focused = false;
+
+    const nextFocus = sessionStorage.getItem("nextFocus");
+    if (nextFocus) {
+      sessionStorage.removeItem("nextFocus");
+
+      setTimeout(() => {
+        if (nextFocus === "supplier" && supplierSelect) {
+          supplierSelect.focus();
+        } else if (nextFocus === "date" && dateInput) {
+          dateInput.focus();
+        } else if (nextFocus === "firstItem") {
+          focusFirstItemCell();
+        }
+      }, 0);
+
+      focused = true;
+    }
+
+    if (!focused) {
+      const focusAfter = document.getElementById("focus_after_reload")?.value;
+      if (focusAfter === "supplier") supplierSelect?.focus();
+      else storeSelect?.focus();
+    }
+
+    // -------------------------------
+    // Header Enter navigation
+    // -------------------------------
+    function moveFocusByEnter(el, nextFn) {
+      el.addEventListener("keydown", (e) => {
+        if (e.isComposing || isComposing || e.key === "Process") return;
+        if (e.key === "Enter") {
+          e.preventDefault();
+          nextFn();
+        }
+      });
+    }
+
+    if (storeSelect && supplierSelect) {
+      moveFocusByEnter(storeSelect, () => supplierSelect.focus());
+      storeSelect.addEventListener("change", () => {
+        sessionStorage.setItem("nextFocus", "supplier");
+        const url = new URL(window.location.href);
+        url.searchParams.set("store_id", storeSelect.value || "");
+        window.location.href = url.toString();
+      });
+    }
+
+    if (supplierSelect && dateInput)
+      moveFocusByEnter(supplierSelect, () => dateInput.focus());
+    if (dateInput) moveFocusByEnter(dateInput, () => focusFirstItemCell());
+
+    // -------------------------------
+    // Load items by supplier
+    // -------------------------------
+    async function loadItems(supplierId) {
+      baseItems = [];
+      if (!supplierId) return;
+      try {
+        const resp = await fetch(`/api/mst_items/by_supplier/${supplierId}`);
+        const data = await resp.json();
+        baseItems = Array.isArray(data) ? data : [];
+      } catch (e) {
+        baseItems = [];
+        console.error("Failed to load items:", e);
+      }
+    }
+
+    if (supplierSelect) {
+      if (supplierSelect.value) loadItems(supplierSelect.value);
+
+      supplierSelect.addEventListener("change", (e) => {
+        loadItems(e.target.value);
+
+        tbody
+          .querySelectorAll(".item-autocomplete")
+          .forEach((inp) => (inp.value = ""));
+        tbody.querySelectorAll(".item-id").forEach((h) => (h.value = ""));
+        tbody.querySelectorAll(".item-suggestions").forEach((box) => {
+          box.hidden = true;
+          box.innerHTML = "";
+        });
+      });
+    }
+
+    // -------------------------------
+    // Autocomplete helpers
+    // -------------------------------
+    function getText(it) {
+      const code = (it.code || "").trim();
+      const name = (it.name || "").trim();
+      return code ? `${code} ${name}` : name;
+    }
+
+    function closeBox(box) {
+      box.hidden = true;
+      box.innerHTML = "";
+    }
+    function openBox(box) {
+      box.hidden = false;
+    }
+
+    function setActive(items, index) {
+      items.forEach((el) => el.classList.remove("active"));
+      if (items[index]) {
+        items[index].classList.add("active");
+        items[index].scrollIntoView({ block: "nearest" });
+      }
+    }
+
+    function getCellElements(input) {
+      const cell = input.closest(".item-cell");
+      if (!cell) return {};
+      return {
+        cell,
+        hidden: cell.querySelector(".item-id"),
+        box: cell.querySelector(".item-suggestions"),
+      };
+    }
+
+    function buildSuggestions(input, hidden, box, forceOpen = false) {
+      const q = (input.value || "").trim().toLowerCase();
+      box.innerHTML = "";
+
+      const shouldShow = forceOpen || q.length > 0;
+      if (!shouldShow || baseItems.length === 0) {
+        closeBox(box);
+        return;
+      }
+
+      const matched = baseItems
+        .filter((it) =>
+          forceOpen ? true : getText(it).toLowerCase().includes(q)
+        )
+        .slice(0, 30);
+
+      if (matched.length === 0) {
+        closeBox(box);
+        return;
+      }
+
+      matched.forEach((it) => {
+        const div = document.createElement("div");
+        div.className = "item-suggest-item";
+        div.textContent = getText(it);
+        div.dataset.id = it.id;
+        div.dataset.unit = (it.unit ?? "").toString();
+
+        div.addEventListener("mousedown", (ev) => {
+          ev.preventDefault();
+          selectItem(input, hidden, box, it);
+        });
+
+        box.appendChild(div);
+      });
+
+      openBox(box);
+      const items = Array.from(box.querySelectorAll(".item-suggest-item"));
+      if (items.length > 0) setActive(items, 0);
+    }
+
+    function selectItem(input, hidden, box, item) {
+      input.value = getText(item);
+      hidden.value = item.id;
+      closeBox(box);
+
+      const tr = input.closest("tr");
+      const qty = tr ? tr.querySelector(".qty-input") : null;
+      if (qty && !qty.value && item.unit != null && String(item.unit) !== "") {
+        qty.value = item.unit;
+      }
+      if (qty) qty.focus();
+    }
+
+    // typing filters
+    tbody.addEventListener("input", (e) => {
+      const input = e.target;
+      if (!input.classList.contains("item-autocomplete")) return;
+      const { hidden, box } = getCellElements(input);
+      if (!hidden || !box) return;
+      hidden.value = "";
+      buildSuggestions(input, hidden, box, false);
+    });
+
+    // focus opens list
+    tbody.addEventListener("focusin", (e) => {
+      const input = e.target;
+      if (!input.classList.contains("item-autocomplete")) return;
+      const { hidden, box } = getCellElements(input);
+      if (!hidden || !box) return;
+      buildSuggestions(input, hidden, box, true);
+    });
+
+    // dropdown keyboard (IME-safe)
+    tbody.addEventListener("keydown", (e) => {
+      const input = e.target;
+      if (!input.classList.contains("item-autocomplete")) return;
+      if (e.isComposing || isComposing || e.key === "Process") return;
+
+      const { hidden, box } = getCellElements(input);
+      if (!hidden || !box) return;
+
+      const isOpen = !box.hidden;
+
+      if (e.key === "ArrowDown") {
+        if (!isOpen) return; // do nothing unless dropdown is open
+        e.preventDefault();
+        e.stopPropagation();
+
+        const list = Array.from(box.querySelectorAll(".item-suggest-item"));
+        let idx = list.findIndex((el) => el.classList.contains("active"));
+        idx = idx < 0 ? 0 : Math.min(idx + 1, list.length - 1);
+        setActive(list, idx);
+        return;
+      }
+
+      if (e.key === "ArrowUp") {
+        if (!isOpen) return; // do nothing unless dropdown is open
+        e.preventDefault();
+        e.stopPropagation();
+
+        const list = Array.from(box.querySelectorAll(".item-suggest-item"));
+        let idx = list.findIndex((el) => el.classList.contains("active"));
+        idx = idx < 0 ? 0 : Math.max(idx - 1, 0);
+        setActive(list, idx);
+        return;
+      }
+
+      if (e.key === "Enter" && isOpen) {
+        e.preventDefault();
+        e.stopPropagation();
+        const list = Array.from(box.querySelectorAll(".item-suggest-item"));
+        const idx = list.findIndex((el) => el.classList.contains("active"));
+        if (idx >= 0) {
+          const id = list[idx].dataset.id || "";
+          const unit = list[idx].dataset.unit || "";
+          const text = list[idx].textContent || "";
+          input.value = text;
+          hidden.value = id;
+          closeBox(box);
+
+          const tr = input.closest("tr");
+          const qty = tr ? tr.querySelector(".qty-input") : null;
+          if (qty && !qty.value && unit) qty.value = unit;
+          if (qty) qty.focus();
+        }
+        return;
+      }
+
+      if (e.key === "Escape" && isOpen) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeBox(box);
+        return;
+      }
+    });
+
+    // click outside closes
+    document.addEventListener("click", (e) => {
+      document.querySelectorAll(".item-cell").forEach((cell) => {
+        const box = cell.querySelector(".item-suggestions");
+        if (!box) return;
+        if (!cell.contains(e.target)) closeBox(box);
+      });
+    });
+
+    // -------------------------------
+    // Calc: blur only (no live input)
+    // -------------------------------
+    const calcTbody = tbody;
+
+    function calc_parseIntSafe(v) {
+      if (!v) return 0;
+      const digits = String(v).replace(/[^\d]/g, "");
+      if (digits === "") return 0;
+      return parseInt(digits, 10) || 0;
+    }
+
+    function calc_recalcRow(tr) {
+      const qty = tr.querySelector(".qty-input");
+      const price = tr.querySelector(".price-input");
+      const amt = tr.querySelector(".amount-display");
+      if (!qty || !price || !amt) return;
+      const total =
+        calc_parseIntSafe(qty.value) * calc_parseIntSafe(price.value);
+      amt.value = total ? total.toLocaleString("ja-JP") : "";
+    }
+
+    function calc_recalcAll() {
+      calcTbody.querySelectorAll("tr").forEach(calc_recalcRow);
+      const totalCell = document.getElementById("total_amount_display");
+      if (!totalCell) return;
+      let sum = 0;
+      calcTbody
+        .querySelectorAll(".amount-display")
+        .forEach((el) => (sum += calc_parseIntSafe(el.value)));
+      totalCell.textContent = sum ? sum.toLocaleString("ja-JP") : "";
+    }
+
+    calcTbody.addEventListener(
+      "blur",
+      (e) => {
+        const el = e.target;
+        if (
+          !(
+            el.classList &&
+            (el.classList.contains("qty-input") ||
+              el.classList.contains("price-input"))
+          )
+        )
+          return;
+        const tr = el.closest("tr");
+        if (tr) calc_recalcRow(tr);
+        calc_recalcAll();
+      },
+      true
+    );
+
+    // -------------------------------
+    // Enter = tab navigation (IME-safe)
+    // -------------------------------
+    function focusNextPrev(el, dir) {
+      const focusables = Array.from(
+        form.querySelectorAll(
+          "#item-rows input, #item-rows select, #item-rows button"
+        )
+      ).filter((node) => {
+        if (node.disabled) return false;
+        if (node.type === "hidden") return false;
+        if (node.classList && node.classList.contains("amount-display"))
+          return false;
+        return true;
+      });
+
+      const idx = focusables.indexOf(el);
+      if (idx < 0) return;
+
+      const next = focusables[idx + dir];
+      if (next) {
+        next.focus();
+        if (typeof next.select === "function" && next.tagName === "INPUT")
+          next.select();
+      }
+    }
+
+    tbody.addEventListener(
+      "keydown",
+      (e) => {
+        const el = e.target;
+        if (!el.closest("#item-rows")) return;
+        if (e.isComposing || isComposing || e.key === "Process") return;
+
+        if (e.key === "Enter") {
+          // If autocomplete dropdown is open, let selection handler run
+          const cell = el.closest(".item-cell");
+          const box = cell ? cell.querySelector(".item-suggestions") : null;
+          const dropdownOpen =
+            box && !box.hidden && box.querySelector(".item-suggest-item");
+
+          if (dropdownOpen) return;
+
+          e.preventDefault(); // stop submit
+
+          // ✅ AUTO CALC HERE
+          if (
+            el.classList &&
+            (el.classList.contains("qty-input") ||
+              el.classList.contains("price-input"))
+          ) {
+            const tr = el.closest("tr");
+            if (tr) calc_recalcRow(tr);
+            calc_recalcAll();
+          }
+
+          // Move focus (Shift+Enter = back)
+          focusNextPrev(el, e.shiftKey ? -1 : 1);
+        }
+      },
+      true
+    );
+
+    /* ===============================
+   Add row (+ 行を追加)
+=============================== */
+    const addBtn = document.getElementById("add-row-btn");
+    const rowCountInput = document.getElementById("row_count");
+
+    if (addBtn && tbody) {
+      addBtn.addEventListener("click", () => {
+        const currentRows = tbody.querySelectorAll("tr").length;
+
+        if (currentRows >= 30) {
+          alert("これ以上追加できません（上限30行）");
+          return;
+        }
+
+        const newIndex = currentRows + 1;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+      <td class="row-no">${newIndex}</td>
+
+      <td class="item-cell">
+        <input type="text"
+               class="item-autocomplete nav-input"
+               data-col="0"
+               placeholder="品名検索"
+               autocomplete="off"
+               style="width:100%;">
+        <input type="hidden"
+               name="item_id_${newIndex}"
+               class="item-id">
+        <div class="item-suggestions" hidden></div>
+      </td>
+
+      <td>
+        <input type="text"
+               name="quantity_${newIndex}"
+               class="num qty-input nav-input"
+               data-col="1"
+               style="width:80px;">
+      </td>
+
+      <td>
+        <input type="text"
+               name="unit_price_${newIndex}"
+               class="num price-input nav-input"
+               data-col="2"
+               style="width:100px;">
+      </td>
+
+      <td>
+        <input type="text"
+               name="amount_display_${newIndex}"
+               class="amount-display"
+               readonly
+               tabindex="-1"
+               aria-readonly="true">
+      </td>
+    `;
+
+        tbody.appendChild(tr);
+
+        // keep POST loop consistent
+        if (rowCountInput) {
+          rowCountInput.value = String(newIndex);
+        }
+
+        // recalc totals after adding
+        calc_recalcAll();
+      });
+    }
+    // initial calc
+    calc_recalcAll();
+  });
+</script>

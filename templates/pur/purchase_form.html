@@ -1,0 +1,26 @@
+{% extends "layout/base.html" %} {% block title %}{{ t("purchase.form.title")
+}}{% endblock %} {% block content %}
+<h2>{{ t("purchase.form.title") }}</h2>
+
+<!-- NEW ENTRY FORM (POST) -->
+<form method="post" id="purchase-form">
+  <input
+    type="hidden"
+    id="focus_after_reload"
+    name="focus_after_reload"
+    value=""
+  />
+
+  {% include "pur/partials/_header_form.html" %} {% include
+  "pur/partials/_detail_table.html" %}
+
+  <div style="margin-top: 16px">
+    <button type="button" id="submit-btn">{{ t("common.create") }}</button>
+  </div>
+</form>
+
+<hr style="margin: 32px 0" />
+
+<!-- RECENT LIST (contains its own GET form) -->
+{% include "pur/partials/_recent_list.html" %} {% endblock %} {% block
+body_extra %} {% include "pur/partials/_scripts.html" %} {% endblock %}

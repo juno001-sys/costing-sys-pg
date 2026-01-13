@@ -11,8 +11,8 @@ from . import reports_bp, get_db
 def purchase_report():
     db = get_db()
 
-    stores = db.execute(
-        "SELECT id, name FROM stores ORDER BY code"
+    mst_stores = db.execute(
+        "SELECT id, name FROM mst_stores ORDER BY code"
     ).fetchall()
 
     store_id = request.args.get("store_id") or ""
@@ -52,7 +52,7 @@ def purchase_report():
             TO_CHAR(p.delivery_date, 'YYYY-MM') AS ym,
             SUM(p.amount) AS total_amount
         FROM purchases p
-        LEFT JOIN items i ON p.item_id = i.id
+        LEFT JOIN mst_items i ON p.item_id = i.id
         LEFT JOIN suppliers s ON i.supplier_id = s.id
         WHERE {' AND '.join(where)}
         GROUP BY s.id, s.name, ym
@@ -86,8 +86,8 @@ def purchase_report():
     ]
 
     return render_template(
-        "purchase_report.html",
-        stores=stores,
+        "pur/purchase_report.html",
+        mst_stores=mst_stores,
         selected_store_id=int(store_id) if store_id else None,
         rows=rows,
         month_keys=month_keys,

@@ -1,0 +1,44 @@
+{# templates/loc/locations.html #}
+{% extends "layout/base.html" %}
+{% block title %}{{ t("nav.inventory_count", "__nav.inventory_count__") }}{% endblock %}
+
+{% block head_extra %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='inventory/inventory_count.css') }}">
+{% endblock %}
+
+{% block content %}
+  <h2>{{ t("stores.inventory_locations_title", "__stores.inventory_locations_title__") }}</h2>
+
+  {% include "loc/partials/_locations_header.html" %}
+
+  {% if not selected_store_id %}
+    <p class="muted" style="margin-top:12px;">
+      {{ t("stores.inventory_locations_hint", "__stores.inventory_locations_hint__") }}
+    </p>
+  {% endif %}
+
+  {% if selected_store_id and items %}
+    <form method="post" action="{{ url_for('inventory_locations_save') }}">
+      <input type="hidden" name="store_id" value="{{ selected_store_id }}">
+
+      {% include "loc/partials/_locations_table.html" %}
+
+      <div class="sticky-bar">
+        <button class="btn btn-primary" type="submit">
+          {{ t("common.update", "__common.update__") }}
+        </button>
+      </div>
+    </form>
+  {% endif %}
+{% endblock %}
+
+{% block body_extra %}
+  <script>
+    window.KURAJIKA = window.KURAJIKA || {};
+    window.KURAJIKA.LOCATIONS = {
+      shelvesApi: "{{ url_for('inventory_api_shelves') }}",
+      storeId: {{ selected_store_id or 'null' }}
+    };
+  </script>
+  <script src="{{ url_for('static', filename='inventory/locations.js') }}"></script>
+{% endblock %}

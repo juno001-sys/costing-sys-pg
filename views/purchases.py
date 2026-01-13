@@ -40,8 +40,13 @@ def init_purchase_views(app, get_db, log_purchase_change):
             selected_store_id = None
     
         # --- 2) 店舗一覧（固定） ---
-        stores = db.execute(
-            "SELECT id, name FROM stores WHERE is_active = 1 ORDER BY code"
+        mst_stores = db.execute(
+            """
+            SELECT id, code, name
+            FROM mst_stores
+            WHERE COALESCE(is_active, 1) = 1
+            ORDER BY code, id
+            """
         ).fetchall()
     
         # --- 3) 店舗に応じて仕入先を絞る ---
@@ -52,7 +57,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
                 FROM suppliers s
                 JOIN store_suppliers ss
                   ON s.id = ss.supplier_id
-                 AND ss.store_id = ?
+                 AND ss.store_id = %s
                  AND ss.is_active = 1
                 WHERE s.is_active = 1
                 ORDER BY s.code
@@ -62,7 +67,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
         else:
             suppliers = db.execute(
                 """
-                SELECT id, name
+                SELECT id, code, name
                 FROM suppliers
                 WHERE is_active = 1
                 ORDER BY code
@@ -74,9 +79,9 @@ def init_purchase_views(app, get_db, log_purchase_change):
         #   明細   ：item_id_i, quantity_i, unit_price_i (i=1..row_count)
         # ----------------------------------------------------
         if request.method == "POST":
-            store_id = request.form.get("store_id") or None
-            header_supplier_id = request.form.get("supplier_id") or None
-            delivery_date = request.form.get("delivery_date") or ""
+            store_id = (request.form.get("store_id") or "").strip()
+            header_supplier_id = (request.form.get("supplier_id") or "").strip()
+            delivery_date = (request.form.get("delivery_date") or "").strip()
 
             # 必須チェック（ブラウザ側でも required だが念のため）
             if not store_id or not header_supplier_id or not delivery_date:
@@ -132,7 +137,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
                     INSERT INTO purchases
                       (store_id, supplier_id, item_id,
                        delivery_date, quantity, unit_price, amount, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
                     """,
                     (
@@ -152,7 +157,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
 
                 # ログ用に新レコードを読み直し
                 new_row = db.execute(
-                    "SELECT * FROM purchases WHERE id = ?",
+                    "SELECT * FROM purchases WHERE id = %s",
                     (new_id,),
                 ).fetchone()
 
@@ -183,6 +188,9 @@ def init_purchase_views(app, get_db, log_purchase_change):
         store_id = request.args.get("store_id") or ""
         selected_store_id = int(store_id) if store_id else None
 
+        supplier_id = request.args.get("supplier_id") or ""
+        selected_supplier_id = int(supplier_id) if supplier_id else None
+
         # 条件クリアボタン
         if request.args.get("clear") == "1":
             if store_id:
@@ -199,40 +207,42 @@ def init_purchase_views(app, get_db, log_purchase_change):
         params = []
 
         if store_id:
-            where_clauses.append("p.store_id = ?")
+            where_clauses.append("p.store_id = %s")
             params.append(store_id)
 
+        if supplier_id:
+            where_clauses.append("p.supplier_id = %s")
+            params.append(supplier_id)
+
         if from_date:
-            where_clauses.append("p.delivery_date >= ?")
+            where_clauses.append("p.delivery_date >= %s")
             params.append(from_date)
 
         if to_date:
-            where_clauses.append("p.delivery_date <= ?")
+            where_clauses.append("p.delivery_date <= %s")
             params.append(to_date)
 
         if search_q:
-            where_clauses.append(
-                "(i.name LIKE ? OR s.name LIKE ? OR i.code LIKE ?)"
-            )
+            where_clauses.append("(i.name LIKE %s OR s.name LIKE %s OR i.code LIKE %s)")
             like = f"%{search_q}%"
             params.extend([like, like, like])
 
-        where_sql = ""
-        if where_clauses:
-            where_sql = "WHERE " + " AND ".join(where_clauses)
+        where_sql = "WHERE " + " AND ".join(where_clauses)
 
         sql = f"""
             SELECT
-              p.id,
-              p.delivery_date,
-              s.name AS supplier_name,
-              i.name AS item_name,
-              p.quantity,
-              p.unit_price,
-              p.amount
+                p.id,
+                p.delivery_date,
+                st.name AS store_name,
+                s.name  AS supplier_name,
+                i.name  AS item_name,
+                p.quantity,
+                p.unit_price,
+                p.amount
             FROM purchases p
-            LEFT JOIN suppliers s ON p.supplier_id = s.id
-            LEFT JOIN items     i ON p.item_id     = i.id
+            LEFT JOIN suppliers   s  ON p.supplier_id = s.id
+            LEFT JOIN mst_items   i  ON p.item_id     = i.id
+            LEFT JOIN mst_stores  st ON p.store_id    = st.id
             {where_sql}
             ORDER BY p.delivery_date DESC, p.id DESC
             LIMIT 50
@@ -240,22 +250,23 @@ def init_purchase_views(app, get_db, log_purchase_change):
         purchases = db.execute(sql, params).fetchall()
 
         return render_template(
-            "purchase_form.html",
-            stores=stores,
-            suppliers=suppliers,
+            "pur/purchase_form.html",
+            mst_stores=mst_stores,
+            stores=mst_stores,                 # for _recent_list.html
+            suppliers=suppliers,               # for supplier dropdown
             purchases=purchases,
             selected_store_id=selected_store_id,
+            selected_supplier_id=selected_supplier_id,
             from_date=from_date,
             to_date=to_date,
             search_q=search_q,
         )
-
     
     # ----------------------------------------
     # API: 仕入先に紐づく品目一覧を返す
-    # /api/items/by_supplier/<supplier_id>
+    # /api/mst_items/by_supplier/<supplier_id>
     # ----------------------------------------
-    @app.route("/api/items/by_supplier/<int:supplier_id>")
+    @app.route("/api/mst_items/by_supplier/<int:supplier_id>")
     def api_items_by_supplier(supplier_id):
         db = get_db()
         rows = db.execute(
@@ -266,7 +277,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
                 i.name,
                 i.unit,
                 COALESCE(SUM(p.amount), 0) AS total_amount
-            FROM items i
+            FROM mst_items i
             LEFT JOIN purchases p 
                 ON p.item_id = i.id
                 AND p.supplier_id = i.supplier_id
@@ -305,8 +316,8 @@ def init_purchase_views(app, get_db, log_purchase_change):
         db = get_db()
 
         # 店舗・仕入先一覧（プルダウン用）
-        stores = db.execute(
-            "SELECT id, name FROM stores ORDER BY code"
+        mst_stores = db.execute(
+            "SELECT id, name FROM mst_stores ORDER BY code"
         ).fetchall()
 
         suppliers = db.execute(
@@ -328,8 +339,8 @@ def init_purchase_views(app, get_db, log_purchase_change):
               i.code AS item_code,
               i.name AS item_name
             FROM purchases p
-            LEFT JOIN items i ON p.item_id = i.id
-            WHERE p.id = ?
+            LEFT JOIN mst_items i ON p.item_id = i.id
+            WHERE p.id = %s
               AND p.is_deleted = 0
             """,
             (purchase_id,),
@@ -345,7 +356,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
             # -------------------------
             if "delete" in request.form:
                 old_row = db.execute(
-                    "SELECT * FROM purchases WHERE id = ?",
+                    "SELECT * FROM purchases WHERE id = %s",
                     (purchase_id,),
                 ).fetchone()
 
@@ -353,13 +364,13 @@ def init_purchase_views(app, get_db, log_purchase_change):
                     """
                     UPDATE purchases
                     SET is_deleted = 1
-                    WHERE id = ?
+                    WHERE id = %s
                     """,
                     (purchase_id,),
                 )
 
                 new_row = db.execute(
-                    "SELECT * FROM purchases WHERE id = ?",
+                    "SELECT * FROM purchases WHERE id = %s",
                     (purchase_id,),
                 ).fetchone()
 
@@ -383,7 +394,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
             # 更新処理
             # -------------------------
             store_id = request.form.get("store_id") or None
-            delivery_date = request.form.get("delivery_date") or ""
+            delivery_date = (request.form.get("delivery_date") or "").strip()
             supplier_id = request.form.get("supplier_id") or None
             item_id = request.form.get("item_id") or None
             quantity = (request.form.get("quantity") or "").replace(",", "")
@@ -392,9 +403,9 @@ def init_purchase_views(app, get_db, log_purchase_change):
             if not delivery_date or not item_id:
                 flash("納品日と品目は必須です。")
                 return render_template(
-                    "purchase_edit.html",
+                    "pur/purchase_edit.html",
                     purchase=purchase,
-                    stores=stores,
+                    mst_stores=mst_stores,
                     suppliers=suppliers,
                 )
 
@@ -411,7 +422,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
             amount_val = qty_val * unit_price_val
 
             old_row = db.execute(
-                "SELECT * FROM purchases WHERE id = ?",
+                "SELECT * FROM purchases WHERE id = %s",
                 (purchase_id,),
             ).fetchone()
 
@@ -419,14 +430,14 @@ def init_purchase_views(app, get_db, log_purchase_change):
                 """
                 UPDATE purchases
                 SET
-                  store_id     = ?,
-                  supplier_id  = ?,
-                  item_id      = ?,
-                  delivery_date = ?,
-                  quantity     = ?,
-                  unit_price   = ?,
-                  amount       = ?
-                WHERE id = ?
+                  store_id     = %s,
+                  supplier_id  = %s,
+                  item_id      = %s,
+                  delivery_date = %s,
+                  quantity     = %s,
+                  unit_price   = %s,
+                  amount       = %s
+                WHERE id = %s
                 """,
                 (
                     store_id,
@@ -441,7 +452,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
             )
 
             new_row = db.execute(
-                "SELECT * FROM purchases WHERE id = ?",
+                "SELECT * FROM purchases WHERE id = %s",
                 (purchase_id,),
             ).fetchone()
 
@@ -461,8 +472,9 @@ def init_purchase_views(app, get_db, log_purchase_change):
 
         # GET のとき：編集画面表示
         return render_template(
-            "purchase_edit.html",
+            "pur/purchase_edit.html",
             purchase=purchase,
-            stores=stores,
+            mst_stores=mst_stores,
+            stores=mst_stores,
             suppliers=suppliers,
         )
