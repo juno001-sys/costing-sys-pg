@@ -4,7 +4,13 @@
     <meta charset="UTF-8" />
 
     <title>
-      {% if env == "prod" %} Kurajika CMS {% elif env == "rft" %} [RFT] Kurajika
+      <div style="display:flex; align-items:center; gap:12px; margin:12px 0 8px 0;">
+  <img src="{{ url_for('static', filename='img/kurajika_logo.png') }}"
+       alt="Kurajika"
+       style="height:36px; width:auto;">
+</div>
+
+{% if env == "prod" %} Kurajika CMS {% elif env == "rft" %} [RFT] Kurajika
       CMS {% else %} [DEV] Kurajika CMS {% endif %}
     </title>
 
