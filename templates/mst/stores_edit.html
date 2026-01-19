@@ -34,7 +34,13 @@
 
   <h3>{{ t("stores.config.title", "__stores.config.title__") }}</h3>
 
+
   <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+
+        <a class="btn" href="{{ url_for('edit_store', store_id=store.id) }}">
+    {{ t("stores.suppliers.title", "__stores.suppliers.title__") }}
+  </a>  
+
     <a class="btn" href="{{ url_for('store_temp_zones_admin', store_id=store.id) }}">
       {{ t("stores.config.temp_zones", "__stores.config.temp_zones__") }}
     </a>
