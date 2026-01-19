@@ -4,7 +4,74 @@
 {% block content %}
 <h2>{{ t("stores.edit.heading") }}</h2>
 
-<form method="post">
+<style>
+  .tabs {
+    display: flex;
+    gap: 8px;
+    border-bottom: 1px solid #ddd;
+    margin: 10px 0 12px 0;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+  .tab-btn {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-bottom: none;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    background: #f7f7f7;
+    cursor: pointer;
+    font-weight: 700;
+  }
+  .tab-btn.active {
+    background: #fff;
+  }
+  .tab-panel {
+    display: none;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 0 8px 8px 8px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+  }
+  .tab-panel.active {
+    display: block;
+  }
+  .supplier-grid {
+    columns: 2;
+    column-gap: 24px;
+  }
+  .supplier-item {
+    display: block;
+    break-inside: avoid;
+    margin: 2px 0;
+  }
+  .tab-links {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+   .tab-iframe { width: 100%; height: 70vh; border: 0; }
+     .kv-grid {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 6px 14px;
+    max-width: 720px;
+  }
+  .kv-key {
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .kv-val {
+    white-space: nowrap;
+  }
+    .inventory-locations select.form-select {
+    min-width: 140px;
+  }
+</style>
+
+<form id="store-edit-form" method="post">
   <div class="form-group">
     <label>{{ t("common.code") }}：</label>
     <input type="text" name="code" value="{{ store.code or '' }}">
@@ -32,37 +99,366 @@
 
   <hr>
 
-  <h3>{{ t("stores.config.title", "__stores.config.title__") }}</h3>
+  <h3>{{ t("stores.config.title") }}</h3>
 
-  <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-    <a class="btn" href="{{ url_for('store_temp_zones_admin', store_id=store.id) }}">
-      {{ t("stores.config.temp_zones", "__stores.config.temp_zones__") }}
-    </a>
+<div style="display:flex; gap:10px; align-items:center; margin: 12px 0;">
+  <button type="submit" class="btn btn-primary" form="store-edit-form">
+    {{ t("common.update") }}
+  </button>
 
-    <a class="btn" href="{{ url_for('store_areas_admin', store_id=store.id) }}">
-      {{ t("stores.config.areas", "__stores.config.areas__") }}
-    </a>
+ 
+</div>
 
-    <a class="btn" href="{{ url_for('shelf_master', store_id=store.id) }}">
-      {{ t("stores.config.shelves", "__stores.config.shelves__") }}
-    </a>
+  <!-- Tabs -->
+  <div class="tabs" role="tablist" aria-label="{{ t('stores.config.title') }}">
+    <button type="button" class="tab-btn active" data-tab="tab-suppliers">
+      {{ t("stores.suppliers.title") }}
+    </button>
+    <button type="button" class="tab-btn" data-tab="tab-tempzones">
+      {{ t("stores.config.temp_zones") }}
+    </button>
+    <button type="button" class="tab-btn" data-tab="tab-areas">
+      {{ t("stores.config.areas") }}
+    </button>
+    <button type="button" class="tab-btn" data-tab="tab-shelves">
+      {{ t("stores.config.shelves") }}
+    </button>
+    <button type="button" class="tab-btn" data-tab="tab-item-locations">
+      {{ t("stores.config.item_locations") }}
+    </button>
+  </div>
+
+  <!-- Panel: Suppliers (submits with this form) -->
+  <div id="tab-suppliers" class="tab-panel active">
+   
+    <div style="margin-bottom:10px;">
+  <button type="submit" class="btn btn-primary" form="store-edit-form">
+    {{ t("common.update") }}　{{ t("stores.suppliers.title") }}
+  </button>
+</div>
+
+    {% if suppliers %}
+      <div class="supplier-grid">
+        {% for sup in suppliers %}
+          <label class="supplier-item">
+            <input
+              type="checkbox"
+              name="supplier_ids"
+              value="{{ sup.id }}"
+              {% if linked_supplier_ids and (sup.id in linked_supplier_ids) %}checked{% endif %}
+            >
+            {{ sup.code }} - {{ sup.name }}
+          </label>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div style="color:#666;">{{ t("suppliers.empty") }}</div>
+    {% endif %}
+  </div>
+
+    <!-- Panel: 温度帯名称 -->
+  <div id="tab-tempzones" class="tab-panel">
+    <div style="margin-bottom:10px;">
+  <button type="submit" class="btn btn-primary" form="store-edit-form">
+    {{ t("common.update") }} {{ t("stores.config.temp_zones") }}
+  </button>
+</div>
+    {% if temp_zones %}
+      <table class="tbl" style="border-collapse:collapse; width: 720px;">
+        <thead>
+          <tr>
+            <th style="border:1px solid #ddd; padding:6px 8px;">{{ t("common.use") }}</th>
+            <th style="border:1px solid #ddd; padding:6px 8px;">Code</th>
+            <th style="border:1px solid #ddd; padding:6px 8px;">{{ t("common.name") }}</th>
+            <th style="border:1px solid #ddd; padding:6px 8px;">{{ t("common.sort_order") }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for z in temp_zones %}
+            <tr>
+              <td style="border:1px solid #ddd; padding:6px 8px; text-align:center;">
+                <input
+                  type="checkbox"
+                  name="temp_zone_is_active__{{ z.code }}"
+                  value="1"
+                  {% if z.is_active %}checked{% endif %}
+                >
+              </td>
+
+              <td style="border:1px solid #ddd; padding:6px 8px;">
+                <strong>{{ z.code }}</strong>
+                <input type="hidden" name="temp_zone_code" value="{{ z.code }}">
+              </td>
+
+              <td style="border:1px solid #ddd; padding:6px 8px;">
+                <input
+                  type="text"
+                  name="temp_zone_display_name__{{ z.code }}"
+                  value="{{ z.display_name or '' }}"
+                  style="width: 95%;"
+                >
+              </td>
+
+              <td style="border:1px solid #ddd; padding:6px 8px;">
+                <input
+                  type="number"
+                  name="temp_zone_sort_order__{{ z.code }}"
+                  value="{{ z.sort_order if z.sort_order is not none else '' }}"
+                  style="width: 90px;"
+                >
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div style="color:#666;">{{ t("common.no_data") }}</div>
+    {% endif %}
+  </div>
+
+  <!-- Panel: エリア設定 -->
+  <div id="tab-areas" class="tab-panel">
+    <div style="margin-bottom:10px;">
+  <button type="submit" class="btn btn-primary" form="store-edit-form">
+    {{ t("common.update") }}  {{ t("stores.config.areas") }}
+  </button>
+</div>
+    {% if areas %}
+      <table style="border-collapse:collapse; width: 720px;">
+        <thead>
+          <tr>
+            <th style="border:1px solid #ddd; padding:6px 8px;">{{ t("common.use") }}</th>
+            <th style="border:1px solid #ddd; padding:6px 8px;">Code</th>
+            <th style="border:1px solid #ddd; padding:6px 8px;">{{ t("common.name") }}</th>
+            <th style="border:1px solid #ddd; padding:6px 8px;">{{ t("common.sort_order") }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in areas %}
+            <tr>
+              <td style="border:1px solid #ddd; padding:6px 8px; text-align:center;">
+                <input
+                  type="checkbox"
+                  name="area_is_active__{{ a.area_id }}"
+                  value="1"
+                  {% if a.is_active %}checked{% endif %}
+                >
+              </td>
+
+              <td style="border:1px solid #ddd; padding:6px 8px;">
+                <strong>{{ a.code }}</strong>
+                <input type="hidden" name="area_id" value="{{ a.area_id }}">
+              </td>
+
+              <td style="border:1px solid #ddd; padding:6px 8px;">
+                <input
+                  type="text"
+                  name="area_display_name__{{ a.area_id }}"
+                  value="{{ a.display_name or '' }}"
+                  style="width:95%;"
+                >
+              </td>
+
+              <td style="border:1px solid #ddd; padding:6px 8px;">
+                <input
+                  type="number"
+                  name="area_sort_order__{{ a.area_id }}"
+                  value="{{ a.sort_order if a.sort_order is not none else '' }}"
+                  style="width:90px;"
+                >
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div style="color:#666;">{{ t("common.no_data") }}</div>
+    {% endif %}
+  </div>
+
+  <!-- Panel: 棚設定 -->
+  <div id="tab-shelves" class="tab-panel">
+    <div style="margin-bottom:10px;">
+  <button type="submit" class="btn btn-primary" form="store-edit-form">
+    {{ t("common.update") }}   {{ t("stores.config.shelves") }}
+  </button>
+</div>
+
+    {% if shelves %}
+      <table style="border-collapse:collapse; width: 920px;">
+        <thead>
+          <tr>
+            <th style="border:1px solid #ddd; padding:6px 8px;">{{ t("masters.area") }}</th>
+            <th style="border:1px solid #ddd; padding:6px 8px;">{{ t("masters.temp_zone") }}</th>
+            <th style="border:1px solid #ddd; padding:6px 8px;">{{ t("masters.shelf_code") }}</th>
+            <th style="border:1px solid #ddd; padding:6px 8px;">{{ t("common.name") }}</th>
+            <th style="border:1px solid #ddd; padding:6px 8px;">{{ t("common.sort_order") }}</th>
+            <th style="border:1px solid #ddd; padding:6px 8px;">{{ t("common.use") }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sh in shelves %}
+            <tr>
+              <td style="border:1px solid #ddd; padding:6px 8px;">{{ sh.area_name }}</td>
+              <td style="border:1px solid #ddd; padding:6px 8px;">{{ sh.temp_zone }}</td>
+              <td style="border:1px solid #ddd; padding:6px 8px;"><strong>{{ sh.code }}</strong></td>
+
+              <td style="border:1px solid #ddd; padding:6px 8px;">
+                <input type="hidden" name="shelf_id" value="{{ sh.id }}">
+                <input
+                  type="text"
+                  name="shelf_name__{{ sh.id }}"
+                  value="{{ sh.name or '' }}"
+                  style="width:95%;"
+                >
+              </td>
+
+              <td style="border:1px solid #ddd; padding:6px 8px;">
+                <input
+                  type="number"
+                  name="shelf_sort_order__{{ sh.id }}"
+                  value="{{ sh.sort_order if sh.sort_order is not none else '' }}"
+                  style="width:90px;"
+                >
+              </td>
+
+              <td style="border:1px solid #ddd; padding:6px 8px; text-align:center;">
+                <input
+                  type="checkbox"
+                  name="shelf_is_active__{{ sh.id }}"
+                  value="1"
+                  {% if sh.is_active %}checked{% endif %}
+                >
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div style="color:#666;">{{ t("common.no_data") }}</div>
+    {% endif %}
+  </div>
+
+  <!-- Panel: 品目配置 -->
+  <div id="tab-item-locations" class="tab-panel">
+  <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
+    <button
+      type="submit"
+      class="btn btn-primary"
+      form="store-edit-form"
+      formaction="/inventory/locations/save"
+      formmethod="post"
+    >
+      {{ t("common.update") }}  {{ t("stores.config.item_locations") }}
+    </button>
 
     <a class="btn" href="{{ url_for('inventory_locations', store_id=store.id) }}">
-      {{ t("stores.config.item_locations", "__stores.config.item_locations__") }}
+      {{ t("stores.inventory_locations_open", "__stores.inventory_locations_open__") }}
     </a>
   </div>
 
+  <input type="hidden" name="store_id" value="{{ store.id }}">
+
+  {% if item_locations %}
+    <table class="table table-bordered inventory-locations" style="width: 980px; border-collapse:collapse;">
+      <thead>
+        <tr>
+          <th style="border:1px solid #ddd; padding:6px 8px;">{{ t("inventory.item") }}</th>
+          <th style="border:1px solid #ddd; padding:6px 8px;">{{ t("inventory.zone_master") }}</th>
+          <th style="border:1px solid #ddd; padding:6px 8px;">{{ t("masters.area") }}</th>
+          <th style="border:1px solid #ddd; padding:6px 8px;">{{ t("inventory.shelf_master_open") }}</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for it in item_locations %}
+          <tr data-item-id="{{ it.id }}">
+            <input type="hidden" name="item_ids" value="{{ it.id }}">
+
+            <!-- Item -->
+            <td style="border:1px solid #ddd; padding:6px 8px;">
+              {{ it.code }} - {{ it.name }}
+            </td>
+
+            <!-- Temp zone -->
+            <td style="border:1px solid #ddd; padding:6px 8px;">
+              <select name="zone_{{ it.id }}" class="form-select temp-zone">
+                <option value=""></option>
+                {% for z in loc_temp_zones %}
+                  <option value="{{ z }}" {% if it.temp_zone_norm == z %}selected{% endif %}>
+                    {{ z }}
+                  </option>
+                {% endfor %}
+              </select>
+            </td>
+
+            <!-- Area -->
+            <td style="border:1px solid #ddd; padding:6px 8px;">
+              <select name="area_{{ it.id }}" class="form-select area">
+                <option value=""></option>
+                {% for a in loc_areas %}
+                  <option value="{{ a.store_area_map_id }}"
+                    {% if (it.area_store_area_map_id|string) == (a.store_area_map_id|string) %}selected{% endif %}>
+                    {{ a.area_name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </td>
+
+            <!-- Shelf (populated by locations.js via API) -->
+            <td style="border:1px solid #ddd; padding:6px 8px;">
+              <select name="shelf_id_{{ it.id }}" class="form-select shelf">
+                <option value=""></option>
+                {% if it.shelf_id %}
+                  <option value="{{ it.shelf_id }}" selected>{{ it.shelf_name }}</option>
+                {% endif %}
+              </select>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div style="color:#666;">{{ t("common.no_data") }}</div>
+  {% endif %}
+
+  <!-- JS config + script (same as locations.html) -->
+  <script>
+    window.KURAJIKA = window.KURAJIKA || {};
+    window.KURAJIKA.LOCATIONS = {
+      shelvesApi: "{{ url_for('inventory_api_shelves') }}",
+      storeId: {{ store.id }}
+    };
+  </script>
+  <script src="{{ url_for('static', filename='inventory/locations.js') }}"></script>
+</div>
   <hr>
 
-  <button type="submit">{{ t("common.update") }}</button>
+  
 
-  <button
-    type="submit"
-    name="delete"
-    value="1"
-    onclick="return confirm('{{ t("stores.confirm_disable") }}');"
-  >
-    {{ t("stores.disable") }}
-  </button>
+  
 </form>
+
+<script>
+  (function () {
+    const btns = document.querySelectorAll(".tab-btn");
+    const panels = document.querySelectorAll(".tab-panel");
+
+    function activate(tabId) {
+      btns.forEach(b => b.classList.toggle("active", b.dataset.tab === tabId));
+      panels.forEach(p => p.classList.toggle("active", p.id === tabId));
+    }
+
+    btns.forEach(btn => {
+      btn.addEventListener("click", () => activate(btn.dataset.tab));
+    });
+
+    // Optional: open a specific tab via URL hash (e.g., #tab-shelves)
+    if (location.hash) {
+      const hashId = location.hash.replace("#", "");
+      if (document.getElementById(hashId)) activate(hashId);
+    }
+  })();
+</script>
+
 {% endblock %}

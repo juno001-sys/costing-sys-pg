@@ -3,9 +3,18 @@
   <head>
     <meta charset="UTF-8" />
 
-    <title>{% if env == "prod" %} Kurajika CMS {% elif env == "rft" %} [RFT] Kurajika
-      CMS {% else %} [DEV] Kurajika CMS {% endif %}
-    </title>
+    
+  <title>
+    {% if env == "prod" %}
+      Kurajika CMS
+    {% elif env == "rft" %}
+      [RFT] Kurajika CMS
+    {% elif env == "local" %}
+      [LOCAL] Kurajika CMS
+    {% else %}
+      [DEV] Kurajika CMS
+    {% endif %}
+  </title>
 
     <style>
       body {
@@ -25,6 +34,9 @@
       }
       body.env-rft {
         background: #fff5fb;
+      }
+      body.env-local {
+        background: #f9ffe3;
       }
 
       .env-banner {
@@ -197,22 +209,18 @@
     {% endif %}
 
     <div class="top-bar">
-      <form method="post" action="{{ url_for('set_lang') }}" style="display:flex; justify-content:flex-end; gap:8px; align-items:center;">
-        <input type="hidden" name="next" value="{{ request.full_path }}">
-        <select name="lang" onchange="this.form.submit()">
-          <option value="ja" {% if lang == 'ja' %}selected{% endif %}>日本語</option>
-          <option value="en" {% if lang == 'en' %}selected{% endif %}>English</option>
-        </select>
-      </form>
     </div>
 
-    {% if env == "prod" %}
-    <h1>倉島事業開発 CMS – Postgres</h1>
-    {% elif env == "rft" %}
-    <h1>⚠ RFT – Refactor Environment</h1>
-    {% else %}
-    <h1>DEV – Test Environment</h1>
-    {% endif %}
+      {% if env == "prod" %}
+    <h1 class="env-banner env-prod">倉島事業開発 CMS – Postgres</h1>
+  {% elif env == "rft" %}
+    <h1 class="env-banner env-rft">⚠ RFT – Refactor Environment</h1>
+  {% elif env == "local" %}
+    <h1 class="env-banner env-local">LOCAL – Your Machine</h1>
+  {% else %}
+    <h1 class="env-banner env-dev">DEV – Test Environment</h1>
+  {% endif %}
+
 
     <div style="display:flex; align-items:center; gap:12px; margin:12px 0 8px 0;">
       <img src="{{ url_for('static', filename='img/kurajika_logo.png') }}"
@@ -270,11 +278,52 @@
     </nav>
 
     {% block content %}{% endblock %} {% block body_extra %}{% endblock %}
+<footer style="
+  margin-top: 40px;
+  padding-top: 12px;
+  border-top: 1px solid #ddd;
+  font-size: 0.9em;
+  color: #666;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+">
 
-    <footer>
-      <div style="margin-top: 20px; font-size: 12px; opacity: 0.7">
-        env=<strong>{{ env }}</strong> / version={{ g.app_version }}
-      </div>
-    </footer>
+  <!-- Left: env / version -->
+  <div>
+    env={{ env }} / version={{ g.app_version }}
+    <span id="git-ahead"></span>
+  </div>
+
+  <!-- Right: language switch -->
+  <div>
+    <form method="post" action="{{ url_for('set_lang') }}" style="margin:0;">
+      <input type="hidden" name="next" value="{{ request.path }}">
+      <select name="lang" onchange="this.form.submit()">
+        {% for l in supported_langs %}
+          <option value="{{ l }}" {% if l == lang %}selected{% endif %}>
+            {{ l }}
+          </option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    fetch("{{ url_for('static', filename='git_ahead.txt') }}?v={{ g.app_version }}")
+      .then(r => r.text())
+      .then(t => {
+        const n = parseInt(String(t).trim(), 10);
+        if (!isNaN(n) && n > 0) {
+          document.getElementById("git-ahead").textContent = ` (+${n} vs dev)`;
+        }
+      })
+      .catch(() => {});
+  })();
+</script>
   </body>
 </html>

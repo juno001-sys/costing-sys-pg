@@ -534,7 +534,7 @@ def init_master_views(app, get_db):
         return render_template("mst/stores_master.html", stores=mst_stores)
 
 
-        # ----------------------------------------
+    # ----------------------------------------
     # 店舗編集・無効化 ＋ 仕入れ先紐付け
     # /mst_stores/<id>/edit
     # ----------------------------------------
@@ -679,10 +679,164 @@ def init_master_views(app, get_db):
                     (store_id, sid),
                 )
 
+                        # ---- 棚設定の更新（inv_store_shelves）----
+            shelf_ids = request.form.getlist("shelf_id")
+
+            for sid_str in shelf_ids:
+                try:
+                    sid = int(sid_str)
+                except ValueError:
+                    continue
+
+                name_val = (request.form.get(f"shelf_name__{sid}") or "").strip()
+                sort_raw = (request.form.get(f"shelf_sort_order__{sid}") or "").strip()
+                is_active = True if request.form.get(f"shelf_is_active__{sid}") == "1" else False
+
+                try:
+                    sort_order = int(sort_raw) if sort_raw else 100
+                except ValueError:
+                    sort_order = 100
+
+                db.execute(
+                    """
+                    UPDATE inv_store_shelves
+                    SET name = %s,
+                        sort_order = %s,
+                        is_active = %s,
+                        updated_at = now()
+                    WHERE id = %s
+                      AND store_id = %s
+                    """,
+                    (name_val or None, sort_order, is_active, sid, store_id),
+                )
+
+
             db.commit()
             flash("店舗を更新しました。")
 
+
             return redirect(url_for("stores_master"))
+
+        # 温度帯（この店舗の温度帯一覧）
+        # NOTE: table name is assumed from your route name: store_temp_zones_admin
+        # If your real table name differs, tell me and I’ll adjust.
+        temp_zones = db.execute(
+            """
+            SELECT store_id, code, display_name, sort_order, is_active, updated_at
+            FROM store_temp_zones
+            WHERE store_id = %s
+              AND is_active = TRUE
+            ORDER BY sort_order, code
+            """,
+            (store_id,),
+        ).fetchall()    
+
+        # エリア（この店舗のエリア一覧）: VIEW store_area_map + master for code
+        areas = db.execute(
+            """
+            SELECT
+              sam.store_id,
+              sam.area_id,
+              am.code AS code,
+              sam.display_name,
+              sam.sort_order,
+              sam.is_active
+            FROM store_area_map sam
+            JOIN inv_area_master am ON am.id = sam.area_id
+            WHERE sam.store_id = %s
+            ORDER BY sam.sort_order, am.code, sam.area_id
+            """,
+            (store_id,),
+        ).fetchall()            
+
+        # 棚（この店舗の棚一覧）: inv_store_shelves + store_area_map (view) for display_name
+        shelves = db.execute(
+            """
+            SELECT
+              sh.id,
+              sh.store_id,
+              sh.store_area_map_id,
+              COALESCE(sam.display_name, '—') AS area_name,
+              sh.temp_zone,
+              sh.code,
+              sh.name,
+              sh.sort_order,
+              sh.is_active
+            FROM inv_store_shelves sh
+            LEFT JOIN store_area_map sam ON sam.id = sh.store_area_map_id
+            WHERE sh.store_id = %s
+            ORDER BY area_name, sh.temp_zone, sh.sort_order, sh.code, sh.id
+            """,
+            (store_id,),
+        ).fetchall()
+
+
+        # 品目配置: エリア候補（store_area_map × area_master）
+        loc_areas = db.execute(
+            """
+            SELECT
+            sam.id AS store_area_map_id,
+            COALESCE(NULLIF(sam.display_name, ''), am.name) AS area_name
+            FROM store_area_map sam
+            JOIN area_master am ON am.id = sam.area_id
+            WHERE sam.store_id = %s
+            AND COALESCE(sam.is_active, TRUE) = TRUE
+            ORDER BY sam.sort_order, area_name
+            """,
+            (store_id,),
+        ).fetchall()
+
+        # 品目配置: 品目一覧（locations_page.py と同じロジック）
+        item_locations = db.execute(
+            """
+            SELECT DISTINCT
+            i.id,
+            i.code,
+            i.name,
+
+            i.temp_zone AS temp_zone,
+
+            CASE
+                WHEN pref.temp_zone IS NOT NULL AND pref.temp_zone <> '' THEN pref.temp_zone
+                WHEN i.temp_zone IN ('常温','AMB') THEN 'AMB'
+                WHEN i.temp_zone IN ('冷蔵','CHILL') THEN 'CHILL'
+                WHEN i.temp_zone IN ('冷凍','FREEZE') THEN 'FREEZE'
+                ELSE 'AMB'
+            END AS temp_zone_norm,
+
+            pref.store_area_map_id AS pref_store_area_map_id,
+
+            m.shelf_id AS shelf_id,
+            sh.name    AS shelf_name,
+
+            sh.store_area_map_id AS shelf_store_area_map_id,
+
+            COALESCE(pref.store_area_map_id, sh.store_area_map_id) AS area_store_area_map_id
+
+            FROM mst_items i
+            LEFT JOIN purchases p
+                ON p.item_id = i.id
+            AND p.store_id = %s
+            AND p.is_deleted = 0
+
+            LEFT JOIN item_location_prefs pref
+                ON pref.store_id = %s
+            AND pref.item_id  = i.id
+
+            LEFT JOIN item_shelf_map m
+                ON m.store_id = %s
+            AND m.item_id  = i.id
+            AND m.is_active = TRUE
+
+            LEFT JOIN store_shelves sh
+                ON sh.id = m.shelf_id
+
+            WHERE i.is_internal = 1
+            OR p.id IS NOT NULL
+            ORDER BY i.code
+            """,
+            (store_id, store_id, store_id),
+        ).fetchall()
 
         # GET のとき：編集画面表示
         return render_template(
@@ -690,4 +844,10 @@ def init_master_views(app, get_db):
             store=store,
             suppliers=suppliers,
             linked_supplier_ids=linked_supplier_ids,
+            temp_zones=temp_zones,
+            areas=areas,
+            shelves=shelves,
+            item_locations=item_locations,
+            loc_areas=loc_areas,
+            loc_temp_zones=["AMB", "CHILL", "FREEZE"],
         )

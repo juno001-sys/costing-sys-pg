@@ -10,3 +10,4 @@ migrate_dev_to_rft.sh
 *.sql
 *.dump
 *_dev_to_rft.sh
+static/git_ahead.txt
