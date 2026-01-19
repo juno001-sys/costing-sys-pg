@@ -297,7 +297,7 @@ def init_master_views(app, get_db):
                 db.rollback()
                 flash(f"mst_items テーブルへの登録でエラーが発生しました: {e}")
 
-            return redirect(url_for("mst/items_master.html"))
+            return redirect(url_for("items_master.html"))
 
         # --------- GET：表示 ----------
         return render_template(
