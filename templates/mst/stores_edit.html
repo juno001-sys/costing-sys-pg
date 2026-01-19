@@ -31,26 +31,53 @@
   </div>
 
   <hr>
+<h3>{{ t("stores.config.title", "__stores.config.title__") }}</h3>
 
-  <h3>{{ t("stores.config.title", "__stores.config.title__") }}</h3>
+<div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+  <span class="btn" style="pointer-events:none; opacity:0.7;">
+    {{ t("stores.suppliers.title", "__stores.suppliers.title__") }}
+  </span>
 
-  <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-    <a class="btn" href="{{ url_for('store_temp_zones_admin', store_id=store.id) }}">
-      {{ t("stores.config.temp_zones", "__stores.config.temp_zones__") }}
-    </a>
+  <a class="btn" href="{{ url_for('store_temp_zones_admin', store_id=store.id) }}">
+    {{ t("stores.config.temp_zones", "__stores.config.temp_zones__") }}
+  </a>
 
-    <a class="btn" href="{{ url_for('store_areas_admin', store_id=store.id) }}">
-      {{ t("stores.config.areas", "__stores.config.areas__") }}
-    </a>
+  <a class="btn" href="{{ url_for('store_areas_admin', store_id=store.id) }}">
+    {{ t("stores.config.areas", "__stores.config.areas__") }}
+  </a>
 
-    <a class="btn" href="{{ url_for('shelf_master', store_id=store.id) }}">
-      {{ t("stores.config.shelves", "__stores.config.shelves__") }}
-    </a>
+  <a class="btn" href="{{ url_for('shelf_master', store_id=store.id) }}">
+    {{ t("stores.config.shelves", "__stores.config.shelves__") }}
+  </a>
 
-    <a class="btn" href="{{ url_for('inventory_locations', store_id=store.id) }}">
-      {{ t("stores.config.item_locations", "__stores.config.item_locations__") }}
-    </a>
+  <a class="btn" href="{{ url_for('inventory_locations', store_id=store.id) }}">
+    {{ t("stores.config.item_locations", "__stores.config.item_locations__") }}
+  </a>
+</div>
+
+<hr>
+
+{# ===== Store ⇄ Supplier tie (INLINE) ===== #}
+
+{% if suppliers %}
+  <div style="columns:2; column-gap:24px; margin-top:10px;">
+    {% for sup in suppliers %}
+      <label style="display:block; break-inside:avoid; margin:2px 0;">
+        <input
+          type="checkbox"
+          name="supplier_ids"
+          value="{{ sup.id }}"
+          {% if linked_supplier_ids and (sup.id in linked_supplier_ids) %}checked{% endif %}
+        >
+        {{ sup.code }} - {{ sup.name }}
+      </label>
+    {% endfor %}
   </div>
+{% else %}
+  <div style="color:#666; margin-top:8px;">
+    {{ t("suppliers.empty", "__suppliers.empty__") }}
+  </div>
+{% endif %}
 
   <hr>
 
