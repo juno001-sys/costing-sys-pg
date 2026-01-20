@@ -3,10 +3,17 @@
   <head>
     <meta charset="UTF-8" />
 
-    <title>{% if env == "prod" %} Kurajika CMS {% elif env == "rft" %} [RFT] Kurajika
-      CMS {% else %} [DEV] Kurajika CMS {% endif %}
-    </title>
-
+ <title>
+  {% if env == "prod" %}
+    Kurajika CMS
+  {% elif env == "rft" %}
+    [RFT] Kurajika CMS
+  {% elif env == "local" %}
+    [LOCAL] Kurajika CMS
+  {% else %}
+    [DEV] Kurajika CMS
+  {% endif %}
+</title>
     <style>
       body {
         font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
@@ -196,20 +203,13 @@
     </div>
     {% endif %}
 
-    <div class="top-bar">
-      <form method="post" action="{{ url_for('set_lang') }}" style="display:flex; justify-content:flex-end; gap:8px; align-items:center;">
-        <input type="hidden" name="next" value="{{ request.full_path }}">
-        <select name="lang" onchange="this.form.submit()">
-          <option value="ja" {% if lang == 'ja' %}selected{% endif %}>日本語</option>
-          <option value="en" {% if lang == 'en' %}selected{% endif %}>English</option>
-        </select>
-      </form>
-    </div>
-
+    
     {% if env == "prod" %}
     <h1>倉島事業開発 CMS – Postgres</h1>
     {% elif env == "rft" %}
     <h1>⚠ RFT – Refactor Environment</h1>
+    {% elif env == "local" %}
+  <h1>LOCAL – Your Machine</h1>
     {% else %}
     <h1>DEV – Test Environment</h1>
     {% endif %}
@@ -271,10 +271,36 @@
 
     {% block content %}{% endblock %} {% block body_extra %}{% endblock %}
 
-    <footer>
-      <div style="margin-top: 20px; font-size: 12px; opacity: 0.7">
-        env=<strong>{{ env }}</strong> / version={{ g.app_version }}
-      </div>
-    </footer>
+    <footer style="
+  margin-top: 40px;
+  padding-top: 12px;
+  border-top: 1px solid #ddd;
+  font-size: 0.9em;
+  color: #666;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+">
+  <!-- Left: env / version -->
+  <div>
+    env={{ env }} / version={{ g.app_version }}
+  </div>
+
+  <!-- Right: language switch -->
+  <div>
+    <form method="post" action="{{ url_for('set_lang') }}" style="margin:0;">
+      <input type="hidden" name="next" value="{{ request.full_path }}">
+      <select name="lang" onchange="this.form.submit()">
+        {% for l in supported_langs %}
+          <option value="{{ l }}" {% if l == lang %}selected{% endif %}>
+            {{ l }}
+          </option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+</footer>
   </body>
 </html>
