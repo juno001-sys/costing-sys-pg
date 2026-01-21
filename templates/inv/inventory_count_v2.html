@@ -57,7 +57,6 @@
 {% endif %}
 
 {% if items %}
-  <!-- Inventory submit form (POST) -->
   <form method="post" id="inventory-form">
     <input type="hidden" name="store_id" value="{{ selected_store_id }}">
     <input type="hidden" name="count_date" value="{{ count_date }}">
@@ -65,60 +64,58 @@
 
     {% set ns = namespace(row_index=0) %}
 
-    {% for zone in zones %}
-      {% set zone_items = grouped_items.get(zone, []) %}
-      {% if zone_items %}
-        <h3 style="margin-top:24px;">{{ zone }}</h3>
+    <table class="monthly-table">
+      <thead>
+        <tr>
+          <th>{{ t("inventory.temp_zone") }}</th>
+          <th>{{ t("masters.area") }}</th>
+          <th>{{ t("inventory.shelf") }}</th>
+          <th>{{ t("inventory.item_name") }}</th>
+          <th class="num">{{ t("inventory.system_qty") }}</th>
+          <th class="num">{{ t("inventory.unit_price") }}</th>
+          <th class="num">{{ t("inventory.stock_amount") }}</th>
+          <th class="num">{{ t("inventory.count_qty_input") }}</th>
+        </tr>
+      </thead>
 
-        <table class="monthly-table">
-          <thead>
-            <tr>
-              <th>{{ t("inventory.item_code") }}</th>
-              <th>{{ t("inventory.item_name") }}</th>
-              <th class="num">{{ t("inventory.system_qty") }}</th>
-              <th class="num">{{ t("inventory.unit_price") }}</th>
-              <th class="num">{{ t("inventory.stock_amount") }}</th>
-              <th class="num">{{ t("inventory.count_qty_input") }}</th>
-            </tr>
-          </thead>
-          <tbody>
-          {% for it in zone_items %}
-            {% set ns.row_index = ns.row_index + 1 %}
-            <tr>
-              <td>{{ it.item_code }}</td>
-              <td>{{ it.item_name }}</td>
-              <td class="num">
-                {{ "{:,}".format(it.system_qty) }}
-                <input type="hidden"
-                       name="item_id_{{ ns.row_index }}"
-                       value="{{ it.item_id }}">
-                <input type="hidden"
-                       name="system_qty_{{ ns.row_index }}"
-                       value="{{ it.system_qty }}">
-              </td>
-              <td class="num">
-                {{ "{:,.0f}".format(it.unit_price) if it.unit_price else "" }}
-              </td>
-              <td class="num">
-                {{ "{:,.0f}".format(it.stock_amount) if it.stock_amount else "" }}
-              </td>
-              <td class="num">
-                <input
-                  type="text"
-                  name="count_qty_{{ ns.row_index }}"
-                  value="{{ it.counted_qty if it.counted_qty is not none else '' }}"
-                  class="num count-input"
-                  data-row="{{ ns.row_index }}"
-                  data-col="0"
-                  style="width:80px; text-align:right;"
-                >
-              </td>
-            </tr>
-          {% endfor %}
-          </tbody>
-        </table>
-      {% endif %}
-    {% endfor %}
+      <tbody>
+      {% for it in items %}
+        {% set ns.row_index = ns.row_index + 1 %}
+        <tr>
+          <td>{{ it.temp_zone }}</td>
+          <td>{{ it.area_name }}</td>
+          <td>{{ it.shelf_label }}</td>
+          <td>{{ it.item_name }}</td>
+
+          <td class="num">
+            {{ "{:,}".format(it.system_qty) }}
+            <input type="hidden" name="item_id_{{ ns.row_index }}" value="{{ it.item_id }}">
+            <input type="hidden" name="system_qty_{{ ns.row_index }}" value="{{ it.system_qty }}">
+          </td>
+
+          <td class="num">
+            {{ "{:,.0f}".format(it.unit_price) if it.unit_price else "" }}
+          </td>
+
+          <td class="num">
+            {{ "{:,.0f}".format(it.stock_amount) if it.stock_amount else "" }}
+          </td>
+
+          <td class="num">
+            <input
+              type="text"
+              name="count_qty_{{ ns.row_index }}"
+              value="{{ it.counted_qty if it.counted_qty is not none else '' }}"
+              class="num count-input"
+              data-row="{{ ns.row_index }}"
+              data-col="0"
+              style="width:80px; text-align:right;"
+            >
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
 
     <div style="margin-top:16px;">
       <button type="submit">{{ t("inventory.save") }}</button>

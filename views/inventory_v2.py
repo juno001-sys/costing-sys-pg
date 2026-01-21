@@ -1,19 +1,11 @@
 # views/inventory_v2.py
 
+import time
 from datetime import datetime
-from flask import (
-    render_template,
-    request,
-    redirect,
-    url_for,
-    flash,
-)
+from flask import render_template, request, redirect, url_for, flash
 
 
 def get_latest_stock_count_dates(db, store_id, limit=3):
-    """
-    棚卸し履歴ヘルパー（最新日＋過去2回）
-    """
     rows = db.execute(
         """
         SELECT DISTINCT count_date
@@ -28,20 +20,7 @@ def get_latest_stock_count_dates(db, store_id, limit=3):
 
 
 def init_inventory_views_v2(app, get_db):
-    """
-    棚卸し系ルートを登録する初期化関数。
-
-        from views.inventory import init_inventory_views
-        init_inventory_views(app, get_db)
-
-    という形で app.py から呼び出します。
-    """
-
-    # ----------------------------------------
-    # 棚卸し入力
-    # /inventory/count
-    # ----------------------------------------
-    @app.route("/inventory/count_v2", methods=["GET", "POST"] )
+    @app.route("/inventory/count_v2", methods=["GET", "POST"], endpoint="inventory_count_v2")
     def inventory_count_v2():
         db = get_db()
 
@@ -55,7 +34,6 @@ def init_inventory_views_v2(app, get_db):
             """
         ).fetchall()
 
-        # 今日の日付をデフォルトに
         today = datetime.today().strftime("%Y-%m-%d")
 
         # -----------------------------
@@ -67,7 +45,7 @@ def init_inventory_views_v2(app, get_db):
 
             if not store_id:
                 flash("店舗を選択してください。")
-                return redirect(url_for("inventory_count"))
+                return redirect(url_for("inventory_count_v2"))
 
             row_count = int(request.form.get("row_count", 0))
 
@@ -78,7 +56,6 @@ def init_inventory_views_v2(app, get_db):
 
                 if not item_id:
                     continue
-
                 if counted_qty is None or counted_qty == "":
                     continue
 
@@ -110,9 +87,7 @@ def init_inventory_views_v2(app, get_db):
 
             db.commit()
             flash("棚卸し結果を登録しました。")
-            return redirect(
-                url_for("inventory_count", store_id=store_id, count_date=count_date)
-            )
+            return redirect(url_for("inventory_count_v2", store_id=store_id, count_date=count_date))
 
         # -----------------------------
         # GET：表示
@@ -123,177 +98,284 @@ def init_inventory_views_v2(app, get_db):
         mst_items = []
         selected_store_id = int(store_id) if store_id else None
 
-        # ★ 最新棚卸日（＋過去2回）を取得
         latest_dates = []
         latest_date = None
         if selected_store_id:
             latest_dates = get_latest_stock_count_dates(db, selected_store_id, limit=3)
             latest_date = latest_dates[0] if latest_dates else None
 
-        # ★ 温度帯ラベルと入れ物を先に用意しておく（store_id が空でも定義されるように）
-        zones = ["冷凍", "冷蔵", "常温", "その他"]
-        grouped_items = {z: [] for z in zones}
+        if not store_id:
+            return render_template(
+                "inv/inventory_count_v2.html",
+                stores=stores,
+                selected_store_id=selected_store_id,
+                count_date=count_date,
+                items=[],
+                mst_items=[],
+                latest_date=latest_date,
+                latest_dates=latest_dates,
+            )
 
-        if store_id:
-            # まず、内製品（is_internal=1）は仕入がなくても拾う
-            # 通常品（is_internal=0）は、指定店舗・指定日までに一度でも仕入がある品目だけ拾う
-            base_rows = db.execute(
-                """
-                SELECT
-                    i.id   AS item_id,
-                    i.code AS item_code,
-                    i.name AS item_name,
-                    COALESCE(i.temp_zone, 'その他') AS storage_type,
-                    i.is_internal
-                FROM mst_items i
-                WHERE i.is_internal = 1
+        t0 = time.perf_counter()
 
-                UNION
+        # =========================================================
+        # 1) base_rows: locations-aware ordered item list (FAST)
+        # =========================================================
+        base_rows = db.execute(
+            """
+            SELECT
+              i.id   AS item_id,
+              i.code AS item_code,
+              i.name AS item_name,
 
-                SELECT DISTINCT
-                    i.id   AS item_id,
-                    i.code AS item_code,
-                    i.name AS item_name,
-                    COALESCE(i.temp_zone, 'その他') AS storage_type,
-                    i.is_internal
-                FROM mst_items i
-                JOIN purchases p
-                  ON p.item_id = i.id
-                 AND p.store_id = %s
-                 AND p.delivery_date <= %s
-                 AND p.is_deleted = 0
-                WHERE i.is_internal = 0
+              -- temp zone preference: prefs -> item master -> default
+              COALESCE(NULLIF(pref.temp_zone, ''), NULLIF(i.temp_zone, ''), 'その他') AS tz_raw,
 
-                ORDER BY storage_type, item_code
-                """,
-                (store_id, count_date),
-            ).fetchall()
+              -- shelf / area (from locations)
+              m.shelf_id,
+              COALESCE(m.sort_order, 9999) AS item_sort_order,
 
-            for row in base_rows:
-                item_id = row["item_id"]
-                item_code = row["item_code"]
-                item_name = row["item_name"]
+              sh.code AS shelf_code,
+              sh.name AS shelf_name,
+              COALESCE(sh.sort_order, 9999) AS shelf_sort_order,
 
-                # ---------- システム在庫の計算 ----------
-                # 最新の棚卸し（count_date 以前）を取得
-                last_cnt = db.execute(
-                    """
-                    SELECT counted_qty, count_date
-                    FROM stock_counts
-                    WHERE store_id = %s
-                      AND item_id  = %s
-                      AND count_date <= %s
-                    ORDER BY count_date DESC, id DESC
-                    LIMIT 1
-                    """,
-                    (store_id, item_id, count_date),
-                ).fetchone()
+              COALESCE(sam.sort_order, 9999) AS area_sort_order,
+              COALESCE(am.name, '') AS area_name,
 
-                if last_cnt:
-                    opening_qty = last_cnt["counted_qty"]
-                    start_date = last_cnt["count_date"]
+              i.is_internal
+            FROM mst_items i
 
-                    pur_row = db.execute(
-                        """
-                        SELECT COALESCE(SUM(quantity), 0) AS qty
-                        FROM purchases
-                        WHERE store_id = %s
-                          AND item_id  = %s
-                          AND delivery_date > %s
-                          AND delivery_date <= %s
-                          AND is_deleted = 0
-                        """,
-                        (store_id, item_id, start_date, count_date),
-                    ).fetchone()
-                else:
-                    opening_qty = 0
-                    pur_row = db.execute(
-                        """
-                        SELECT COALESCE(SUM(quantity), 0) AS qty
-                        FROM purchases
-                        WHERE store_id = %s
-                          AND item_id  = %s
-                          AND delivery_date <= %s
-                          AND is_deleted = 0
-                        """,
-                        (store_id, item_id, count_date),
-                    ).fetchone()
+            LEFT JOIN item_location_prefs pref
+              ON pref.store_id = %s
+             AND pref.item_id  = i.id
 
-                pur_qty = pur_row["qty"] if pur_row else 0
-                end_qty = opening_qty + pur_qty   # システム在庫
+            LEFT JOIN item_shelf_map m
+              ON m.store_id   = %s
+             AND m.item_id    = i.id
+             AND m.is_active  = TRUE
 
-                # ---------- 単価（加重平均） ----------
-                price_row = db.execute(
-                    """
-                    SELECT
-                      CASE
-                        WHEN SUM(quantity) > 0 THEN
-                          CAST(SUM(quantity * unit_price) AS REAL) / SUM(quantity)
-                        ELSE 0
-                      END AS unit_price
-                    FROM purchases
-                    WHERE store_id = %s
-                      AND item_id  = %s
-                      AND delivery_date <= %s
-                      AND is_deleted = 0
-                    """,
-                    (store_id, item_id, count_date),
-                ).fetchone()
+            LEFT JOIN store_shelves sh
+              ON sh.id = m.shelf_id
 
-                unit_price = price_row["unit_price"] or 0.0
-                stock_amount = end_qty * unit_price
+            LEFT JOIN store_area_map sam
+              ON sam.id = sh.store_area_map_id
 
-                # ---------- この棚卸し日の棚卸数量を取得 ----------
-                counted_row = db.execute(
-                    """
-                    SELECT counted_qty
-                    FROM stock_counts
-                    WHERE store_id   = %s
-                      AND item_id    = %s
-                      AND count_date = %s
-                    ORDER BY id DESC
-                    LIMIT 1
-                    """,
-                    (store_id, item_id, count_date),
-                ).fetchone()
+            LEFT JOIN area_master am
+              ON am.id = sam.area_id
 
-                counted_qty = counted_row["counted_qty"] if counted_row else None
+            WHERE
+              pref.item_id IS NOT NULL
+              OR m.item_id IS NOT NULL
+              OR i.is_internal = 1
+              OR EXISTS (
+                SELECT 1
+                FROM purchases p
+                WHERE p.store_id = %s
+                  AND p.item_id = i.id
+                  AND p.is_deleted = 0
+                  AND p.delivery_date <= %s
+              )
 
-                # 在庫ゼロは通常は表示しないが、
-                # 内製品（is_internal=1）は在庫ゼロでも表示する
-                is_internal = row["is_internal"] == 1
+            ORDER BY
+              CASE
+                WHEN COALESCE(NULLIF(pref.temp_zone, ''), NULLIF(i.temp_zone, ''), 'その他') IN ('冷凍','FREEZE') THEN 1
+                WHEN COALESCE(NULLIF(pref.temp_zone, ''), NULLIF(i.temp_zone, ''), 'その他') IN ('冷蔵','CHILL')  THEN 2
+                WHEN COALESCE(NULLIF(pref.temp_zone, ''), NULLIF(i.temp_zone, ''), 'その他') IN ('常温','AMB')    THEN 3
+                ELSE 9
+              END,
+              COALESCE(sam.sort_order, 9999),
+              COALESCE(am.name, ''),
+              COALESCE(sh.sort_order, 9999),
+              COALESCE(sh.code, ''),
+              COALESCE(m.sort_order, 9999),
+              i.code;
+            """,
+            (store_id, store_id, store_id, count_date),
+        ).fetchall()
 
-                if end_qty > 0 or is_internal:
-                    mst_items.append(
-                        {
-                            "item_id": item_id,
-                            "item_code": item_code,
-                            "item_name": item_name,
-                            "system_qty": end_qty,
-                            "unit_price": unit_price,
-                            "stock_amount": stock_amount,
-                            "counted_qty": counted_qty,
-                            "storage_type": row["storage_type"],
-                            "is_internal": row["is_internal"],
-                        }
-                    )
+        print(f"[V2-1] 1 base_rows elapsed: {time.perf_counter() - t0:.3f}s rows={len(base_rows)}")
 
-            # ★ mst_items を温度帯ごとにグルーピング
-            for it in mst_items:
-                z = it.get("storage_type") or "その他"
-                if z not in grouped_items:
-                    grouped_items[z] = []
-                grouped_items[z].append(it)
+        item_ids = [r["item_id"] for r in base_rows]
+        if not item_ids:
+            item_ids = []
 
-        return render_template(
+        # =========================================================
+        # 2) Batch: last count (opening_qty + last_count_date)
+        # =========================================================
+        t1 = time.perf_counter()
+        last_rows = db.execute(
+            """
+            SELECT DISTINCT ON (item_id)
+              item_id,
+              count_date AS last_count_date,
+              counted_qty AS opening_qty
+            FROM stock_counts
+            WHERE store_id = %s
+              AND item_id = ANY(%s)
+              AND count_date <= %s
+            ORDER BY item_id, count_date DESC, id DESC
+            """,
+            (store_id, item_ids, count_date),
+        ).fetchall()
+
+        last_map = {}
+        for r in last_rows:
+            last_map[r["item_id"]] = (r["opening_qty"] or 0, r["last_count_date"])
+
+        print(f"[V2-1] 2 last_cnt batch elapsed: {time.perf_counter() - t1:.3f}s rows={len(last_rows)}")
+
+        # =========================================================
+        # 3) Batch: purchases AFTER last_count_date (system_qty component)
+        # =========================================================
+        t2 = time.perf_counter()
+        after_rows = db.execute(
+            """
+            WITH last_cnt AS (
+              SELECT DISTINCT ON (item_id)
+                item_id,
+                count_date AS last_count_date
+              FROM stock_counts
+              WHERE store_id = %s
+                AND item_id = ANY(%s)
+                AND count_date <= %s
+              ORDER BY item_id, count_date DESC, id DESC
+            )
+            SELECT
+              p.item_id,
+              COALESCE(SUM(p.quantity), 0) AS qty_after
+            FROM purchases p
+            LEFT JOIN last_cnt lc ON lc.item_id = p.item_id
+            WHERE p.store_id = %s
+              AND p.item_id = ANY(%s)
+              AND p.is_deleted = 0
+              AND p.delivery_date <= %s
+              AND (lc.last_count_date IS NULL OR p.delivery_date > lc.last_count_date)
+            GROUP BY p.item_id
+            """,
+            (store_id, item_ids, count_date, store_id, item_ids, count_date),
+        ).fetchall()
+
+        after_map = {r["item_id"]: (r["qty_after"] or 0) for r in after_rows}
+
+        print(f"[V2-1] 3 purchases-after batch elapsed: {time.perf_counter() - t2:.3f}s rows={len(after_rows)}")
+
+        # =========================================================
+        # 4) Batch: weighted avg unit price up to count_date
+        # =========================================================
+        t3 = time.perf_counter()
+        price_rows = db.execute(
+            """
+            SELECT
+              item_id,
+              CASE
+                WHEN SUM(quantity) > 0 THEN
+                  (SUM(quantity * unit_price)::numeric / SUM(quantity))
+                ELSE 0
+              END AS unit_price
+            FROM purchases
+            WHERE store_id = %s
+              AND item_id = ANY(%s)
+              AND is_deleted = 0
+              AND delivery_date <= %s
+            GROUP BY item_id
+            """,
+            (store_id, item_ids, count_date),
+        ).fetchall()
+
+        price_map = {r["item_id"]: float(r["unit_price"] or 0) for r in price_rows}
+
+        print(f"[V2-1] 4 price batch elapsed: {time.perf_counter() - t3:.3f}s rows={len(price_rows)}")
+
+        # =========================================================
+        # 5) Batch: counted_qty on this count_date (for input default)
+        # =========================================================
+        t4 = time.perf_counter()
+        counted_rows = db.execute(
+            """
+            SELECT item_id, counted_qty
+            FROM stock_counts
+            WHERE store_id = %s
+              AND item_id = ANY(%s)
+              AND count_date = %s
+            """,
+            (store_id, item_ids, count_date),
+        ).fetchall()
+
+        counted_map = {r["item_id"]: r["counted_qty"] for r in counted_rows}
+
+        print(f"[V2-1] 5 counted_today batch elapsed: {time.perf_counter() - t4:.3f}s rows={len(counted_rows)}")
+
+        # =========================================================
+        # 6) Build items (NO DB calls here)
+        # =========================================================
+        t5 = time.perf_counter()
+
+        for row in base_rows:
+            item_id = row["item_id"]
+            item_code = row["item_code"]
+            item_name = row["item_name"]
+
+            # temp zone normalize to Japanese labels
+            tz_raw = row["tz_raw"] or "その他"
+            if tz_raw in ("冷凍", "FREEZE"):
+                storage_type = "冷凍"
+            elif tz_raw in ("冷蔵", "CHILL"):
+                storage_type = "冷蔵"
+            elif tz_raw in ("常温", "AMB"):
+                storage_type = "常温"
+            else:
+                storage_type = "その他"
+
+            opening_qty, _last_date = last_map.get(item_id, (0, None))
+            pur_after = after_map.get(item_id, 0)
+            end_qty = opening_qty + pur_after
+
+            unit_price = price_map.get(item_id, 0.0)
+            stock_amount = end_qty * unit_price
+
+            counted_qty = counted_map.get(item_id)
+
+            is_internal = (row["is_internal"] == 1)
+
+            area_name = row["area_name"] or "—"
+            shelf_code = row["shelf_code"] or ""
+            shelf_name = row["shelf_name"] or ""
+            shelf_label = (f"{shelf_code} {shelf_name}").strip() or "—"
+
+            if end_qty > 0 or is_internal:
+                mst_items.append(
+                    {
+                        "item_id": item_id,
+                        "item_code": item_code,
+                        "item_name": item_name,
+                        "temp_zone": storage_type,
+                        "area_name": area_name if area_name else "—",
+                        "shelf_label": shelf_label,
+                        "system_qty": end_qty,
+                        "unit_price": unit_price,
+                        "stock_amount": stock_amount,
+                        "counted_qty": counted_qty,
+                        "is_internal": row["is_internal"],
+                    }
+                )
+
+        print(f"[V2-1] 6 build-items elapsed: {time.perf_counter() - t5:.3f}s items={len(mst_items)}")
+
+        # =========================================================
+        # 7) Render
+        # =========================================================
+        t6 = time.perf_counter()
+        html = render_template(
             "inv/inventory_count_v2.html",
             stores=stores,
             selected_store_id=selected_store_id,
             count_date=count_date,
-            items=mst_items,   
+            items=mst_items,
             mst_items=mst_items,
             latest_date=latest_date,
             latest_dates=latest_dates,
-            zones=zones,
-            grouped_items=grouped_items,
         )
+        print(f"[V2-1] 7 render elapsed: {time.perf_counter() - t6:.3f}s")
+        print(f"[V2-1] TOTAL elapsed: {time.perf_counter() - t0:.3f}s")
+
+        return html

@@ -96,7 +96,7 @@ def init_location_page(app, get_db):
 
                 WHERE i.is_internal = 1
                   OR p.id IS NOT NULL
-                ORDER BY i.code
+                ORDER BY 6,7
             """,
             (selected_store_id, selected_store_id, selected_store_id),
             ).fetchall()
