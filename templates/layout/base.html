@@ -33,6 +33,9 @@
       body.env-rft {
         background: #fff5fb;
       }
+      body.env-local {
+        background: #fff5fb;
+      }
 
       .env-banner {
         padding: 8px 16px;
@@ -236,6 +239,14 @@
             >{{ t("nav.inventory_count") }}</a
           >
         </li>
+        <li>
+          <a
+            href="{{ url_for('inventory_count_v2') }}"
+            class="{% if request.endpoint == 'inventory_count_v2' %}active{% endif %}"
+            >{{ t("nav.inventory_count")  }} v2</a>
+        </li>
+
+
         <li>
           <a href="{{ url_for('reports.purchase_report') }}"
             >{{ t("nav.purchase_report") }}</a

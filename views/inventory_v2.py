@@ -1,4 +1,4 @@
-# views/inventory.py
+# views/inventory_v2.py
 
 from datetime import datetime
 from flask import (
@@ -27,7 +27,7 @@ def get_latest_stock_count_dates(db, store_id, limit=3):
     return [r["count_date"] for r in rows]
 
 
-def init_inventory_views(app, get_db):
+def init_inventory_views_v2(app, get_db):
     """
     棚卸し系ルートを登録する初期化関数。
 
@@ -41,8 +41,8 @@ def init_inventory_views(app, get_db):
     # 棚卸し入力
     # /inventory/count
     # ----------------------------------------
-    @app.route("/inventory/count", methods=["GET", "POST"])
-    def inventory_count():
+    @app.route("/inventory/count_v2", methods=["GET", "POST"] )
+    def inventory_count_v2():
         db = get_db()
 
         # 店舗一覧
@@ -286,7 +286,7 @@ def init_inventory_views(app, get_db):
                 grouped_items[z].append(it)
 
         return render_template(
-            "inv/inventory_count.html",
+            "inv/inventory_count_v2.html",
             stores=stores,
             selected_store_id=selected_store_id,
             count_date=count_date,

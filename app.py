@@ -8,6 +8,7 @@ from flask import Flask, g, render_template, session, request, redirect, url_for
 
 from db import get_db, close_db
 from views.inventory import init_inventory_views
+from views.inventory_v2 import init_inventory_views_v2
 from views.masters import init_master_views
 from views.purchases import init_purchase_views
 from views.reports import init_report_views
@@ -161,6 +162,7 @@ init_purchase_views(app, get_db, log_purchase_change)
 init_report_views(app, get_db)
 init_master_views(app, get_db)
 init_inventory_views(app, get_db)
+init_inventory_views_v2(app, get_db)
 init_location_views(app, get_db)
 
 # ----------------------------------------
