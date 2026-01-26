@@ -1,0 +1,70 @@
+{% extends "layout/base.html" %} {% block title %} {{ t("profit.settings.title")
+}} {% endblock %} {% block content %}
+<h2>{{ t("profit.settings.title") }}</h2>
+
+<h3>{{ t("profit.settings.history") }}</h3>
+
+<table border="1" cellpadding="8">
+  <tr>
+    <th>{{ t("profit.settings.effective_from") }}</th>
+    <th>{{ t("profit.settings.fl_ratio") }}</th>
+    <th>{{ t("profit.settings.food_ratio") }}</th>
+    <th>{{ t("profit.settings.utility_ratio") }}</th>
+    <th>{{ t("profit.settings.fixed_cost") }}</th>
+    <th>{{ t("profit.settings.type") }}</th>
+  </tr>
+
+  {% for r in settings %}
+  <tr>
+    <td>{{ r["effective_from"] }}</td>
+    <td>{{ r["fl_ratio"] }}</td>
+    <td>{{ r["food_ratio"] }}</td>
+    <td>{{ r["utility_ratio"] }}</td>
+    <td class="num">
+      {% if r["fixed_cost_yen"] is not none %} {{
+      "{:,}".format(r["fixed_cost_yen"]) }} {% endif %}
+    </td>
+    <td>
+      {% if r["store_id"] is none %} {{ t("profit.settings.global") }} {% else
+      %} {{ t("profit.settings.store_specific") }} {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h3 style="margin-top: 24px">{{ t("profit.settings.new") }}</h3>
+
+<form method="post">
+  <label>
+    {{ t("profit.settings.effective_from") }}<br />
+    <input type="date" name="effective_from" required />
+  </label>
+  <br /><br />
+
+  <label>
+    {{ t("profit.settings.fl_ratio") }}<br />
+    <input type="number" step="0.0001" name="fl_ratio" required />
+  </label>
+  <br /><br />
+
+  <label>
+    {{ t("profit.settings.food_ratio") }}<br />
+    <input type="number" step="0.0001" name="food_ratio" required />
+  </label>
+  <br /><br />
+
+  <label>
+    {{ t("profit.settings.utility_ratio") }}<br />
+    <input type="number" step="0.0001" name="utility_ratio" required />
+  </label>
+  <br /><br />
+
+  <label>
+    {{ t("profit.settings.fixed_cost") }}<br />
+    <input type="number" name="fixed_cost_yen" required />
+  </label>
+  <br /><br />
+
+  <button type="submit">{{ t("profit.settings.save") }}</button>
+</form>
+{% endblock %}

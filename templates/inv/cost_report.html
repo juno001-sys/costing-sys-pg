@@ -4,108 +4,357 @@
 
 {% block content %}
 
-  <form method="get" style="margin-bottom: 16px;">
-    <label>
-      {{ t("form.store") }}：
-      <select name="store_id">
-        <option value="">{{ t("common.all") }}</option>
-        {% for s in stores %}
-          <option value="{{ s.id }}"
-                  {% if selected_store_id == s.id %}selected{% endif %}>
-            {{ s.name }}
-          </option>
-        {% endfor %}
-      </select>
-    </label>
-    <button type="submit">{{ t("form.show") }}</button>
-  </form>
+<style>
+/* ===============================
+   売上原価（Primary KPI row）
+=============================== */
+tr.cogs-row td {
+  border-top: 3px solid #f57c00;
+  border-bottom: 3px solid #f57c00;
+}
+</style>
 
-  <table class="monthly-table">
-    <thead>
-      <tr>
-        <th>{{ t("cost.category") }}</th>
-        {% for ym in month_keys %}
-          <th>{{ ym }}</th>
-        {% endfor %}
-        <th>{{ t("common.total") }}</th>
-      </tr>
-    </thead>
+<form method="get" style="margin-bottom: 16px;">
+  <label>
+    {{ t("form.store") }}：
+    <select name="store_id">
+      <option value="">{{ t("common.all") }}</option>
+      {% for s in stores %}
+        <option value="{{ s.id }}" {% if selected_store_id == s.id %}selected{% endif %}>
+          {{ s.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </label>
+  <button type="submit">{{ t("form.show") }}</button>
+</form>
 
-    <tbody>
+<table class="monthly-table">
+  <thead>
+    <tr>
+      <th>{{ t("cost.category") }}</th>
+      {% for ym in month_keys %}
+        <th>{{ ym }}</th>
+      {% endfor %}
+      <th>{{ t("common.total") }}</th>
+    </tr>
+  </thead>
 
-      <!-- 期首繰越 -->
-      <tr>
-        <td>{{ t("cost.begin_inventory") }}</td>
-        {% for ym in month_keys %}
-          {% set v = beg_inv_by_month[ym] %}
+  <tbody>
+    <!-- 期首繰越 -->
+    <tr>
+      <td>{{ t("cost.begin_inventory") }}</td>
+      {% for ym in month_keys %}
+        {% set v = beg_inv_by_month[ym] %}
+        <td class="num">{% if v %}{{ "{:,}".format(v|float|round(0)|int) }}{% endif %}</td>
+      {% endfor %}
+      <td class="num">{% if beg_inv_total %}{{ "{:,}".format(beg_inv_total|float|round(0)|int) }}{% endif %}</td>
+    </tr>
+
+    <!-- 仕入額 -->
+    <tr>
+      <td>{{ t("cost.purchase_amount") }}</td>
+      {% for ym in month_keys %}
+        {% set v = purchases_by_month[ym] %}
+        <td class="num">{% if v %}{{ "{:,}".format(v|float|round(0)|int) }}{% endif %}</td>
+      {% endfor %}
+      <td class="num">{% if purchases_total %}{{ "{:,}".format(purchases_total|float|round(0)|int) }}{% endif %}</td>
+    </tr>
+
+    <!-- 売上原価（強調行） -->
+    <tr class="cogs-row">
+      <td>{{ t("cost.cogs") }}</td>
+      {% for ym in month_keys %}
+        {% set v = cogs_by_month[ym] %}
+        <td class="num">{% if v %}{{ "{:,}".format(v|float|round(0)|int) }}{% endif %}</td>
+      {% endfor %}
+      <td class="num">{% if cogs_total %}{{ "{:,}".format(cogs_total|float|round(0)|int) }}{% endif %}</td>
+    </tr>
+
+    <!-- 月末棚卸し -->
+    <tr>
+      <td>{{ t("cost.ending_inventory") }}</td>
+      {% for ym in month_keys %}
+        {% set v = end_inv_by_month[ym] %}
+        <td class="num">{% if v %}{{ "{:,}".format(v|float|round(0)|int) }}{% endif %}</td>
+      {% endfor %}
+      <td class="num">{% if end_inv_total %}{{ "{:,}".format(end_inv_total|float|round(0)|int) }}{% endif %}</td>
+    </tr>
+  </tbody>
+</table>
+
+{% if profit_est %}
+
+<style>
+  .profit-wrap { margin-top: 18px; }
+
+  /* assumptions: inline blocks */
+  .assumptions-row{
+    display:flex;
+    gap:16px;
+    align-items:flex-start;
+    flex-wrap:wrap;
+    margin-bottom:18px;
+  }
+  .mini-table{
+    border-collapse:collapse;
+    min-width:280px;
+  }
+  .mini-table td, .mini-table th{
+    border:1px solid #999;
+    padding:8px 10px;
+    white-space:nowrap;
+  }
+  .mini-title{
+    font-weight:700;
+    margin:0 0 6px 0;
+  }
+
+  /* two estimation tables */
+  .est-grid{
+    display:flex;
+    gap:32px;
+    align-items:flex-start;
+    flex-wrap:wrap;
+  }
+  .est-table{
+    border-collapse:collapse;
+    min-width:320px;
+  }
+  .est-table td, .est-table th{
+    border:1px solid #999;
+    padding:10px 12px;
+  }
+  .est-table th{
+    background:#f3f6ff;
+    font-weight:700;
+  }
+  .num { text-align:right; }
+  .input-sales{
+    width: 100%;
+    box-sizing: border-box;
+    padding:8px 10px;
+    text-align:right;
+  }
+  .note { color:#666; font-size:12px; margin-top:6px; }
+</style>
+
+<div class="profit-wrap">
+
+  <!-- 推計基準値 (line-style display) -->
+  <h3>{{ t("profit.assumptions") }}</h3>
+
+  <div class="assumptions-row">
+
+    <div>
+      <table class="mini-table">
+        <tr>
+          <td>{{ t("profit.fl_ratio") }}</td>
+          <td class="num">{{ profit_est.fl_ratio }}</td>
+        </tr>
+        <tr>
+          <td>{{ t("profit.food_ratio") }}</td>
+          <td class="num">{{ profit_est.food_ratio }}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div>
+      <table class="mini-table">
+        <tr>
+          <td>{{ t("profit.l_ratio") }}</td>
+          <td class="num">{{ profit_est.l_ratio }}</td>
+        </tr>
+        <tr>
+          <td>{{ t("profit.utility_ratio") }}</td>
+          <td class="num">{{ profit_est.utility_ratio }}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div>
+      <table class="mini-table">
+        <tr>
+          <td>{{ t("profit.fixed_cost") }}</td>
+          <td class="num">{{ "{:,}".format(profit_est.fixed_cost_yen) }}</td>
+        </tr>
+        <tr>
+          <td>{{ t("profit.rent_variable") }}</td>
+          <td>{{ t("profit.future") }}</td>
+        </tr>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- estimation tables -->
+  <div class="est-grid"
+     id="profit-estimator"
+     data-f-ratio="{{ profit_est.food_ratio }}"
+     data-l-ratio="{{ profit_est.l_ratio }}"
+     data-u-ratio="{{ profit_est.utility_ratio }}"
+     data-fixed="{{ profit_est.fixed_cost_yen }}">
+
+    <!-- 利益推計表 (ideal) -->
+    <div>
+      <h3>{{ t("profit.estimate") }}</h3>
+      <table class="est-table">
+        <tr>
+          <th>{{ t("profit.category") }}</th>
+          <th>{{ profit_ym }}</th>
+        </tr>
+        <tr>
+          <td>{{ t("profit.ideal_sales") }}</td>
+          <td class="num">{{ "{:,}".format(profit_est.ideal_sales_yen) }}</td>
+        </tr>
+        <tr>
+          <td>{{ t("cost.cogs") }}</td>
+          <td class="num">{{ "{:,}".format(profit_est.cogs_yen) }}</td>
+        </tr>
+        <tr>
+          <td>{{ t("profit.ideal_labor") }}</td>
+          <td class="num">{{ "{:,}".format(profit_est.ideal_labor_yen) }}</td>
+        </tr>
+        <tr>
+          <td>{{ t("profit.utility") }}</td>
+          <td class="num">{{ "{:,}".format(profit_est.utility_yen) }}</td>
+        </tr>
+        <tr>
+          <td>{{ t("profit.contrib") }}</td>
+          <td class="num">{{ "{:,}".format(profit_est.contrib_yen) }}</td>
+        </tr>
+        <tr>
+          <td>{{ t("profit.fixed_cost_short") }}</td>
+          <td class="num">{{ "{:,}".format(profit_est.fixed_cost_yen) }}</td>
+        </tr>
+        <tr>
+          <td><b>{{ t("profit.est_profit") }}</b></td>
+          <td class="num"><b>{{ "{:,}".format(profit_est.est_profit_yen) }}</b></td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- 実際売上等 (operator input → auto calculation) -->
+    <div>
+      <h3>{{ t("profit.actual_sales_block") }}</h3>
+      <table class="est-table" id="actual-sales-table">
+        <tr>
+          <th>{{ t("profit.category") }}</th>
+          <th>{{ profit_ym }}</th>
+        </tr>
+        <tr>
+          <td>{{ t("profit.actual_sales") }}</td>
           <td class="num">
-            {% if v %}
-              {{ "{:,}".format(v|float|round(0)|int) }}
-            {% endif %}
+            <input id="actual-sales-input"
+                   class="input-sales num"
+                   type="text"
+                   inputmode="numeric"
+                   placeholder="0">
           </td>
-        {% endfor %}
-        <td class="num">
-          {% if beg_inv_total %}
-            {{ "{:,}".format(beg_inv_total|float|round(0)|int) }}
-          {% endif %}
-        </td>
-      </tr>
+        </tr>
+        <tr>
+          <td>{{ t("cost.cogs") }}</td>
+          <td class="num" id="act-cogs"></td>
+        </tr>
+        <tr>
+          <td>{{ t("profit.ideal_labor") }}</td>
+          <td class="num" id="act-labor"></td>
+        </tr>
+        <tr>
+          <td>{{ t("profit.utility") }}</td>
+          <td class="num" id="act-utility"></td>
+        </tr>
+        <tr>
+          <td>{{ t("profit.contrib") }}</td>
+          <td class="num" id="act-contrib"></td>
+        </tr>
+        <tr>
+          <td>{{ t("profit.fixed_cost_short") }}</td>
+          <td class="num" id="act-fixed"></td>
+        </tr>
+        <tr>
+          <td><b>{{ t("profit.est_profit") }}</b></td>
+          <td class="num"><b id="act-profit"></b></td>
+        </tr>
+      </table>
+      <div class="note">{{ t("profit.actual_sales_note") }}</div>
+    </div>
 
-      <!-- 仕入額 -->
-      <tr>
-        <td>{{ t("cost.purchase_amount") }}</td>
-        {% for ym in month_keys %}
-          {% set v = purchases_by_month[ym] %}
-          <td class="num">
-            {% if v %}
-              {{ "{:,}".format(v|float|round(0)|int) }}
-            {% endif %}
-          </td>
-        {% endfor %}
-        <td class="num">
-          {% if purchases_total %}
-            {{ "{:,}".format(purchases_total|float|round(0)|int) }}
-          {% endif %}
-        </td>
-      </tr>
+  </div>
+</div>
 
-      <!-- 売上原価（強調行） -->
-      <tr class="cogs-row">
-        <td>{{ t("cost.cogs") }}</td>
-        {% for ym in month_keys %}
-          {% set v = cogs_by_month[ym] %}
-          <td class="num">
-            {% if v %}
-              {{ "{:,}".format(v|float|round(0)|int) }}
-            {% endif %}
-          </td>
-        {% endfor %}
-        <td class="num">
-          {% if cogs_total %}
-            {{ "{:,}".format(cogs_total|float|round(0)|int) }}
-          {% endif %}
-        </td>
-      </tr>
+<script>
+(function () {
+  const wrap = document.getElementById("profit-estimator");
+  if (!wrap) return;
 
-      <!-- 月末棚卸し -->
-      <tr>
-        <td>{{ t("cost.ending_inventory") }}</td>
-        {% for ym in month_keys %}
-          {% set v = end_inv_by_month[ym] %}
-          <td class="num">
-            {% if v %}
-              {{ "{:,}".format(v|float|round(0)|int) }}
-            {% endif %}
-          </td>
-        {% endfor %}
-        <td class="num">
-          {% if end_inv_total %}
-            {{ "{:,}".format(end_inv_total|float|round(0)|int) }}
-          {% endif %}
-        </td>
-      </tr>
+  const fRatio = parseFloat(wrap.dataset.fRatio || "0");   // F比率
+  const lRatio = parseFloat(wrap.dataset.lRatio || "0");   // L比率
+  const uRatio = parseFloat(wrap.dataset.uRatio || "0");   // 光熱水費率
+  const fixed  = parseInt(wrap.dataset.fixed || "0", 10);  // 固定費
 
-    </tbody>
+  const input = document.getElementById("actual-sales-input");
 
-  </table>
+  const elCogs    = document.getElementById("act-cogs");
+  const elLabor   = document.getElementById("act-labor");
+  const elUtility = document.getElementById("act-utility");
+  const elContrib = document.getElementById("act-contrib");
+  const elFixed   = document.getElementById("act-fixed");
+  const elProfit  = document.getElementById("act-profit");
+
+  const formatYen = (n) => {
+    const sign = n < 0 ? "-" : "";
+    const v = Math.abs(n);
+    return sign + v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  };
+
+  const parseYen = (s) => {
+    if (s == null) return 0;
+    const raw = window.KURAJIKA && window.KURAJIKA.toHalfWidthNum
+      ? window.KURAJIKA.toHalfWidthNum(s)
+      : String(s).replace(/[^\d\-]/g, "");
+    const n = parseInt(raw || "0", 10);
+    return isNaN(n) ? 0 : n;
+  };
+
+  function recalc() {
+    const sales = parseYen(input.value);
+
+    // ✅ simulation: derive costs from sales
+    const cogs    = Math.round(sales * fRatio);
+    const labor   = Math.round(sales * lRatio);
+    const utility = Math.round(sales * uRatio);
+
+    const contrib = sales - cogs - labor - utility;
+    const profit  = contrib - fixed;
+
+    elCogs.textContent    = formatYen(cogs);
+    elLabor.textContent   = formatYen(labor);
+    elUtility.textContent = formatYen(utility);
+    elContrib.textContent = formatYen(contrib);
+    elFixed.textContent   = formatYen(fixed);
+    elProfit.textContent  = formatYen(profit);
+  }
+
+  function formatInputAndRecalc() {
+    const raw = parseYen(input.value);
+    input.value = raw ? formatYen(raw) : "";
+    // keep cursor at end (simple & stable)
+    input.setSelectionRange(input.value.length, input.value.length);
+    recalc();
+  }
+
+  // format while typing + also on blur/change (covers autofill / paste)
+  input.addEventListener("input", formatInputAndRecalc);
+  input.addEventListener("blur", formatInputAndRecalc);
+  input.addEventListener("change", formatInputAndRecalc);
+
+  // init (covers initial value/autofill)
+  elFixed.textContent = formatYen(fixed);
+  formatInputAndRecalc();
+})();
+</script>
+
+{% endif %}
+
 {% endblock %}

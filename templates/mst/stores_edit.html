@@ -53,6 +53,10 @@
   <a class="btn" href="{{ url_for('inventory_locations', store_id=store.id) }}">
     {{ t("stores.config.item_locations", "__stores.config.item_locations__") }}
   </a>
+
+<a class="btn" href="{{ url_for('admin_profit_settings.profit_settings', store_id=store.id) }}">
+  {{ t("profit.settings.title") }}
+</a>
 </div>
 
 <hr>

@@ -1,3 +1,4 @@
+#app.py
 from __future__ import annotations
 
 import json
@@ -14,6 +15,8 @@ from views.purchases import init_purchase_views
 from views.reports import init_report_views
 from labels import label
 from views.loc import init_location_views
+from views.admin_profit_settings import bp as admin_profit_settings_bp
+
 
 # ----------------------------------------
 # Flask app
@@ -21,6 +24,8 @@ from views.loc import init_location_views
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "kurajika-dev")
 app.config["JSON_AS_ASCII"] = False
+
+app.register_blueprint(admin_profit_settings_bp)
 
 APP_VERSION = os.getenv("RAILWAY_GIT_COMMIT_SHA", "dev")[:7]
 APP_ENV = os.getenv("APP_ENV", "development")  # dev / mail / prod etc.

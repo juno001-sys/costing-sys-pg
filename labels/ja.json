@@ -151,5 +151,41 @@
   "suppliers.address": "住所",
   "common.use": "使用",
   "common.name": "名称",
-  "common.sort_order": "並び順"
+  "common.sort_order": "並び順",
+  "profit.settings.title": "利益推計設定",
+  "profit.settings.history": "履歴",
+  "profit.settings.new": "新しい設定を追加",
+
+  "profit.settings.effective_from": "適用開始日",
+  "profit.settings.fl_ratio": "FL比率",
+  "profit.settings.food_ratio": "F比率",
+  "profit.settings.utility_ratio": "光熱水費率",
+  "profit.settings.fixed_cost": "固定費（円）",
+
+  "profit.settings.save": "保存",
+  "profit.settings.type": "種別",
+  "profit.settings.global": "グローバル（共通）",
+  "profit.settings.store_specific": "店舗別",
+
+  "profit.assumptions": "推計基準値",
+  "profit.estimate": "利益推計表",
+  "profit.category": "区分",
+
+  "profit.fl_ratio": "標準_設定FL比率",
+  "profit.food_ratio": "標準_設定F比率",
+  "profit.l_ratio": "差引 L 比率",
+  "profit.utility_ratio": "標準_光熱水費",
+  "profit.fixed_cost": "家賃等_固定費",
+  "profit.fixed_cost_short": "固定費",
+  "profit.rent_variable": "家賃_歩合準変動費",
+  "profit.future": "将来実装",
+
+  "profit.ideal_sales": "理想売上",
+  "profit.ideal_labor": "理想直接労務費",
+  "profit.utility": "光熱水費",
+  "profit.contrib": "貢献利益",
+  "profit.est_profit": "推計利益",
+  "profit.actual_sales_block": "売上から原価等算出",
+  "profit.actual_sales": "実際売上",
+  "profit.actual_sales_note": "※ 実際売上を入力すると、L比率・光熱水費率・固定費を用いて自動計算します。"
 }
