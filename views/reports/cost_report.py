@@ -196,65 +196,86 @@ def cost_report():
     profit_setting_row = None
     profit_est = None
 
-    # Only meaningful when a store is selected
-    if selected_store_id and profit_ym:
-      month_start = profit_ym + "-01"
+    if profit_ym:
+        month_start = profit_ym + "-01"
+        cogs_focus = cogs_by_month.get(profit_ym) or 0
 
-      profit_setting_row = db.execute(
-          """
-          SELECT
-            fl_ratio,
-            food_ratio,
-            utility_ratio,
-            fixed_cost_yen,
-            store_id
-          FROM mst_profit_settings
-          WHERE (store_id = %s OR store_id IS NULL)
-            AND effective_from <= %s
-            AND (effective_to IS NULL OR effective_to >= %s)
-          ORDER BY
-            (store_id IS NOT NULL) DESC,
-            effective_from DESC
-          LIMIT 1
-          """,
-          [selected_store_id, month_start, month_start],
-      ).fetchone()
+        if selected_store_id:
+            # store-specific first, then global fallback
+            profit_setting_row = db.execute(
+                """
+                SELECT
+                  fl_ratio,
+                  food_ratio,
+                  utility_ratio,
+                  fixed_cost_yen,
+                  store_id
+                FROM mst_profit_settings
+                WHERE (store_id = %s OR store_id IS NULL)
+                  AND effective_from <= %s
+                  AND (effective_to IS NULL OR effective_to >= %s)
+                ORDER BY
+                  (store_id IS NOT NULL) DESC,
+                  effective_from DESC
+                LIMIT 1
+                """,
+                [selected_store_id, month_start, month_start],
+            ).fetchone()
+        else:
+            # (全て) => global only
+            profit_setting_row = db.execute(
+                """
+                SELECT
+                  fl_ratio,
+                  food_ratio,
+                  utility_ratio,
+                  fixed_cost_yen,
+                  store_id
+                FROM mst_profit_settings
+                WHERE store_id IS NULL
+                  AND effective_from <= %s
+                  AND (effective_to IS NULL OR effective_to >= %s)
+                ORDER BY effective_from DESC
+                LIMIT 1
+                """,
+                [month_start, month_start],
+            ).fetchone()
 
-    profit_est = None
-    if profit_setting_row:
-        from decimal import Decimal, ROUND_HALF_UP
+        if profit_setting_row:
+            from decimal import Decimal, ROUND_HALF_UP
 
-        def yen(v):
-            return int(Decimal(v).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+            def yen(v):
+                return int(Decimal(v).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
-        fl = Decimal(str(profit_setting_row["fl_ratio"]))
-        f  = Decimal(str(profit_setting_row["food_ratio"]))
-        u  = Decimal(str(profit_setting_row["utility_ratio"]))
-        fixed = Decimal(str(profit_setting_row["fixed_cost_yen"]))
-        l = fl - f
+            fl = Decimal(str(profit_setting_row["fl_ratio"]))
+            f  = Decimal(str(profit_setting_row["food_ratio"]))
+            u  = Decimal(str(profit_setting_row["utility_ratio"]))
+            fixed = Decimal(str(profit_setting_row["fixed_cost_yen"]))
 
-        cogs = Decimal(str(cogs_by_month.get(profit_ym) or 0))
+            l = fl - f
+            cogs = Decimal(str(cogs_focus))
 
-        ideal_sales = cogs / f
-        ideal_labor = ideal_sales * l
-        utility = ideal_sales * u
-        contrib = ideal_sales - cogs - ideal_labor - utility
-        est_profit = contrib - fixed
+            ideal_sales = cogs / f
+            ideal_labor = ideal_sales * l
+            utility = ideal_sales * u
+            contrib = ideal_sales - cogs - ideal_labor - utility
+            est_profit = contrib - fixed
 
-        profit_est = {
-            "fl_ratio": float(fl),
-            "food_ratio": float(f),
-            "l_ratio": float(l),
-            "utility_ratio": float(u),
-            "fixed_cost_yen": int(profit_setting_row["fixed_cost_yen"]),
-            "ideal_sales_yen": yen(ideal_sales),
-            "cogs_yen": yen(cogs),
-            "ideal_labor_yen": yen(ideal_labor),
-            "utility_yen": yen(utility),
-            "contrib_yen": yen(contrib),
-            "est_profit_yen": yen(est_profit),
-        }
+            profit_est = {
+                "fl_ratio": float(fl),
+                "food_ratio": float(f),
+                "l_ratio": float(l),
+                "utility_ratio": float(u),
+                "fixed_cost_yen": int(fixed),
+                "setting_store_id": profit_setting_row["store_id"],
 
+                "ideal_sales_yen": yen(ideal_sales),
+                "cogs_yen": yen(cogs),
+                "ideal_labor_yen": yen(ideal_labor),
+                "utility_yen": yen(utility),
+                "contrib_yen": yen(contrib),
+                "est_profit_yen": yen(est_profit),
+            }
 
     def fetch_profit_setting(db, store_id: int, month_start: date):
       return db.execute(

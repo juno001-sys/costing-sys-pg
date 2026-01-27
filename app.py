@@ -41,6 +41,26 @@ def inject_env():
     # For templates: {{ env }}
     return {"env": APP_ENV}
 
+@app.context_processor
+def inject_store_list():
+    if hasattr(g, "_stores_cache"):
+        return {"stores": g._stores_cache}
+
+    try:
+        db = get_db()
+        g._stores_cache = db.execute(
+            """
+            SELECT id, code, name
+            FROM mst_stores
+            WHERE COALESCE(is_active, 1) = 1
+            ORDER BY code, id
+            """
+        ).fetchall()
+    except Exception:
+        g._stores_cache = []
+
+    return {"stores": g._stores_cache}
+
 
 @app.before_request
 def inject_version():
