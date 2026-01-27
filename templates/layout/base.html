@@ -277,6 +277,14 @@
             >{{ t("nav.stores_master") }}</a
           >
         </li>
+        <li>
+  <a
+    href="{{ url_for('reports.work_logs') }}"
+    class="{% if request.endpoint == 'reports.work_logs' %}active{% endif %}"
+  >
+    {{ t("nav.work_logs") }}
+  </a>
+</li>
       </ul>
     </nav>
 

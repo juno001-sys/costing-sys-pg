@@ -187,5 +187,6 @@
   "profit.est_profit": "推計利益",
   "profit.actual_sales_block": "売上から原価等算出",
   "profit.actual_sales": "実際売上",
-  "profit.actual_sales_note": "※ 実際売上を入力すると、L比率・光熱水費率・固定費を用いて自動計算します。"
+  "profit.actual_sales_note": "※ 実際売上を入力すると、推計基準値を用いて自動計算します。",
+  "nav.work_logs": "作業ログ"
 }

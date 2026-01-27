@@ -8,6 +8,7 @@ from flask import (
     url_for,
     flash,
 )
+from views.reports.audit_log import log_event
 
 
 def init_master_views(app, get_db):
@@ -46,6 +47,27 @@ def init_master_views(app, get_db):
                         """,
                         (code if code else None, name, phone, email, address),
                     )
+                     # NEW: audit log (CREATE supplier)
+                    try:
+                        log_event(
+                            db,
+                            action="CREATE",
+                            module="mst",
+                            entity_table="suppliers",
+                            entity_id="(new)",
+                            message="Supplier created",
+                            status_code=200,
+                            meta={
+                                "code": code or None,
+                                "name": name,
+                                "phone": phone,
+                                "email": email,
+                                "address": address,
+                            },
+                        )
+                    except Exception:
+                        pass
+
                     db.commit()
                     flash("仕入先を登録しました。")
                 except sqlite3.OperationalError as e:
@@ -134,6 +156,24 @@ def init_master_views(app, get_db):
                         "UPDATE suppliers SET is_active = 0 WHERE id = %s",
                         (supplier_id,),
                     )
+                     # NEW: audit log (DISABLE supplier)
+                    try:
+                        log_event(
+                            db,
+                            action="DISABLE",
+                            module="mst",
+                            entity_table="suppliers",
+                            entity_id=str(supplier_id),
+                            message="Supplier disabled",
+                            status_code=200,
+                            meta={
+                                "name": supplier["name"],
+                                "code": supplier["code"],
+                            },
+                        )
+                    except Exception:
+                        pass
+
                     db.commit()
                     flash(f"仕入先（{supplier['name']}）を無効化しました。")
                 except sqlite3.Error as e:
@@ -172,6 +212,26 @@ def init_master_views(app, get_db):
                     """,
                     (code if code else None, name, phone, email, address, supplier_id),
                 )
+                # NEW: audit log (UPDATE supplier)
+                try:
+                    log_event(
+                        db,
+                        action="UPDATE",
+                        module="mst",
+                        entity_table="suppliers",
+                        entity_id=str(supplier_id),
+                        message="Supplier updated",
+                        status_code=200,
+                        meta={
+                            "code": code or None,
+                            "name": name,
+                            "phone": phone,
+                            "email": email,
+                            "address": address,
+                        },
+                    )
+                except Exception:
+                    pass
                 db.commit()
                 flash("仕入先を更新しました。")
             except sqlite3.Error as e:
@@ -291,6 +351,27 @@ def init_master_views(app, get_db):
                     """,
                     (new_code, name, unit_val, supplier_id, temp_zone, is_internal),
                 )
+                # NEW: audit log (CREATE item)
+                try:
+                    log_event(
+                        db,
+                        action="CREATE",
+                        module="mst",
+                        entity_table="mst_items",
+                        entity_id="(new)",
+                        message="Item created",
+                        status_code=200,
+                        meta={
+                            "code": new_code,
+                            "name": name,
+                            "supplier_id": int(supplier_id),
+                            "unit": unit_val,
+                            "temp_zone": temp_zone,
+                            "is_internal": is_internal,
+                        },
+                    )
+                except Exception:
+                    pass
                 db.commit()
                 flash(f"品目を登録しました。（コード: {new_code}）")
             except sqlite3.Error as e:
@@ -394,6 +475,25 @@ def init_master_views(app, get_db):
                         "UPDATE mst_items SET is_active = 0 WHERE id = %s",
                         (item_id,),
                     )
+                     # NEW: audit log (DISABLE item)
+                    try:
+                        log_event(
+                            db,
+                            action="DISABLE",
+                            module="mst",
+                            entity_table="mst_items",
+                            entity_id=str(item_id),
+                            message="Item disabled",
+                            status_code=200,
+                            meta={
+                                "code": item["code"],
+                                "name": item["name"],
+                                "supplier_id": item["supplier_id"],
+                            },
+                        )
+                    except Exception:
+                        pass
+
                     db.commit()
                     flash(f"品目（コード: {item['code']}）を無効化しました。")
                 except sqlite3.Error as e:
@@ -477,6 +577,30 @@ def init_master_views(app, get_db):
                         item_id,
                     ),
                 )
+                # NEW: audit log (UPDATE item)
+                try:
+                    log_event(
+                        db,
+                        action="UPDATE",
+                        module="mst",
+                        entity_table="mst_items",
+                        entity_id=str(item_id),
+                        message="Item updated",
+                        status_code=200,
+                        meta={
+                            "name": name,
+                            "unit": unit_val,
+                            "supplier_id": int(supplier_id) if supplier_id else None,
+                            "temp_zone": temp_zone,
+                            "purchase_unit": purchase_unit,
+                            "inventory_unit": inventory_unit,
+                            "min_purchase_unit": min_purchase_unit,
+                            "is_internal": is_internal,
+                            "storage_cost": storage_cost_val,
+                        },
+                    )
+                except Exception:
+                    pass
                 db.commit()
                 flash("品目を更新しました。")
             except sqlite3.Error as e:
@@ -517,6 +641,25 @@ def init_master_views(app, get_db):
                     """,
                     (code or None, name, seats or None, opened_on or None)
                 )
+                # NEW: audit log (CREATE store)
+                try:
+                    log_event(
+                        db,
+                        action="CREATE",
+                        module="mst",
+                        entity_table="mst_stores",
+                        entity_id="(new)",
+                        message="Store created",
+                        status_code=200,
+                        meta={
+                            "code": code or None,
+                            "name": name,
+                            "seats": seats or None,
+                            "opened_on": opened_on or None,
+                        },
+                    )
+                except Exception:
+                    pass
                 db.commit()
                 flash("店舗を登録しました。")
     
@@ -602,6 +745,23 @@ def init_master_views(app, get_db):
                     "UPDATE mst_stores SET is_active = 0 WHERE id = %s",
                     (store_id,),
                 )
+                # NEW: audit log (DISABLE store)
+                try:
+                    log_event(
+                        db,
+                        action="DISABLE",
+                        module="mst",
+                        entity_table="mst_stores",
+                        entity_id=str(store_id),
+                        message="Store disabled",
+                        status_code=200,
+                        meta={
+                            "code": store["code"],
+                            "name": store["name"],
+                        },
+                    )
+                except Exception:
+                    pass
                 db.commit()
                 flash("店舗を無効化しました。")
                 return redirect(url_for("stores_master"))
@@ -678,6 +838,28 @@ def init_master_views(app, get_db):
                     """,
                     (store_id, sid),
                 )
+                 # NEW: audit log (UPDATE store + supplier links)
+            try:
+                log_event(
+                    db,
+                    action="UPDATE",
+                    module="mst",
+                    entity_table="mst_stores",
+                    entity_id=str(store_id),
+                    message="Store updated (including supplier links)",
+                    status_code=200,
+                    meta={
+                        "code": code or None,
+                        "name": name,
+                        "seats": seats_val,
+                        "opened_on": opened_on or None,
+                        "closed_on": closed_on or None,
+                        "supplier_links_added": sorted(list(to_add)),
+                        "supplier_links_removed": sorted(list(to_remove)),
+                    },
+                )
+            except Exception:
+                pass
 
             db.commit()
             flash("店舗を更新しました。")

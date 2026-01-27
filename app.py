@@ -3,10 +3,11 @@ from __future__ import annotations
 
 import json
 import os
+import uuid
+import time
+
 from datetime import datetime, date
-
 from flask import Flask, g, render_template, session, request, redirect, url_for
-
 from db import get_db, close_db
 from views.inventory import init_inventory_views
 from views.inventory_v2 import init_inventory_views_v2
@@ -16,6 +17,9 @@ from views.reports import init_report_views
 from labels import label
 from views.loc import init_location_views
 from views.admin_profit_settings import bp as admin_profit_settings_bp
+from views.reports.audit_log import log_event
+
+
 
 
 # ----------------------------------------
@@ -53,6 +57,85 @@ def inject_labels():
     # Usage in Jinja: {{ L("form.store") }}
     return {"L": label}
 
+@app.before_request
+def inject_request_id():
+    g.request_id = uuid.uuid4().hex[:16]
+
+@app.before_request
+def start_timer():
+    g.req_start = time.perf_counter()
+
+# ----------------------------------------
+# PERF logging (slow requests + watch list)
+# ----------------------------------------
+WATCH_ENDPOINTS = {
+    # reports
+    "reports.purchase_report",
+    "reports.usage_report",
+    "reports.cost_report",
+    "reports.work_logs",
+    # inventory
+    "inventory_count",
+    "inventory_count_v2",
+    # purchases
+    "new_purchase",
+    "edit_purchase",
+}
+
+WATCH_PATH_PREFIXES = (
+    "/reports",          # catch all report pages
+    "/inventory/count",  # v1
+    "/inventory/count_v2",
+)
+
+SLOW_MS = 800  # default threshold
+
+@app.after_request
+def log_slow_request(response):
+    try:
+        start = getattr(g, "req_start", None)
+        if start is None:
+            return response
+
+        elapsed_ms = (time.perf_counter() - start) * 1000.0
+
+        endpoint = request.endpoint or ""
+        path = request.path or ""
+
+        watched = (
+            endpoint in WATCH_ENDPOINTS
+            or any(path.startswith(pfx) for pfx in WATCH_PATH_PREFIXES)
+        )
+
+        should_log = watched or elapsed_ms >= SLOW_MS or response.status_code >= 400
+        if not should_log:
+            return response
+
+        db = get_db()
+        try:
+            log_event(
+                db,
+                action="PERF",
+                module="system",
+                message=("Watched request" if watched else "Slow request"),
+                status_code=response.status_code,
+                meta={
+                    "elapsed_ms": round(elapsed_ms, 1),
+                    "endpoint": endpoint,
+                    "method": request.method,
+                    "path": path,
+                    "query": request.query_string.decode("utf-8") if request.query_string else "",
+                    "watched": watched,
+                },
+            )
+            db.commit()
+        except Exception:
+            pass
+
+    except Exception:
+        pass
+
+    return response
 
 # ----------------------------------------
 # i18n (t function)
@@ -119,6 +202,9 @@ def log_purchase_change(db, purchase_id, action, old_row, new_row, changed_by=No
     old_data = row_to_dict(old_row)
     new_data = row_to_dict(new_row)
 
+    # -----------------------------
+    # Existing purchase_logs insert
+    # -----------------------------
     db.execute(
         """
         INSERT INTO purchase_logs
@@ -134,7 +220,35 @@ def log_purchase_change(db, purchase_id, action, old_row, new_row, changed_by=No
             datetime.now().isoformat(timespec="seconds"),
         ),
     )
+
+    # -----------------------------
+    # NEW: sys_work_logs (audit)
+    # -----------------------------
+    try:
+        # local import avoids circular imports
+        from views.reports.audit_log import log_event
+
+        log_event(
+            db,
+            action=action,                     # CREATE / UPDATE / DELETE
+            module="pur",
+            entity_table="purchases",
+            entity_id=str(purchase_id),
+            message=f"Purchase {action}",
+            old_data=old_data,
+            new_data=new_data,
+            store_id=(
+                new_data.get("store_id")
+                if isinstance(new_data, dict)
+                else None
+            ),
+            status_code=200,
+        )
+    except Exception:
+        # audit logging must NEVER break business logic
+        pass
     
+        
 def get_lang() -> str:
     lang = session.get("lang")
     if lang in SUPPORTED_LANGS:
@@ -151,6 +265,27 @@ def set_lang():
 
     next_url = request.form.get("next") or request.referrer or url_for("index")
     return redirect(next_url)
+
+#----------------------------------------
+# log unhandled exceptions (500s) automatically
+#----------------------------------------
+@app.errorhandler(Exception)
+def handle_exception(e):
+    db = get_db()
+    try:
+        log_event(
+            db,
+            action="ERROR",
+            module="system",
+            message=str(e),
+            meta={"type": type(e).__name__},
+            status_code=500
+        )
+        db.commit()
+    except Exception:
+        # avoid recursive failure
+        pass
+    raise e
 
 # ----------------------------------------
 # Home

@@ -1,0 +1,145 @@
+{% extends "layout/base.html" %}
+{% block title %}Work Logs{% endblock %}
+
+{% block content %}
+<h2>Work Logs</h2>
+
+<form method="get" style="margin: 12px 0; display:flex; gap:12px; flex-wrap:wrap; align-items:end;">
+  <div>
+    <label>From<br>
+      <input type="date" name="from" value="{{ date_from }}">
+    </label>
+  </div>
+
+  <div>
+    <label>To<br>
+      <input type="date" name="to" value="{{ date_to }}">
+    </label>
+  </div>
+
+  <div>
+    <label>Store<br>
+      <select name="store_id">
+        <option value="">All</option>
+        {% for s in stores %}
+          <option value="{{ s.id }}" {% if selected_store_id|int == s.id %}selected{% endif %}>
+            {{ s.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+
+  <div>
+    <label>Module<br>
+      <input name="module" value="{{ module }}" placeholder="pur/inv/mst/rpt/auth">
+    </label>
+  </div>
+
+  <div>
+    <label>Action<br>
+      <input name="action" value="{{ action }}" placeholder="CREATE/UPDATE/DELETE">
+    </label>
+  </div>
+
+  <div>
+    <label>Search<br>
+      <input name="q" value="{{ q }}" placeholder="keyword / request_id / entity">
+    </label>
+  </div>
+
+  <div>
+    <label>
+      <input type="checkbox" name="only_errors" value="1" {% if only_errors %}checked{% endif %}>
+      Errors only
+    </label>
+  </div>
+
+  <div>
+    <label>Per page<br>
+      <select name="per_page">
+        {% for n in [25,50,100,200] %}
+          <option value="{{ n }}" {% if per_page == n %}selected{% endif %}>{{ n }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+
+  <button type="submit">Apply</button>
+</form>
+
+<p style="color:#666;">Total: {{ total }} logs</p>
+
+<table border="1" cellpadding="8" style="border-collapse:collapse; width:100%;">
+  <tr>
+    <th>Time</th>
+    <th>Actor</th>
+    <th>Action</th>
+    <th>Target</th>
+    <th>Status</th>
+    <th>Summary</th>
+  </tr>
+
+  {% for r in rows %}
+    <tr>
+      <td style="white-space:nowrap;">
+  {{ r.created_at_local }} {{ r.tz_label }}
+  <br>
+  <span style="color:#666; font-size:12px;">
+    UTC: {{ r.created_at }}
+  </span>
+</td>
+      <td>{{ r.actor_name or "" }}{% if r.actor_email %}<br><span style="color:#666;">{{ r.actor_email }}</span>{% endif %}</td>
+      <td>{{ r.module or "" }} / {{ r.action }}</td>
+      <td>{{ r.entity_table or "" }}{% if r.entity_id %} #{{ r.entity_id }}{% endif %}</td>
+      <td class="num">{{ r.status_code or "" }}</td>
+      <td>
+        {{ r.message or "" }}
+        <details style="margin-top:6px;">
+          <summary>Details</summary>
+          <div style="margin-top:8px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;">
+            <div><b>request_id:</b> {{ r.request_id }}</div>
+            <div><b>route:</b> {{ r.method }} {{ r.path }}</div>
+            <div><b>old_data:</b> {{ r.old_data }}</div>
+            <div><b>new_data:</b> {{ r.new_data }}</div>
+            <div><b>meta:</b> {{ r.meta }}</div>
+          </div>
+        </details>
+      </td>
+    </tr>
+  {% endfor %}
+</table>
+
+<div style="margin-top:12px; display:flex; gap:10px; align-items:center;">
+  <div>Page {{ page }} / {{ total_pages }}</div>
+
+  {% if page > 1 %}
+    <a href="{{ url_for('reports.work_logs',
+      page=page-1,
+      per_page=per_page,
+      store_id=selected_store_id,
+      action=action,
+      module=module,
+      q=q,
+      only_errors=('1' if only_errors else ''),
+      from=date_from,
+      to=date_to
+    ) }}">Prev</a>
+  {% endif %}
+
+  {% if page < total_pages %}
+    <a href="{{ url_for('reports.work_logs',
+      page=page+1,
+      per_page=per_page,
+      store_id=selected_store_id,
+      action=action,
+      module=module,
+      q=q,
+      only_errors=('1' if only_errors else ''),
+      from=date_from,
+      to=date_to
+    ) }}">Next</a>
+  {% endif %}
+</div>
+
+{% endblock %}

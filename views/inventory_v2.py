@@ -3,6 +3,7 @@
 import time
 from datetime import datetime
 from flask import render_template, request, redirect, url_for, flash
+from views.reports.audit_log import log_event
 
 
 def get_latest_stock_count_dates(db, store_id, limit=3):
@@ -48,6 +49,8 @@ def init_inventory_views_v2(app, get_db):
                 return redirect(url_for("inventory_count_v2"))
 
             row_count = int(request.form.get("row_count", 0))
+            
+            inserted_rows = 0
 
             for i in range(1, row_count + 1):
                 item_id = request.form.get(f"item_id_{i}")
@@ -84,6 +87,30 @@ def init_inventory_views_v2(app, get_db):
                         datetime.now().isoformat(timespec="seconds"),
                     ),
                 )
+            
+                inserted_rows += 1  # NEW
+
+            #  NEW: one audit log per submit (lightweight)
+            try:
+                batch_id = f"{store_id}:{count_date}"
+                log_event(
+                    db,
+                    action="SUBMIT",
+                    module="inv",
+                    entity_table="stock_counts",
+                    entity_id=batch_id,
+                    message=f"Inventory count submitted (v2) {count_date}",
+                    store_id=int(store_id),
+                    status_code=200,
+                    meta={
+                        "count_date": str(count_date),
+                        "row_count": int(row_count),
+                        "inserted_rows": int(inserted_rows),
+                        "version": "v2",
+                    },
+                )
+            except Exception:
+                pass
 
             db.commit()
             flash("棚卸し結果を登録しました。")
