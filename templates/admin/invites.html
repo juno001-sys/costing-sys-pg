@@ -1,0 +1,73 @@
+{% extends "layout/base.html" %} {% block title %}Invites{% endblock %} {% block
+content %}
+
+<h2>Company Invites</h2>
+
+<form method="post" style="margin: 12px 0">
+  <label>Email<br /><input name="email" type="email" required /></label
+  ><br /><br />
+
+  <label
+    >Role<br />
+    <select name="role">
+      <option value="operator">operator</option>
+      <option value="admin">admin</option>
+      <option value="auditor">auditor</option>
+    </select> </label
+  ><br /><br />
+
+  <label
+    >Expires (days)<br />
+    <input
+      name="expires_days"
+      type="number"
+      value="7"
+      min="1"
+      max="60"
+    /> </label
+  ><br /><br />
+
+  <button type="submit">Create Invite</button>
+</form>
+
+<h3>Recent Invites</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Email</th>
+      <th>Role</th>
+      <th>Expires</th>
+      <th>Used</th>
+      <th>Invite URL</th>
+      <th>Copy text</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for inv in invites %} {% set invite_url = base_url ~
+    url_for('accept_invite', token=inv.token) %}
+    <tr>
+      <td>{{ inv.email }}</td>
+      <td>{{ inv.role }}</td>
+      <td>{{ inv.expires_at }}</td>
+      <td>{{ inv.used_at or "" }}</td>
+      <td style="max-width: 360px; word-break: break-all">{{ invite_url }}</td>
+      <td style="max-width: 420px">
+        <textarea rows="6" style="width: 100%">
+Hello,
+
+You’ve been invited to Kurajika CMS.
+Role: {{ inv.role }}
+
+Open this link to activate your account:
+{{ invite_url }}
+
+(If the link expired, ask the admin to re-issue.)
+</textarea
+        >
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}

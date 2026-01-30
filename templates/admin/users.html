@@ -1,0 +1,62 @@
+{% extends "layout/base.html" %} {% block title %}Users{% endblock %} {% block
+content %}
+
+<h2>Users</h2>
+
+<h3>Create user</h3>
+<form method="post">
+  <label>Email<br /><input name="email" required /></label><br /><br />
+  <label>Name<br /><input name="name" /></label><br /><br />
+  <label
+    >Role<br />
+    <select name="role">
+      <option value="operator">operator</option>
+      <option value="admin">admin</option>
+      <option value="auditor">auditor</option>
+    </select> </label
+  ><br /><br />
+  <label
+    >Initial password<br /><input
+      name="password"
+      type="password"
+      required /></label
+  ><br /><br />
+  <button type="submit">Create</button>
+</form>
+
+<h3 style="margin-top: 24px">Existing users</h3>
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Email</th>
+      <th>Name</th>
+      <th>Role</th>
+      <th>Active</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for u in users %}
+    <tr>
+      <td>{{ u.id }}</td>
+      <td>{{ u.email }}</td>
+      <td>{{ u.name or "" }}</td>
+      <td>{{ u.role }}</td>
+      <td>{{ u.is_active }}</td>
+      <td>
+        {% if u.is_active == 1 %}
+        <form
+          method="post"
+          action="{{ url_for('disable_user', user_id=u.id) }}"
+        >
+          <button type="submit">Disable</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}

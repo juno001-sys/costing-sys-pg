@@ -195,6 +195,107 @@
       });
     </script>
 
+
+    <script>
+(function () {
+  function getCellText(td) {
+    if (!td) return "";
+    // If the cell contains an input, sort by its value
+    const inp = td.querySelector("input, select, textarea");
+    if (inp) return (inp.value || "").trim();
+    return (td.textContent || "").trim();
+  }
+
+  function parseValue(text) {
+    const s = (text || "").trim();
+
+    // numeric (commas allowed)
+    const n = s.replace(/,/g, "");
+    if (n !== "" && /^-?\d+(\.\d+)?$/.test(n)) {
+      return { type: "num", val: parseFloat(n) };
+    }
+
+    // date-ish: YYYY-MM-DD or YYYY/MM/DD
+    if (/^\d{4}[-\/]\d{2}[-\/]\d{2}$/.test(s)) {
+      return { type: "date", val: new Date(s.replace(/\//g, "-")).getTime() };
+    }
+
+    return { type: "str", val: s.toLowerCase() };
+  }
+
+  function compare(a, b) {
+    if (a.type !== b.type) {
+      // num > date > str
+      const rank = { num: 3, date: 2, str: 1 };
+      return (rank[a.type] || 0) - (rank[b.type] || 0);
+    }
+    if (a.val < b.val) return -1;
+    if (a.val > b.val) return 1;
+    return 0;
+  }
+
+  function makeSortable(table) {
+    const thead = table.querySelector("thead");
+    const tbody = table.querySelector("tbody");
+    if (!thead || !tbody) return;
+
+    const headerRow = thead.querySelector("tr");
+    if (!headerRow) return;
+
+    const ths = Array.from(headerRow.children).filter(el => el.tagName === "TH");
+    if (ths.length === 0) return;
+
+    // Skip tables explicitly marked as non-sortable
+    if (table.dataset.noSort === "1") return;
+
+    ths.forEach((th, idx) => {
+      th.style.cursor = "pointer";
+      th.title = "Click to sort";
+
+      th.addEventListener("click", () => {
+        const current = th.dataset.sortDir || "none";
+        const nextDir = current === "asc" ? "desc" : "asc";
+
+        // reset others
+        ths.forEach(x => {
+          if (x !== th) {
+            delete x.dataset.sortDir;
+            x.style.textDecoration = "";
+          }
+        });
+
+        th.dataset.sortDir = nextDir;
+        th.style.textDecoration = "underline";
+
+        const rows = Array.from(tbody.querySelectorAll("tr"));
+        const withKey = rows.map(tr => {
+          const tds = tr.children;
+          const td = tds[idx];
+          const raw = getCellText(td);
+          const parsed = parseValue(raw);
+          return { tr, key: parsed };
+        });
+
+        withKey.sort((r1, r2) => {
+          const c = compare(r1.key, r2.key);
+          return nextDir === "asc" ? c : -c;
+        });
+
+        // apply
+        const frag = document.createDocumentFragment();
+        withKey.forEach(r => frag.appendChild(r.tr));
+        tbody.appendChild(frag);
+      });
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll("table").forEach(makeSortable);
+  });
+})();
+</script>
+
+
     {% block head_extra %}{% endblock %}
   </head>
 
@@ -222,6 +323,45 @@
            alt="Kurajika"
            style="height:36px; width:auto;">
     </div>
+{% if current_user %}
+<div style="
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  gap:12px;
+  padding:8px 12px;
+  border:1px solid #ddd;
+  border-radius:8px;
+  margin:10px 0 18px 0;
+  background:#fafafa;
+  font-size:0.9em;
+  color:#444;
+">
+
+  <div>
+    <b>{{ current_user.name or "" }}</b>
+    <span style="color:#666;">{{ current_user.email }}</span>
+    &nbsp;|&nbsp;
+    Role: <b>{{ current_role }}</b>
+    &nbsp;|&nbsp;
+    Company: <b>{{ current_company_name }}</b>
+  </div>
+
+  <form method="post" action="{{ url_for('logout') }}" style="margin:0;">
+    <button type="submit" style="
+      padding:4px 10px;
+      border:1px solid #ccc;
+      border-radius:6px;
+      background:#fff;
+      cursor:pointer;
+      font-size:0.9em;
+    ">
+      Logout
+    </button>
+  </form>
+
+</div>
+{% endif %}
 
     <nav>
       <ul class="nav-tabs">

@@ -16,9 +16,18 @@ from views.purchases import init_purchase_views
 from views.reports import init_report_views
 from labels import label
 from views.loc import init_location_views
-from views.admin_profit_settings import bp as admin_profit_settings_bp
+
+
 from views.reports.audit_log import log_event
 
+
+from views.auth.invite import init_auth_invite_views
+
+from views.admin.users import init_admin_user_views
+from views.admin.invites import init_admin_invites_views
+from views.admin.profit_settings import bp as admin_profit_settings_bp
+
+from views.auth.login import init_auth_login_views
 
 
 
@@ -40,26 +49,6 @@ DEFAULT_LANG = "ja"
 def inject_env():
     # For templates: {{ env }}
     return {"env": APP_ENV}
-
-@app.context_processor
-def inject_store_list():
-    if hasattr(g, "_stores_cache"):
-        return {"stores": g._stores_cache}
-
-    try:
-        db = get_db()
-        g._stores_cache = db.execute(
-            """
-            SELECT id, code, name
-            FROM mst_stores
-            WHERE COALESCE(is_active, 1) = 1
-            ORDER BY code, id
-            """
-        ).fetchall()
-    except Exception:
-        g._stores_cache = []
-
-    return {"stores": g._stores_cache}
 
 
 @app.before_request
@@ -84,6 +73,24 @@ def inject_request_id():
 @app.before_request
 def start_timer():
     g.req_start = time.perf_counter()
+
+@app.context_processor
+def inject_t():
+    try:
+        lang = get_lang()
+        translations = get_translations(lang)
+    except Exception:
+        lang = DEFAULT_LANG
+        translations = {}
+
+    def t(key: str, default: str | None = None) -> str:
+        return translations.get(key, default or f"__{key}__")
+
+    return {
+        "t": t,
+        "lang": lang,
+        "supported_langs": SUPPORTED_LANGS,
+    }
 
 # ----------------------------------------
 # PERF logging (slow requests + watch list)
@@ -175,21 +182,49 @@ def get_translations(lang: str) -> dict:
         _LANG_CACHE[lang] = load_lang_dict(lang)
     return _LANG_CACHE[lang]
 
+@app.context_processor
+def inject_current_company():
+    company_id = getattr(g, "current_company_id", None)
+    if not company_id:
+        return {"current_company_name": None}
+
+    try:
+        db = get_db()
+        row = db.execute(
+            "SELECT name FROM mst_companies WHERE id = %s",
+            (company_id,),
+        ).fetchone()
+        return {"current_company_name": row["name"] if row else None}
+    except Exception:
+        return {"current_company_name": None}
 
 @app.context_processor
-def inject_t():
-    lang = get_lang()
-    translations = get_translations(lang)
+def inject_store_list():
+    if hasattr(g, "_stores_cache"):
+        return {"stores": g._stores_cache}
 
-    def t(key: str, default: str | None = None) -> str:
-        return translations.get(key, default or f"__{key}__")
+    # if not logged in, show none
+    company_id = getattr(g, "current_company_id", None)
+    if not company_id:
+        g._stores_cache = []
+        return {"stores": g._stores_cache}
 
-    return {
-        "t": t,
-        "lang": lang,
-        "supported_langs": SUPPORTED_LANGS,
-    }
+    try:
+        db = get_db()
+        g._stores_cache = db.execute(
+            """
+            SELECT id, code, name
+            FROM mst_stores
+            WHERE COALESCE(is_active, 1) = 1
+              AND company_id = %s
+            ORDER BY code, id
+            """,
+            (company_id,),
+        ).fetchall()
+    except Exception:
+        g._stores_cache = []
 
+    return {"stores": g._stores_cache}
 # ----------------------------------------
 # Helpers
 # ----------------------------------------
@@ -289,8 +324,14 @@ def set_lang():
 #----------------------------------------
 # log unhandled exceptions (500s) automatically
 #----------------------------------------
+from werkzeug.exceptions import HTTPException
+
 @app.errorhandler(Exception)
 def handle_exception(e):
+    # ✅ Let normal HTTP errors (404/403/etc.) pass through
+    if isinstance(e, HTTPException):
+        return e
+
     db = get_db()
     try:
         log_event(
@@ -299,31 +340,65 @@ def handle_exception(e):
             module="system",
             message=str(e),
             meta={"type": type(e).__name__},
-            status_code=500
+            status_code=500,
         )
         db.commit()
     except Exception:
-        # avoid recursive failure
         pass
+
     raise e
 
 # ----------------------------------------
 # Home
 # ----------------------------------------
+#@app.route("/")
+#def index():
+#    if getattr(g, "current_user", None) is None:
+#        return redirect(url_for("login"))
+#    return render_template("home.html")
 @app.route("/")
 def index():
+    if getattr(g, "current_user", None) is None:
+        return redirect(url_for("login"))
     return render_template("home.html")
-
-
 # ----------------------------------------
 # Register views
 # ----------------------------------------
+
+# Auth must be registered first (sets app.extensions["admin_required"])
+init_auth_login_views(app, get_db)
+init_auth_invite_views(app, get_db)
+
+# Admin screens that depend on admin_required
+init_admin_invites_views(app, get_db)
+init_admin_user_views(app, get_db)
+
+# Existing modules
 init_purchase_views(app, get_db, log_purchase_change)
 init_report_views(app, get_db)
 init_master_views(app, get_db)
 init_inventory_views(app, get_db)
 init_inventory_views_v2(app, get_db)
 init_location_views(app, get_db)
+
+# ----------------------------------------
+# Global login requirement (after auth)
+# ----------------------------------------
+@app.before_request
+def require_login_globally():
+    # allow auth + public endpoints
+    if request.endpoint in ("login", "accept_invite", "set_lang", "static"):
+        return None
+
+    # allow favicon
+    if request.path == "/favicon.ico":
+        return None
+
+    # enforce login
+    if getattr(g, "current_user", None) is None:
+        return redirect(url_for("login", next=request.full_path))
+
+    return None
 
 # ----------------------------------------
 # Run
