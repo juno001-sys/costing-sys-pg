@@ -19,6 +19,10 @@ def work_logs():
     q = request.args.get("q") or ""
     only_errors = request.args.get("only_errors") == "1"
 
+    # NEW: slow filter (>= 3000ms)
+    only_slow = request.args.get("only_slow") == "1"
+    slow_ms = 3000
+
     # date range (default: last 7 days)
     today = datetime.now()
     default_from = (today - timedelta(days=7)).date().isoformat()
@@ -68,9 +72,16 @@ def work_logs():
     if only_errors:
         where.append("status_code >= 400")
 
+    # NEW: only slow logs (meta.elapsed_ms >= 3000)
+    if only_slow:
+        where.append("meta ? 'elapsed_ms'")
+        where.append("(meta->>'elapsed_ms')::numeric >= %s")
+        params.append(slow_ms)
+
     if q:
         # lightweight search: message/entity/request_id/actor_email
-        where.append("""
+        where.append(
+            """
           (
             COALESCE(message,'') ILIKE %s
             OR COALESCE(entity_table,'') ILIKE %s
@@ -78,7 +89,8 @@ def work_logs():
             OR COALESCE(request_id,'') ILIKE %s
             OR COALESCE(actor_email,'') ILIKE %s
           )
-        """)
+        """
+        )
         like = f"%{q}%"
         params.extend([like, like, like, like, like])
 
@@ -87,7 +99,7 @@ def work_logs():
     # -------------------------
     # Query (list)
     # -------------------------
-    tz = "Asia/Tokyo"   # later: from company/user setting
+    tz = "Asia/Tokyo"  # later: from company/user setting
 
     sql = f"""
     SELECT
@@ -129,4 +141,7 @@ def work_logs():
         module=module,
         q=q,
         only_errors=only_errors,
+        # NEW: pass through for checkbox state
+        only_slow=only_slow,
+        slow_ms=slow_ms,
     )

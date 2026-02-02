@@ -61,7 +61,7 @@
   "inventory.item_code": "コード",
   "inventory.item_name": "品目名",
   "inventory.system_qty": "システム在庫",
-  "inventory.unit_price": "在庫金額/システム在庫",
+  "inventory.unit_price": "平均単価",
   "inventory.stock_amount": "在庫金額",
   "inventory.count_qty_input": "棚卸数（入力）",
   "inventory.save": "棚卸結果を保存",
@@ -160,7 +160,7 @@
   "profit.settings.fl_ratio": "FL比率",
   "profit.settings.food_ratio": "F比率",
   "profit.settings.utility_ratio": "光熱水費率",
-  "profit.settings.fixed_cost": "固定費（円）",
+  "profit.settings.fixed_cost": "固定費/月（円）",
 
   "profit.settings.save": "保存",
   "profit.settings.type": "種別",
@@ -175,8 +175,8 @@
   "profit.food_ratio": "標準_設定F比率",
   "profit.l_ratio": "差引 L 比率",
   "profit.utility_ratio": "標準_光熱水費",
-  "profit.fixed_cost": "家賃等_固定費",
-  "profit.fixed_cost_short": "固定費",
+  "profit.fixed_cost": "家賃等_固定費/月",
+  "profit.fixed_cost_short": "固定費/月",
   "profit.rent_variable": "家賃_歩合準変動費",
   "profit.future": "将来実装",
 
