@@ -29,7 +29,8 @@ from views.admin.profit_settings import bp as admin_profit_settings_bp
 
 from views.auth.login import init_auth_login_views
 
-
+from views.admin.system_home import init_admin_system_home_views
+from views.admin.system_companies import init_admin_system_company_views
 
 # ----------------------------------------
 # Flask app
@@ -372,6 +373,8 @@ init_auth_invite_views(app, get_db)
 # Admin screens that depend on admin_required
 init_admin_invites_views(app, get_db)
 init_admin_user_views(app, get_db)
+init_admin_system_home_views(app, get_db)
+init_admin_system_company_views(app, get_db)
 
 # Existing modules
 init_purchase_views(app, get_db, log_purchase_change)
@@ -380,6 +383,7 @@ init_master_views(app, get_db)
 init_inventory_views(app, get_db)
 init_inventory_views_v2(app, get_db)
 init_location_views(app, get_db)
+
 
 # ----------------------------------------
 # Global login requirement (after auth)

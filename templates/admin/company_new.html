@@ -1,0 +1,30 @@
+{% extends "layout/base_app.html" %} {% block title %}Create Company{% endblock
+%} {% block content %}
+<h2>Create Company + First Admin</h2>
+
+<form method="post">
+  <div>
+    <label>Company name</label><br />
+    <input name="company_name" style="width: 360px" required />
+  </div>
+
+  <div style="margin-top: 10px">
+    <label>Admin email</label><br />
+    <input name="admin_email" style="width: 360px" required />
+  </div>
+
+  <div style="margin-top: 10px">
+    <label>Admin name</label><br />
+    <input name="admin_name" style="width: 360px" />
+  </div>
+
+  <div style="margin-top: 10px">
+    <label>Temporary password</label><br />
+    <input name="temp_password" type="password" style="width: 360px" required />
+  </div>
+
+  <div style="margin-top: 14px">
+    <button type="submit">Create</button>
+  </div>
+</form>
+{% endblock %}

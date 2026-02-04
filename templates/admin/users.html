@@ -2,7 +2,10 @@
 content %}
 
 <h2>Users</h2>
-
+{% with messages = get_flashed_messages() %} {% if messages %} {% for m in
+messages %}
+<div class="flash">{{ m }}</div>
+{% endfor %} {% endif %} {% endwith %}
 <h3>Create user</h3>
 <form method="post">
   <label>Email<br /><input name="email" required /></label><br /><br />

@@ -439,6 +439,16 @@
               {{ t("nav.work_logs") }}
             </a>
           </li>
+          {% if current_role == "admin" %}
+          <li>
+            <a
+              href="{{ url_for('admin_users') }}"
+              class="{% if request.endpoint == 'admin_users' %}active{% endif %}"
+            >
+              {{ t("nav.admin_users") }}
+            </a>
+          </li>
+          {% endif %}
         </ul>
       </nav>
     </header>

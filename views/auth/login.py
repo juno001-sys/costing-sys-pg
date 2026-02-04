@@ -17,9 +17,13 @@ def init_auth_login_views(app, get_db):
     """
     Provides:
       - before_request: load session -> g.current_user, g.current_company_id, g.current_role
-      - decorators: login_required, admin_required
+      - decorators: login_required, admin_required, role_required
       - routes: /login, /logout
     """
+
+    # -------------------------
+    # decorators
+    # -------------------------
     def login_required(fn):
         @wraps(fn)
         def wrapper(*args, **kwargs):
@@ -39,7 +43,27 @@ def init_auth_login_views(app, get_db):
             return fn(*args, **kwargs)
         return wrapper
 
+    def role_required(*allowed_roles):
+        def decorator(fn):
+            @wraps(fn)
+            def wrapper(*args, **kwargs):
+                if getattr(g, "current_user", None) is None:
+                    return redirect(url_for("login", next=request.full_path))
+                if getattr(g, "current_role", None) not in allowed_roles:
+                    flash("権限がありません。")
+                    return redirect(url_for("index"))
+                return fn(*args, **kwargs)
+            return wrapper
+        return decorator
 
+    # expose decorators
+    app.extensions["login_required"] = login_required
+    app.extensions["admin_required"] = admin_required
+    app.extensions["role_required"] = role_required
+
+    # -------------------------
+    # session loader
+    # -------------------------
     def _load_session_from_db():
         token = session.get("session_token")
         if not token:
@@ -116,7 +140,11 @@ def init_auth_login_views(app, get_db):
             return
 
         # mark current
-        g.current_user = {"id": row["user_id"], "email": row["email"], "name": row["name"]}
+        g.current_user = {
+            "id": row["user_id"],
+            "email": row["email"],
+            "name": row["name"],
+        }
         g.current_company_id = row["company_id"]
         g.current_role = row["role"]
 
@@ -130,11 +158,6 @@ def init_auth_login_views(app, get_db):
         except Exception:
             pass
 
-    
-    # expose decorators
-    app.extensions["login_required"] = login_required
-    app.extensions["admin_required"] = admin_required
-
     @app.before_request
     def _inject_current_user():
         _load_session_from_db()
@@ -147,12 +170,14 @@ def init_auth_login_views(app, get_db):
             "current_role": getattr(g, "current_role", None),
         }
 
+    # -------------------------
+    # session creation
+    # -------------------------
     def _create_session(db, user_id: int, company_id: int):
         token = secrets.token_urlsafe(32)
         now = datetime.now(timezone.utc)
         expires_at = now + timedelta(days=MAX_SESSION_DAYS)
 
-        # enforce max sessions per user (keep newest 5)
         db.execute(
             """
             INSERT INTO sys_sessions
@@ -189,6 +214,9 @@ def init_auth_login_views(app, get_db):
         db.commit()
         session["session_token"] = token
 
+    # -------------------------
+    # routes
+    # -------------------------
     @app.route("/login", methods=["GET", "POST"])
     def login():
         if request.method == "GET":
@@ -213,17 +241,14 @@ def init_auth_login_views(app, get_db):
             flash("ログインに失敗しました。")
             return redirect(url_for("login", next=next_url))
 
-        # password optional: if password_hash exists, require correct password
         if u["password_hash"]:
             if not password or not check_password_hash(u["password_hash"], password):
                 flash("ログインに失敗しました。")
                 return redirect(url_for("login", next=next_url))
         else:
-            # no password set yet -> allow login only if you want (we will require invite normally)
             flash("パスワード未設定です。招待リンクから有効化してください。")
             return redirect(url_for("login", next=next_url))
 
-        # choose company: MVP picks first active membership
         mem = db.execute(
             """
             SELECT company_id, role

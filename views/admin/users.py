@@ -11,9 +11,14 @@ def init_admin_user_views(app, get_db):
     @admin_required
     def admin_users():
         db = get_db()
-        current = g.current_user
-        company_id = current["company_id"]
+        company_id = getattr(g, "current_company_id", None)
+        if not company_id:
+            flash("Company context is missing.")
+            return redirect(url_for("index"))
 
+        # -------------------------
+        # POST: create user
+        # -------------------------
         if request.method == "POST":
             email = (request.form.get("email") or "").strip().lower()
             name = (request.form.get("name") or "").strip()
@@ -24,17 +29,45 @@ def init_admin_user_views(app, get_db):
                 flash("Emailと初期パスワードは必須です。")
                 return redirect(url_for("admin_users"))
 
+            # ✅ ADD THIS BLOCK HERE
+            exists = db.execute(
+                "SELECT 1 FROM sys_users WHERE lower(email) = %s",
+                (email,),
+            ).fetchone()
+
+            if exists:
+                flash("そのメールアドレスは既に登録されています。")
+                return redirect(url_for("admin_users"))
+            # ✅ END ADDITION
+
             if role not in ("admin", "operator", "auditor"):
                 role = "operator"
 
+            pw_hash = generate_password_hash(password, method="pbkdf2:sha256")
+
             try:
+                # 1) create sys_users
+                urow = db.execute(
+                    """
+                    INSERT INTO sys_users
+                    (company_id, email, name, password_hash, role, is_active, created_at, updated_at)
+                    VALUES
+                    (%s, %s, %s, %s, %s, 1, now(), now())
+                    RETURNING id
+                    """,
+                    (company_id, email, name or None, pw_hash, role),
+                ).fetchone()
+                new_user_id = urow["id"]
+
+                # 2) create membership
                 db.execute(
                     """
-                    INSERT INTO sys_users (company_id, email, name, password_hash, role)
-                    VALUES (%s, %s, %s, %s, %s)
+                    INSERT INTO sys_user_companies (user_id, company_id, role, is_active)
+                    VALUES (%s, %s, %s, 1)
                     """,
-                    (company_id, email, name or None, generate_password_hash(password), role),
+                    (new_user_id, company_id, role),
                 )
+
                 db.commit()
                 flash("ユーザーを作成しました。")
             except Exception as e:
@@ -43,12 +76,16 @@ def init_admin_user_views(app, get_db):
 
             return redirect(url_for("admin_users"))
 
+        # -------------------------
+        # GET: list users
+        # -------------------------
         users = db.execute(
             """
-            SELECT id, email, name, role, is_active, created_at
-            FROM sys_users
-            WHERE company_id = %s
-            ORDER BY id DESC
+            SELECT u.id, u.email, u.name, uc.role, u.is_active, u.created_at
+            FROM sys_user_companies uc
+            JOIN sys_users u ON u.id = uc.user_id
+            WHERE uc.company_id = %s AND uc.is_active = 1
+            ORDER BY u.id DESC
             """,
             (company_id,),
         ).fetchall()
@@ -59,13 +96,17 @@ def init_admin_user_views(app, get_db):
     @admin_required
     def disable_user(user_id):
         db = get_db()
-        company_id = g.current_user["company_id"]
+        company_id = getattr(g, "current_company_id", None)
+        if not company_id:
+            flash("Company context is missing.")
+            return redirect(url_for("index"))
 
+        # disable membership for this company
         db.execute(
             """
-            UPDATE sys_users
-            SET is_active = 0, updated_at = now()
-            WHERE id = %s AND company_id = %s
+            UPDATE sys_user_companies
+            SET is_active = 0
+            WHERE user_id = %s AND company_id = %s
             """,
             (user_id, company_id),
         )

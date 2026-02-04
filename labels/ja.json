@@ -189,5 +189,8 @@
   "profit.actual_sales": "実際売上",
   "profit.actual_sales_note": "※ 実際売上を入力すると、推計基準値を用いて自動計算します。",
   "nav.work_logs": "作業ログ",
+  "nav.user_manual": "ユーザーマニュアル",
+  "nav.admin_users": "ユーザー管理",
+  "nav.admin_users": "ユーザー管理",
   "nav.user_manual": "ユーザーマニュアル"
 }
