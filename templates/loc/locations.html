@@ -1,44 +1,164 @@
-{# templates/loc/locations.html #}
-{% extends "layout/base.html" %}
-{% block title %}{{ t("nav.inventory_count", "__nav.inventory_count__") }}{% endblock %}
+{% extends "layout/base.html" %} {% block title %} {{ t("nav.inventory_count",
+"__nav.inventory_count__") }} {% endblock %} {% block head_extra %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='inventory/inventory_count.css') }}"
+/>
+{% endblock %} {% block content %}
+<h2>
+  {{ t("stores.inventory_locations_title",
+  "__stores.inventory_locations_title__") }}
+</h2>
 
-{% block head_extra %}
-  <link rel="stylesheet" href="{{ url_for('static', filename='inventory/inventory_count.css') }}">
-{% endblock %}
+{% include "loc/partials/_locations_header.html" %} {% if not selected_store_id
+%}
+<p class="muted" style="margin-top: 12px">
+  {{ t("stores.inventory_locations_hint", "__stores.inventory_locations_hint__")
+  }}
+</p>
+{% endif %} {# IMPORTANT: render form whenever store is selected (even if items
+is empty) #} {% if selected_store_id %}
+<form method="post" action="{{ url_for('inventory_locations_save') }}">
+  <input type="hidden" name="store_id" value="{{ selected_store_id }}" />
 
-{% block content %}
-  <h2>{{ t("stores.inventory_locations_title", "__stores.inventory_locations_title__") }}</h2>
+  {% include "loc/partials/_locations_table.html" %}
 
-  {% include "loc/partials/_locations_header.html" %}
+  <div class="sticky-bar">
+    <button class="btn btn-primary" type="submit">
+      {{ t("common.update", "__common.update__") }}
+    </button>
+  </div>
+</form>
+{% endif %} {% endblock %} {% block body_extra %}
+<script>
+  window.LOC_SELECTED_STORE_ID = "{{ selected_store_id or '' }}";
+</script>
 
-  {% if not selected_store_id %}
-    <p class="muted" style="margin-top:12px;">
-      {{ t("stores.inventory_locations_hint", "__stores.inventory_locations_hint__") }}
-    </p>
-  {% endif %}
+<script>
+  (function () {
+    const storeId = window.LOC_SELECTED_STORE_ID;
+    if (!storeId) return;
 
-  {% if selected_store_id and items %}
-    <form method="post" action="{{ url_for('inventory_locations_save') }}">
-      <input type="hidden" name="store_id" value="{{ selected_store_id }}">
+    let shelvesAll = [];
+    const shelvesByZoneArea = new Map(); // `${tz}|${areaId}` → shelves[]
+    const areasByZone = new Map(); // tz → Set(areaId)
+    let ALL_AREAS = [];
 
-      {% include "loc/partials/_locations_table.html" %}
+    async function fetchJSON(url) {
+      const res = await fetch(url, { credentials: "same-origin" });
+      if (!res.ok) return [];
+      return await res.json();
+    }
 
-      <div class="sticky-bar">
-        <button class="btn btn-primary" type="submit">
-          {{ t("common.update", "__common.update__") }}
-        </button>
-      </div>
-    </form>
-  {% endif %}
-{% endblock %}
+    function getAllAreasFromRow(tr) {
+      const areaSel = tr.querySelector("select.area");
+      if (!areaSel) return [];
+      return Array.from(areaSel.querySelectorAll("option"))
+        .filter((o) => o.value)
+        .map((o) => ({ id: String(o.value), name: o.textContent }));
+    }
 
-{% block body_extra %}
-  <script>
-    window.KURAJIKA = window.KURAJIKA || {};
-    window.KURAJIKA.LOCATIONS = {
-      shelvesApi: "{{ url_for('inventory_api_shelves') }}",
-      storeId: {{ selected_store_id or 'null' }}
-    };
-  </script>
-  <script src="{{ url_for('static', filename='inventory/locations.js') }}"></script>
+    function buildIndexes() {
+      shelvesByZoneArea.clear();
+      areasByZone.clear();
+
+      for (const s of shelvesAll) {
+        const tz = (s.temp_zone || "").trim();
+        const areaId = String(s.area_id);
+
+        if (!areasByZone.has(tz)) areasByZone.set(tz, new Set());
+        areasByZone.get(tz).add(areaId);
+
+        const key = `${tz}|${areaId}`;
+        if (!shelvesByZoneArea.has(key)) shelvesByZoneArea.set(key, []);
+        shelvesByZoneArea.get(key).push(s);
+      }
+    }
+
+    function setAreaOptions(sel, areas, selected) {
+      sel.innerHTML = '<option value=""></option>';
+      for (const a of areas) {
+        const o = document.createElement("option");
+        o.value = a.id;
+        o.textContent = a.name;
+        sel.appendChild(o);
+      }
+      if (
+        selected &&
+        Array.from(sel.options).some((o) => o.value === String(selected))
+      ) {
+        sel.value = String(selected);
+      }
+    }
+
+    function setShelfOptions(sel, shelves, selected) {
+      sel.innerHTML = '<option value=""></option>';
+      for (const s of shelves) {
+        const o = document.createElement("option");
+        o.value = s.id;
+        o.textContent = s.name;
+        sel.appendChild(o);
+      }
+      if (
+        selected &&
+        Array.from(sel.options).some((o) => o.value === String(selected))
+      ) {
+        sel.value = String(selected);
+      }
+    }
+
+    function refreshRow(tr, keepCurrent = true) {
+      const tzSel = tr.querySelector("select.temp-zone");
+      const areaSel = tr.querySelector("select.area");
+      const shelfSel = tr.querySelector("select.shelf");
+      if (!tzSel || !areaSel || !shelfSel) return;
+
+      const tz = (tzSel.value || "").trim();
+      const prevArea = keepCurrent ? areaSel.value : "";
+      const prevShelf = keepCurrent ? shelfSel.value : "";
+
+      const allowedAreaIds = areasByZone.get(tz) || new Set();
+      const filteredAreas = ALL_AREAS.filter((a) => allowedAreaIds.has(a.id));
+
+      let chosenArea = "";
+      if (prevArea && allowedAreaIds.has(prevArea)) {
+        chosenArea = prevArea;
+      } else if (filteredAreas.length) {
+        chosenArea = filteredAreas[0].id;
+      }
+
+      setAreaOptions(areaSel, filteredAreas, chosenArea);
+
+      const shelves = shelvesByZoneArea.get(`${tz}|${chosenArea}`) || [];
+      setShelfOptions(shelfSel, shelves, prevShelf);
+    }
+
+    async function init() {
+      shelvesAll = await fetchJSON(
+        `/api/locations/shelves_all?store_id=${encodeURIComponent(storeId)}`
+      );
+      buildIndexes();
+
+      const rows = document.querySelectorAll("tr[data-item-id]");
+      if (!rows.length) return;
+
+      ALL_AREAS = getAllAreasFromRow(rows[0]);
+      rows.forEach((tr) => refreshRow(tr, true));
+    }
+
+    document.addEventListener("change", (e) => {
+      const tr = e.target.closest("tr[data-item-id]");
+      if (!tr) return;
+
+      if (e.target.matches("select.temp-zone")) {
+        refreshRow(tr, false);
+      }
+      if (e.target.matches("select.area")) {
+        refreshRow(tr, true);
+      }
+    });
+
+    window.addEventListener("DOMContentLoaded", init);
+  })();
+</script>
 {% endblock %}

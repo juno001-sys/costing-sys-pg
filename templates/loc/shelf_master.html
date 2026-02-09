@@ -48,15 +48,16 @@
           <td>{{ sh.area_name }}</td>
 
           <td>
-            {% set tz_label = sh.temp_zone %}
-            {% for z in temp_zones %}
-              {% if z.code == sh.temp_zone %}
-                {% set tz_label = z.name %}
-              {% endif %}
-            {% endfor %}
-            {{ tz_label }}
-          </td>
-
+  <select name="temp_zone_{{ sh.id }}" style="width:100%;">
+    <option value="">—</option>
+    {% for z in temp_zones %}
+      <option value="{{ z.code }}"
+        {% if z.code == sh.temp_zone %}selected{% endif %}>
+        {{ z.name }}
+      </option>
+    {% endfor %}
+  </select>
+</td>
           <td>{{ sh.code }}</td>
 
           <td>

@@ -1,0 +1,33 @@
+{% extends "layout/base_public.html" %} {% block title %}Login{% endblock %} {%
+block content %}
+<h2>Login</h2>
+
+<div style="display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap">
+  <!-- Normal users -->
+  <div class="card" style="flex: 1; min-width: 320px">
+    <h3>Normal User</h3>
+    <form method="post" action="{{ url_for('login') }}">
+      <input type="hidden" name="next" value="{{ next }}" />
+      <label>Email<br /><input name="email" required /></label><br /><br />
+      <label
+        >Password<br /><input name="password" type="password" required /></label
+      ><br /><br />
+      <button type="submit">Login</button>
+    </form>
+  </div>
+
+  <!-- System admin -->
+  <div class="card" style="flex: 1; min-width: 320px">
+    <h3>System Admin</h3>
+    <form method="post" action="{{ url_for('login') }}">
+      <!-- Force sys-admin landing after login -->
+      <input type="hidden" name="next" value="/admin/system" />
+      <label>Email<br /><input name="email" required /></label><br /><br />
+      <label
+        >Password<br /><input name="password" type="password" required /></label
+      ><br /><br />
+      <button type="submit">Login as System Admin</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

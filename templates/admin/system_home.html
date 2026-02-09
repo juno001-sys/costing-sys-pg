@@ -1,0 +1,11 @@
+{% extends "layout/base_app.html" %} {% block title %}System Admin{% endblock %}
+{% block content %}
+<h2>System Admin</h2>
+<ul>
+  <li>
+    <a href="{{ url_for('admin_system_company_new') }}"
+      >Create Company + First Admin</a
+    >
+  </li>
+</ul>
+{% endblock %}

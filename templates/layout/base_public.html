@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="{{ lang }}">
+  <head>
+    <meta charset="UTF-8" />
+    <title>{% block title %}Kurajika CMS{% endblock %}</title>
+
+    <style>
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        margin: 40px;
+      }
+      .flash {
+        background: #ffeebb;
+        border: 1px solid #e0c97f;
+        padding: 10px 16px;
+        margin: 20px 0;
+        border-radius: 6px;
+      }
+      .card {
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 16px;
+        max-width: 520px;
+        background: #fff;
+      }
+    </style>
+
+    {% block head_extra %}{% endblock %}
+  </head>
+
+  <body class="env-{{ env }}">
+    {% with messages = get_flashed_messages() %} {% if messages %} {% for m in
+    messages %}
+    <div class="flash">{{ m }}</div>
+    {% endfor %} {% endif %} {% endwith %} {% block content %}{% endblock %}
+  </body>
+</html>

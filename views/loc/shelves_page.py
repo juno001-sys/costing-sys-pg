@@ -60,23 +60,29 @@ def init_location_shelves_page(app, get_db):
                 use_flag = request.form.get(f"use_shelf_{sid}") == "on"
                 name = request.form.get(f"name_{sid}") or ""
                 sort_order = request.form.get(f"sort_{sid}") or "100"
+
+                temp_zone = request.form.get(f"temp_zone_{sid}") or None
+
                 try:
                     sort_order = int(sort_order)
                 except ValueError:
                     sort_order = 100
 
-                db.execute(
+                cur = db.execute(
                     """
                     UPDATE inv_store_shelves
                        SET name = %s,
                            sort_order = %s,
                            is_active = %s,
+                           temp_zone = %s,
                            updated_at = NOW()
-                     WHERE id = %s
-                       AND store_id = %s
+                       WHERE id = %s
+                        AND store_id = %s
                     """,
-                    (name, sort_order, use_flag, sid, selected_store_id),
+                    (name, sort_order, use_flag,temp_zone, sid, selected_store_id),
                 )
+
+                print("UPDATE shelf", sid, "rowcount=", cur.rowcount, "temp_zone=", temp_zone)
 
             db.commit()
             flash("Updated shelves.")

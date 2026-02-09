@@ -1,0 +1,23 @@
+{% extends "layout/base.html" %} {% block title %}Accept Invite{% endblock %} {%
+block content %}
+
+<h2>Accept Invite</h2>
+<p>Email: <b>{{ email }}</b></p>
+<p>Role: <b>{{ role }}</b></p>
+
+<form method="post">
+  <label>Name<br /><input name="name" required /></label><br /><br />
+
+  <label
+    >Password (optional)<br />
+    <input
+      name="password"
+      type="password"
+      placeholder="Leave blank to set later"
+    /> </label
+  ><br /><br />
+
+  <button type="submit">Activate</button>
+</form>
+
+{% endblock %}

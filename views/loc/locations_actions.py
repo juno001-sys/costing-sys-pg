@@ -52,12 +52,17 @@ def init_location_actions(app, get_db):
             if shelf_id:
                 # upsert-like: insert new active mapping
                 db.execute(
-                    """
-                    INSERT INTO item_shelf_map (store_id, shelf_id, item_id, sort_order, is_active)
-                    VALUES (%s, %s, %s, 100, TRUE)
-                    """,
-                    (store_id, shelf_id, item_id),
-                )
+                """
+                INSERT INTO item_shelf_map (store_id, shelf_id, item_id, sort_order, is_active, updated_at)
+                VALUES (%s, %s, %s, 100, TRUE, NOW())
+                ON CONFLICT (store_id, item_id, shelf_id)
+                DO UPDATE SET
+                is_active  = TRUE,
+                sort_order = EXCLUDED.sort_order,
+                updated_at = NOW()
+                """,
+                (store_id, shelf_id, item_id),
+            )
 
         db.commit()
         flash("Saved inventory locations.")
