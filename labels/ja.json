@@ -192,5 +192,7 @@
   "nav.user_manual": "ユーザーマニュアル",
   "nav.admin_users": "ユーザー管理",
   "nav.admin_users": "ユーザー管理",
-  "nav.user_manual": "ユーザーマニュアル"
+  "nav.user_manual": "ユーザーマニュアル",
+  "stores.inventory_layout_section": "棚卸し場所設定",
+  "stores.inventory_layout_hint": "エリア・温度帯・棚を設定します"
 }
