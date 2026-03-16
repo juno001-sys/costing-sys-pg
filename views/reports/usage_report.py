@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from flask import render_template, request
+from flask import render_template, request,g
+from utils.access_scope import (
+    get_accessible_stores,
+    normalize_accessible_store_id,
+)
 
 from . import reports_bp, get_db
 
@@ -12,20 +16,22 @@ def usage_report():
     db = get_db()
 
     # Stores
-    mst_stores = db.execute(
-        "SELECT id, name FROM mst_stores ORDER BY code"
-    ).fetchall()
+    mst_stores = get_accessible_stores()
 
     # Suppliers (dropdown)
     suppliers = db.execute(
-        "SELECT id, name FROM suppliers ORDER BY code"
+        "SELECT id, name FROM pur_suppliers ORDER BY code"
     ).fetchall()
 
     # Query params
-    store_id = request.args.get("store_id") or ""
+    selected_store_id = normalize_accessible_store_id(
+    request.args.get("store_id")
+    )
+    store_id = str(selected_store_id) if selected_store_id else ""
+
+
     supplier_id = request.args.get("supplier_id") or ""
 
-    selected_store_id = int(store_id) if store_id else None
     selected_supplier_id = int(supplier_id) if supplier_id else None
 
     # Last 13 months
@@ -58,6 +64,11 @@ def usage_report():
     ]
     params_pur: list[object] = [start_date, end_date]
 
+    company_id = getattr(g, "current_company_id", None)
+    if company_id:
+        where_pur.append("st.company_id = %s")
+        params_pur.append(company_id)
+
     if store_id:
         where_pur.append("p.store_id = %s")
         params_pur.append(int(store_id))
@@ -72,6 +83,7 @@ def usage_report():
             TO_CHAR(p.delivery_date, 'YYYY-MM') AS ym,
             SUM(p.quantity) AS pur_qty
         FROM purchases p
+        LEFT JOIN mst_stores st ON p.store_id = st.id
         WHERE {' AND '.join(where_pur)}
         GROUP BY p.item_id, ym
     """
@@ -92,6 +104,10 @@ def usage_report():
     ]
     params_inv: list[object] = [start_date, end_date]
 
+    if company_id:
+        where_inv.append("st.company_id = %s")
+        params_inv.append(company_id)
+
     if store_id:
         where_inv.append("sc.store_id = %s")
         params_inv.append(int(store_id))
@@ -104,6 +120,7 @@ def usage_report():
             TO_CHAR(sc.count_date, 'YYYY-MM') AS ym,
             MAX(sc.count_date) AS max_date
           FROM stock_counts sc
+          LEFT JOIN mst_stores st ON sc.store_id = st.id
           WHERE {' AND '.join(where_inv)}
           GROUP BY sc.store_id, sc.item_id, ym
         )
@@ -115,6 +132,7 @@ def usage_report():
         JOIN stock_counts sc
           ON sc.store_id = lc.store_id
          AND sc.item_id = lc.item_id
+         AND TO_CHAR(sc.count_date, 'YYYY-MM') = lc.ym
          AND sc.count_date = lc.max_date
         ORDER BY lc.item_id, lc.ym
     """

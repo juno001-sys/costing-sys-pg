@@ -1,7 +1,10 @@
 # views/inventory_locations/zones_page.py
 
 from flask import render_template, request
-
+from utils.access_scope import (
+    get_accessible_stores,
+    normalize_accessible_store_id,
+)
 
 def init_location_zones_page(app, get_db):
     """
@@ -13,12 +16,12 @@ def init_location_zones_page(app, get_db):
     def zone_master():
         db = get_db()
 
-        store_id = request.args.get("store_id")
-        selected_store_id = int(store_id) if store_id else None
+        selected_store_id = normalize_accessible_store_id(
+        request.args.get("store_id")
+        )
+        store_id = str(selected_store_id) if selected_store_id else ""
 
-        mst_stores = db.execute(
-            "SELECT id, name FROM mst_stores ORDER BY code"
-        ).fetchall()
+        mst_stores = get_accessible_stores()
 
         # IMPORTANT:
         # Your current schema uses store_shelves.temp_zone TEXT with CHECK (AMB/CHILL/FREEZE).

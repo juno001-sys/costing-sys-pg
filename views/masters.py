@@ -6,7 +6,7 @@ from flask import (
     request,
     redirect,
     url_for,
-    flash,
+    flash,g,
 )
 from views.reports.audit_log import log_event
 
@@ -28,6 +28,8 @@ def init_master_views(app, get_db):
     @app.route("/suppliers", methods=["GET", "POST"])
     def suppliers_master():
         db = get_db()
+        
+        company_id = getattr(g, "current_company_id", None)
 
         if request.method == "POST":
             name = (request.form.get("name") or "").strip()
@@ -40,12 +42,14 @@ def init_master_views(app, get_db):
                 flash("仕入先名は必須です。")
             else:
                 try:
+                    company_id = getattr(g, "current_company_id", None)
+
                     db.execute(
                         """
-                        INSERT INTO suppliers (code, name, phone, email, address)
-                        VALUES (%s, %s, %s, %s, %s)
+                        INSERT INTO pur_suppliers (company_id, code, name, phone, email, address)
+                        VALUES (%s, %s, %s, %s, %s, %s)
                         """,
-                        (code if code else None, name, phone, email, address),
+                        (company_id, code if code else None, name, phone, email, address),
                     )
                      # NEW: audit log (CREATE supplier)
                     try:
@@ -76,13 +80,17 @@ def init_master_views(app, get_db):
             return redirect(url_for("suppliers_master"))
 
         # GET：有効な仕入先のみ表示
+        company_id = getattr(g, "current_company_id", None)
+
         suppliers = db.execute(
             """
             SELECT id, code, name, phone, email, address, is_active
-            FROM suppliers
+            FROM pur_suppliers
             WHERE is_active = 1
+              AND company_id = %s
             ORDER BY code, id
-            """
+            """,
+            (company_id,),
         ).fetchall()
 
         return render_template(
@@ -99,13 +107,16 @@ def init_master_views(app, get_db):
         db = get_db()
 
         # 対象仕入先を取得（有効/無効問わず）
+        company_id = getattr(g, "current_company_id", None)
+
         supplier = db.execute(
             """
             SELECT id, code, name, phone, email, address, is_active
-            FROM suppliers
+            FROM pur_suppliers
             WHERE id = %s
+              AND company_id = %s
             """,
-            (supplier_id,),
+            (supplier_id, company_id,)
         ).fetchone()
 
         if supplier is None:
@@ -124,11 +135,13 @@ def init_master_views(app, get_db):
                 in_pur = db.execute(
                     """
                     SELECT COUNT(*) AS cnt
-                    FROM purchases
-                    WHERE supplier_id = %s
-                      AND is_deleted = 0
+                    FROM purchases p
+                    LEFT JOIN mst_stores st ON p.store_id = st.id
+                    WHERE p.supplier_id = %s
+                      AND p.is_deleted = 0
+                      AND st.company_id = %s
                     """,
-                    (supplier_id,),
+                    (supplier_id, company_id,)
                 ).fetchone()
 
                 in_items = db.execute(
@@ -136,8 +149,9 @@ def init_master_views(app, get_db):
                     SELECT COUNT(*) AS cnt
                     FROM mst_items
                     WHERE supplier_id = %s
+                    AND company_id = %s
                     """,
-                    (supplier_id,),
+                    (supplier_id,company_id,)
                 ).fetchone()
 
                 pur_cnt = in_pur["cnt"] or 0
@@ -153,8 +167,13 @@ def init_master_views(app, get_db):
                 # 2) 利用されていなければ無効化
                 try:
                     db.execute(
-                        "UPDATE suppliers SET is_active = 0 WHERE id = %s",
-                        (supplier_id,),
+                        """
+                        UPDATE pur_suppliers
+                        SET is_active = 0
+                        WHERE id = %s
+                          AND company_id = %s
+                        """,
+                        (supplier_id, company_id,)
                     )
                      # NEW: audit log (DISABLE supplier)
                     try:
@@ -201,7 +220,7 @@ def init_master_views(app, get_db):
             try:
                 db.execute(
                     """
-                    UPDATE suppliers
+                    UPDATE pur_suppliers
                     SET
                       code    = %s,
                       name    = %s,
@@ -209,8 +228,9 @@ def init_master_views(app, get_db):
                       email   = %s,
                       address = %s
                     WHERE id = %s
+                     AND company_id = %s
                     """,
-                    (code if code else None, name, phone, email, address, supplier_id),
+                     (code if code else None, name, phone, email, address, supplier_id, company_id,)
                 )
                 # NEW: audit log (UPDATE supplier)
                 try:
@@ -255,14 +275,18 @@ def init_master_views(app, get_db):
     def mst_items():
         db = get_db()
 
+        company_id = getattr(g, "current_company_id", None)
+
         # 仕入先一覧（プルダウン用：有効なもののみ）
         suppliers = db.execute(
             """
             SELECT id, name, code
-            FROM suppliers
+            FROM pur_suppliers
             WHERE is_active = 1
+            AND company_id = %s
             ORDER BY code
-            """
+            """,
+             (company_id,),
         ).fetchall()
 
         # 登録済み品目一覧（有効なもののみ）
@@ -277,10 +301,12 @@ def init_master_views(app, get_db):
               i.is_internal,
               s.name AS supplier_name
             FROM mst_items i
-            LEFT JOIN suppliers s ON i.supplier_id = s.id
+            LEFT JOIN pur_suppliers s ON i.supplier_id = s.id
             WHERE i.is_active = 1
+             AND i.company_id = %s
             ORDER BY i.code, i.name
-            """
+            """,
+            (company_id,)
         ).fetchall()
 
         # --------- 新規登録（POST） ----------
@@ -304,8 +330,13 @@ def init_master_views(app, get_db):
 
             # 仕入先コード2桁を取得（SS部分）
             supplier = db.execute(
-                "SELECT code FROM suppliers WHERE id = %s",
-                (supplier_id,),
+                """
+                SELECT code
+                FROM pur_suppliers
+                WHERE id = %s
+                  AND company_id = %s
+                """,
+                (supplier_id, company_id,)
             ).fetchone()
 
             if supplier is None or supplier["code"] is None:
@@ -320,8 +351,13 @@ def init_master_views(app, get_db):
 
             # 既存コードの最大値（SSIII の III 部分）を取得
             row = db.execute(
-                "SELECT MAX(code) AS max_code FROM mst_items WHERE code LIKE %s",
-                (f"{code2}%",),
+                """
+                SELECT MAX(code) AS max_code
+                FROM mst_items
+                WHERE code LIKE %s
+                  AND company_id = %s
+                """,
+                (f"{code2}%", company_id,)
             ).fetchone()
 
             if row["max_code"]:
@@ -346,10 +382,10 @@ def init_master_views(app, get_db):
                 db.execute(
                     """
                     INSERT INTO mst_items
-                        (code, name, unit, supplier_id, temp_zone, is_internal)
-                    VALUES (%s, %s, %s, %s, %s, %s)
+                        (company_id, code, name, unit, supplier_id, temp_zone, is_internal)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
                     """,
-                    (new_code, name, unit_val, supplier_id, temp_zone, is_internal),
+                    (company_id, new_code, name, unit_val, supplier_id, temp_zone, is_internal),
                 )
                 # NEW: audit log (CREATE item)
                 try:
@@ -394,15 +430,17 @@ def init_master_views(app, get_db):
     @app.route("/mst_items/<int:item_id>/edit", methods=["GET", "POST"], endpoint="edit_item")
     def edit_item(item_id):
         db = get_db()
-
+        company_id = getattr(g, "current_company_id", None)
         # 仕入先一覧（プルダウン用：有効なもののみ）
         suppliers = db.execute(
             """
             SELECT id, name, code
-            FROM suppliers
+            FROM pur_suppliers
             WHERE is_active = 1
+             AND company_id = %s
             ORDER BY code
-            """
+            """,
+             (company_id,),
         ).fetchall()
 
         # 対象品目を取得（有効/無効問わず）
@@ -423,8 +461,9 @@ def init_master_views(app, get_db):
               i.is_active
             FROM mst_items i
             WHERE i.id = %s
+            AND i.company_id = %s
             """,
-            (item_id,),
+            (item_id,company_id,)
         ).fetchone()
 
         if item is None:
@@ -443,20 +482,24 @@ def init_master_views(app, get_db):
                 in_pur = db.execute(
                     """
                     SELECT COUNT(*) AS cnt
-                    FROM purchases
-                    WHERE item_id = %s
-                      AND is_deleted = 0
+                    FROM purchases p
+                    LEFT JOIN mst_stores st ON p.store_id = st.id
+                    WHERE p.item_id = %s
+                      AND p.is_deleted = 0
+                      AND st.company_id = %s
                     """,
-                    (item_id,),
+                    (item_id, company_id,)
                 ).fetchone()
 
                 in_stock = db.execute(
                     """
                     SELECT COUNT(*) AS cnt
-                    FROM stock_counts
-                    WHERE item_id = %s
+                    FROM stock_counts sc
+                    LEFT JOIN mst_stores st ON sc.store_id = st.id
+                    WHERE sc.item_id = %s
+                      AND st.company_id = %s
                     """,
-                    (item_id,),
+                    (item_id, company_id,)
                 ).fetchone()
 
                 pur_cnt = in_pur["cnt"] or 0
@@ -472,8 +515,13 @@ def init_master_views(app, get_db):
                 # 2) 利用されていなければ無効化
                 try:
                     db.execute(
-                        "UPDATE mst_items SET is_active = 0 WHERE id = %s",
-                        (item_id,),
+                        """
+                        UPDATE mst_items
+                        SET is_active = 0
+                        WHERE id = %s
+                          AND company_id = %s
+                        """,
+                        (item_id, company_id,)
                     )
                      # NEW: audit log (DISABLE item)
                     try:
@@ -563,6 +611,7 @@ def init_master_views(app, get_db):
                       is_internal       = %s,
                       storage_cost      = %s
                     WHERE id = %s
+                      AND company_id = %s
                     """,
                     (
                         name,
@@ -575,6 +624,7 @@ def init_master_views(app, get_db):
                         is_internal,
                         storage_cost_val,
                         item_id,
+                        company_id,
                     ),
                 )
                 # NEW: audit log (UPDATE item)
@@ -624,6 +674,8 @@ def init_master_views(app, get_db):
     @app.route("/mst_stores", methods=["GET", "POST"], endpoint="stores_master")
     def mst_stores():
         db = get_db()
+
+        company_id = getattr(g, "current_company_id", None)
     
         if request.method == "POST":
             code = (request.form.get("code") or "").strip()
@@ -636,10 +688,10 @@ def init_master_views(app, get_db):
             else:
                 db.execute(
                     """
-                    INSERT INTO mst_stores (code, name, seats, opened_on)
-                    VALUES (%s, %s, %s, %s)
+                    INSERT INTO mst_stores (company_id, code, name, seats, opened_on)
+                    VALUES (%s, %s, %s, %s, %s)
                     """,
-                    (code or None, name, seats or None, opened_on or None)
+                    (company_id, code or None, name, seats or None, opened_on or None)
                 )
                 # NEW: audit log (CREATE store)
                 try:
@@ -670,8 +722,10 @@ def init_master_views(app, get_db):
             """
             SELECT id, code, name, seats, opened_on, closed_on, is_active
             FROM mst_stores
+            WHERE company_id = %s
             ORDER BY code, id
-            """
+            """,
+            (company_id,)
         ).fetchall()
     
         return render_template("mst/stores_master.html", stores=mst_stores)
@@ -685,14 +739,17 @@ def init_master_views(app, get_db):
     def edit_store(store_id):
         db = get_db()
 
+        company_id = getattr(g, "current_company_id", None)
+
         # 店舗情報
         store = db.execute(
             """
             SELECT id, code, name, seats, opened_on, closed_on, is_active
             FROM mst_stores
             WHERE id = %s
+             AND company_id = %s
             """,
-            (store_id,),
+            (store_id,company_id,)
         ).fetchone()
 
         if store is None:
@@ -703,17 +760,19 @@ def init_master_views(app, get_db):
         suppliers = db.execute(
             """
             SELECT id, code, name
-            FROM suppliers
+            FROM pur_suppliers
             WHERE is_active = 1
+             AND company_id = %s
             ORDER BY code
-            """
+            """,
+            (company_id,)
         ).fetchall()
 
         # この店舗に紐付いている仕入れ先ID一覧
         linked_rows = db.execute(
             """
             SELECT supplier_id
-            FROM store_suppliers
+            FROM pur_store_suppliers
             WHERE store_id = %s
               AND is_active = 1
             """,
@@ -730,11 +789,13 @@ def init_master_views(app, get_db):
                 in_use = db.execute(
                     """
                     SELECT COUNT(*) AS cnt
-                    FROM purchases
-                    WHERE store_id = %s
-                      AND is_deleted = 0
+                    FROM purchases p
+                    LEFT JOIN mst_stores st ON p.store_id = st.id
+                    WHERE p.store_id = %s
+                    AND p.is_deleted = 0
+                    AND st.company_id = %s
                     """,
-                    (store_id,),
+                    (store_id,company_id,)
                 ).fetchone()["cnt"] or 0
 
                 if in_use > 0:
@@ -820,7 +881,7 @@ def init_master_views(app, get_db):
             for sid in to_add:
                 db.execute(
                     """
-                    INSERT INTO store_suppliers (store_id, supplier_id, is_active)
+                    INSERT INTO pur_store_suppliers (store_id, supplier_id, is_active)
                     VALUES (%s, %s, 1)
                     ON CONFLICT (store_id, supplier_id)
                     DO UPDATE SET is_active = 1
@@ -832,7 +893,7 @@ def init_master_views(app, get_db):
             for sid in to_remove:
                 db.execute(
                     """
-                    UPDATE store_suppliers
+                    UPDATE pur_store_suppliers
                     SET is_active = 0
                     WHERE store_id = %s AND supplier_id = %s
                     """,

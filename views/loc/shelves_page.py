@@ -1,6 +1,10 @@
 # views/loc/shelves_page.py
 
 from flask import render_template, request, redirect, url_for, flash
+from utils.access_scope import (
+    get_accessible_stores,
+    normalize_accessible_store_id,
+)
 
 
 def init_location_shelves_page(app, get_db):
@@ -9,12 +13,11 @@ def init_location_shelves_page(app, get_db):
         db = get_db()
 
         # store selector
-        store_id = request.values.get("store_id")  # works for GET+POST
-        selected_store_id = int(store_id) if store_id else None
-
-        mst_stores = db.execute(
-            "SELECT id, name FROM mst_stores ORDER BY code"
-        ).fetchall()
+        selected_store_id = normalize_accessible_store_id(
+        request.values.get("store_id")
+        )
+        store_id = str(selected_store_id) if selected_store_id else ""
+        mst_stores = get_accessible_stores()
 
         # For area dropdown / labels (store-scoped enabled areas)
         store_areas = []

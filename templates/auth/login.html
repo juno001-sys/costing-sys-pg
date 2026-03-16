@@ -20,12 +20,17 @@ block content %}
   <div class="card" style="flex: 1; min-width: 320px">
     <h3>System Admin</h3>
     <form method="post" action="{{ url_for('login') }}">
+      <!-- Tell backend this is a system admin login -->
+      <input type="hidden" name="system_admin" value="1" />
+
       <!-- Force sys-admin landing after login -->
       <input type="hidden" name="next" value="/admin/system" />
+
       <label>Email<br /><input name="email" required /></label><br /><br />
       <label
         >Password<br /><input name="password" type="password" required /></label
       ><br /><br />
+
       <button type="submit">Login as System Admin</button>
     </form>
   </div>

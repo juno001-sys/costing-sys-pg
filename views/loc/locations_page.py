@@ -1,5 +1,9 @@
 # views/loc/locations_page.py
-from flask import render_template, request, jsonify
+from flask import render_template, request, jsonify,g
+from utils.access_scope import (
+    get_accessible_stores,
+    normalize_accessible_store_id,
+)
 
 
 def init_location_page(app, get_db):
@@ -7,7 +11,11 @@ def init_location_page(app, get_db):
     @app.get("/api/locations/areas")
     def api_locations_areas():
         db = get_db()
-        store_id = request.args.get("store_id", type=int)
+        company_id = getattr(g, "current_company_id", None)
+        selected_store_id = normalize_accessible_store_id(
+        request.args.get("store_id")
+        )
+        store_id = selected_store_id
         temp_zone = (request.args.get("temp_zone") or "").strip()
 
         if not store_id or not temp_zone:
@@ -39,7 +47,15 @@ def init_location_page(app, get_db):
     @app.get("/api/locations/shelves")
     def api_locations_shelves():
         db = get_db()
-        store_id = request.args.get("store_id", type=int)
+        selected_store_id = normalize_accessible_store_id(
+        request.args.get("store_id")
+        )
+
+        selected_store_id = normalize_accessible_store_id(
+        request.args.get("store_id")
+        )
+        store_id = str(selected_store_id) if selected_store_id else ""
+        
         area_id = request.args.get("area_id", type=int)
         temp_zone = (request.args.get("temp_zone") or "").strip()
 
@@ -76,7 +92,10 @@ def init_location_page(app, get_db):
     @app.get("/api/locations/shelves_all")
     def api_locations_shelves_all():
         db = get_db()
-        store_id = request.args.get("store_id", type=int)
+        selected_store_id = normalize_accessible_store_id(
+        request.args.get("store_id")
+        )
+        store_id = selected_store_id
         if not store_id:
             return jsonify([])
 
@@ -108,13 +127,14 @@ def init_location_page(app, get_db):
     @app.route("/inventory/locations", methods=["GET"])
     def inventory_locations():
         db = get_db()
+        company_id = getattr(g, "current_company_id", None)
 
-        mst_stores = db.execute(
-            "SELECT id, name FROM mst_stores ORDER BY code"
-        ).fetchall()
+        mst_stores = get_accessible_stores()
 
-        store_id = request.args.get("store_id") or ""
-        selected_store_id = int(store_id) if store_id else None
+        selected_store_id = normalize_accessible_store_id(
+        request.args.get("store_id")
+        )
+        store_id = str(selected_store_id) if selected_store_id else ""
 
         areas = []
         if selected_store_id:
@@ -184,11 +204,17 @@ def init_location_page(app, get_db):
                   LEFT JOIN area_master am
                     ON am.id = sam.area_id
 
-                WHERE i.is_internal = 1
-                   OR p.id IS NOT NULL
+                   WHERE (
+                        i.company_id = %s
+                        OR i.company_id IS NULL
+                      )
+                  AND (
+                        i.is_internal = 1
+                        OR p.id IS NOT NULL
+                      )
                 ORDER BY 6,7
                 """,
-                (selected_store_id, selected_store_id, selected_store_id),
+                (selected_store_id, selected_store_id, selected_store_id, company_id),
             ).fetchall()
 
         return render_template(

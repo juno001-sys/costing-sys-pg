@@ -8,7 +8,11 @@ def init_location_actions(app, get_db):
     def inventory_locations_save():
         db = get_db()
 
-        store_id = request.form.get("store_id")
+        selected_store_id = normalize_accessible_store_id(
+        request.form.get("store_id")
+        )
+        store_id = str(selected_store_id) if selected_store_id else None
+
         if not store_id:
             flash("missing store_id")
             return redirect(url_for("inventory_locations"))

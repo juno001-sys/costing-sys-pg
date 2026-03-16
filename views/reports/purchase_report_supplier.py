@@ -2,8 +2,11 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from flask import redirect, render_template, request, url_for
-
+from flask import redirect, render_template, request, url_for,g
+from utils.access_scope import (
+    get_accessible_stores,
+    normalize_accessible_store_id,
+)
 from . import reports_bp, get_db
 
 
@@ -15,24 +18,25 @@ def purchase_report_supplier(supplier_id: int):
     db = get_db()
 
     # 店舗一覧
-    mst_stores = db.execute(
-        "SELECT id, name FROM mst_stores ORDER BY code"
-    ).fetchall()
+    mst_stores = get_accessible_stores()
 
     # 仕入先一覧
     suppliers = db.execute(
-        "SELECT id, name FROM suppliers ORDER BY code"
+        "SELECT id, name FROM pur_suppliers ORDER BY code"
     ).fetchall()
 
     # 店舗（クエリパラメータ）
-    store_id = request.args.get("store_id") or ""
+    selected_store_id = normalize_accessible_store_id(
+    request.args.get("store_id")
+    )
+    store_id = str(selected_store_id) if selected_store_id else ""
 
     # 仕入先名
     if supplier_id == 0:
         supplier_name = "（仕入先を選択してください）"
     else:
         supplier_row = db.execute(
-            "SELECT id, name FROM suppliers WHERE id = %s",
+            "SELECT id, name FROM pur_suppliers WHERE id = %s",
             [supplier_id],
         ).fetchone()
         if supplier_row is None:
@@ -80,6 +84,11 @@ def purchase_report_supplier(supplier_id: int):
         ]
         params: list[object] = [start_date, end_date, supplier_id]
 
+        company_id = getattr(g, "current_company_id", None)
+        if company_id:
+            where_clauses.append("st.company_id = %s")
+            params.append(company_id)
+
         if store_id:
             where_clauses.append("p.store_id = %s")
             params.append(int(store_id))
@@ -96,6 +105,7 @@ def purchase_report_supplier(supplier_id: int):
                 SUM(p.amount)   AS total_amount
             FROM purchases p
             LEFT JOIN mst_items i ON p.item_id = i.id
+            LEFT JOIN mst_stores st ON p.store_id = st.id
             WHERE {where_sql}
             GROUP BY i.id, i.code, i.name, ym
             ORDER BY i.code, ym
@@ -150,7 +160,6 @@ def purchase_report_supplier(supplier_id: int):
         month_totals_amount.append(col_amt)
         month_totals_qty.append(col_qty)
 
-    selected_store_id = int(store_id) if store_id else None
 
     return render_template(
         "pur/purchase_report_supplier.html",
