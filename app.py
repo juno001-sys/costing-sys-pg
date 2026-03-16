@@ -46,6 +46,8 @@ APP_ENV = os.getenv("APP_ENV", "development")  # dev / mail / prod etc.
 SUPPORTED_LANGS = ["ja", "en", "hi", "id"]
 DEFAULT_LANG = "ja"
 
+
+
 @app.context_processor
 def inject_env():
     # For templates: {{ env }}
