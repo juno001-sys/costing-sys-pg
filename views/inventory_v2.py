@@ -5,6 +5,11 @@ from datetime import datetime
 from flask import render_template, request, redirect, url_for, flash
 from views.reports.audit_log import log_event
 
+from utils.access_scope import (
+    get_accessible_stores,
+    normalize_accessible_store_id,
+)
+
 
 def get_latest_stock_count_dates(db, store_id, limit=3):
     rows = db.execute(
@@ -26,14 +31,7 @@ def init_inventory_views_v2(app, get_db):
         db = get_db()
 
         # 店舗一覧
-        stores = db.execute(
-            """
-            SELECT id, code, name
-            FROM mst_stores
-            WHERE COALESCE(is_active, 1) = 1
-            ORDER BY code, id
-            """
-        ).fetchall()
+        mst_stores = get_accessible_stores()
 
         today = datetime.today().strftime("%Y-%m-%d")
 
@@ -41,7 +39,12 @@ def init_inventory_views_v2(app, get_db):
         # POST：棚卸し登録
         # -----------------------------
         if request.method == "POST":
-            store_id = request.form.get("store_id") or None
+            selected_post_store_id = normalize_accessible_store_id(
+                request.form.get("store_id")
+            )
+            store_id = str(selected_post_store_id) if selected_post_store_id else None
+
+
             count_date = request.form.get("count_date") or today
 
             if not store_id:
@@ -119,11 +122,18 @@ def init_inventory_views_v2(app, get_db):
         # -----------------------------
         # GET：表示
         # -----------------------------
-        store_id = request.args.get("store_id") or ""
+        selected_store_id = normalize_accessible_store_id(
+            request.args.get("store_id")
+        )
+        store_id = str(selected_store_id) if selected_store_id else ""
+
         count_date = request.args.get("count_date") or today
 
         mst_items = []
-        selected_store_id = int(store_id) if store_id else None
+        selected_store_id = normalize_accessible_store_id(
+        request.args.get("store_id")
+        )
+        store_id = str(selected_store_id) if selected_store_id else ""
 
         latest_dates = []
         latest_date = None
@@ -134,7 +144,7 @@ def init_inventory_views_v2(app, get_db):
         if not store_id:
             return render_template(
                 "inv/inventory_count_v2.html",
-                stores=stores,
+                stores=mst_stores,
                 selected_store_id=selected_store_id,
                 count_date=count_date,
                 items=[],
@@ -394,7 +404,7 @@ def init_inventory_views_v2(app, get_db):
         t6 = time.perf_counter()
         html = render_template(
             "inv/inventory_count_v2.html",
-            stores=stores,
+            stores=mst_stores,
             selected_store_id=selected_store_id,
             count_date=count_date,
             items=mst_items,

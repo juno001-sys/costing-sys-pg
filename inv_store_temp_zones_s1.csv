@@ -1,0 +1,4 @@
+store_id,code,display_name,sort_order,is_active,updated_at
+1,AMB,常温faa,10,t,2026-01-20 08:05:04.468345
+1,CHILL,冷蔵,20,t,2026-01-20 08:05:04.468345
+1,FREEZE,冷凍,30,t,2026-01-20 08:05:04.468345

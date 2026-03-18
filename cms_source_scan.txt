@@ -1,0 +1,942 @@
+
+==============================
+ PYTHON FILE STRUCTURE
+==============================
+./app.py
+./db.py
+./init/import_items_from_csv.py
+./labels.py
+./views/__init__.py
+./views/admin/__init__.py
+./views/admin/invites.py
+./views/admin/profit_settings.py
+./views/admin/system_companies.py
+./views/admin/system_home.py
+./views/admin/users.py
+./views/auth/__init__.py
+./views/auth/auth.py
+./views/auth/invite.py
+./views/auth/login.py
+./views/inv_sort/__init__.py
+./views/inv_sort/order_builder.py
+./views/inv_sort/sort_config.py
+./views/inventory.py
+./views/inventory_v2.py
+./views/inventory_v2_bk260121.py
+./views/loc/__init__.py
+./views/loc/admin_store_config.py
+./views/loc/item_location_api.py
+./views/loc/locations_actions.py
+./views/loc/locations_api.py
+./views/loc/locations_page.py
+./views/loc/shelves_page.py
+./views/loc/sort/__init__.py
+./views/loc/sort/order_builder.py
+./views/loc/sort/routes.py
+./views/loc/sort/sort_config.py
+./views/loc/zones_page.py
+./views/masters.py
+./views/purchases.py
+./views/reports/__init__.py
+./views/reports/audit_log.py
+./views/reports/cost_report.py
+./views/reports/purchase_report.py
+./views/reports/purchase_report_supplier.py
+./views/reports/usage_report.py
+./views/reports/work_logs.py
+
+==============================
+ ROUTES (SCREENS / APIs)
+==============================
+./app.py:355:#@app.route("/")
+./app.py:360:@app.route("/")
+./views/masters.py:28:    @app.route("/suppliers", methods=["GET", "POST"])
+./views/masters.py:97:    @app.route("/suppliers/<int:supplier_id>/edit", methods=["GET", "POST"])
+./views/masters.py:254:    @app.route("/mst_items", methods=["GET", "POST"], endpoint="items_master")
+./views/masters.py:394:    @app.route("/mst_items/<int:item_id>/edit", methods=["GET", "POST"], endpoint="edit_item")
+./views/masters.py:624:    @app.route("/mst_stores", methods=["GET", "POST"], endpoint="stores_master")
+./views/masters.py:684:    @app.route("/mst_stores/<int:store_id>/edit", methods=["GET", "POST"], endpoint="edit_store")
+./views/loc/locations_page.py:108:    @app.route("/inventory/locations", methods=["GET"])
+./views/loc/locations_api.py:7:    @app.route("/inventory/api/shelves", methods=["GET"], endpoint="inventory_api_shelves")
+./views/loc/sort/routes.py:8:    @app.route("/inventory/locations/sort", methods=["POST"], endpoint="inventory_locations_sort_save")
+./views/loc/shelves_page.py:7:    @app.route("/inventory/shelves", methods=["GET", "POST"], endpoint="shelf_master")
+./views/loc/locations_actions.py:7:    @app.route("/inventory/locations/save", methods=["POST"])
+./views/loc/locations_actions.py:71:    @app.route("/inventory/reorder-mst_items", methods=["POST"])
+./views/loc/zones_page.py:12:    @app.route("/inventory/zones", methods=["GET"], endpoint="zone_master")
+./views/loc/admin_store_config.py:5:    @app.route("/inventory/store-temp-zones", methods=["GET"], endpoint="store_temp_zones_admin")
+./views/loc/admin_store_config.py:46:    @app.route("/inventory/store-temp-zones/save", methods=["POST"], endpoint="store_temp_zones_admin_save")
+./views/loc/admin_store_config.py:83:    @app.route("/inventory/store-areas", methods=["GET"], endpoint="store_areas_admin")
+./views/loc/admin_store_config.py:122:    @app.route("/inventory/store-areas/save", methods=["POST"], endpoint="store_areas_admin_save")
+./views/loc/item_location_api.py:5:    @app.route("/inventory/api/item-location", methods=["GET"], endpoint="inventory_api_item_location")
+./views/inventory_v2_bk260121.py:48:    @app.route("/inventory/count_v2", methods=["GET", "POST"] )
+./views/auth/auth.py:66:    @app.route("/login", methods=["GET", "POST"])
+./views/auth/invite.py:55:    @app.route("/invite/<token>", methods=["GET", "POST"])
+./views/auth/login.py:222:    @app.route("/login", methods=["GET", "POST"])
+./views/inventory_v2.py:24:    @app.route("/inventory/count_v2", methods=["GET", "POST"], endpoint="inventory_count_v2")
+./views/admin/invites.py:12:    @app.route("/admin/invites", methods=["GET", "POST"])
+./views/admin/users.py:10:    @app.route("/admin/users", methods=["GET", "POST"])
+./views/admin/system_companies.py:14:    @app.route(
+./views/purchases.py:30:    @app.route("/purchases/new", methods=["GET", "POST"])
+./views/purchases.py:271:    @app.route("/api/mst_items/by_supplier/<int:supplier_id>")
+./views/purchases.py:312:    @app.route(
+./views/inv_sort/__init__.py:12:    @app.route("/inventory/item-sort-config", methods=["POST"], endpoint="inventory_item_sort_config_save")
+./views/inventory.py:44:    @app.route("/inventory/count", methods=["GET", "POST"])
+
+==============================
+ DATABASE ACCESS (get_db)
+==============================
+./db.py:79:def get_db():
+./app.py:142:        db = get_db()
+./app.py:193:        db = get_db()
+./app.py:214:        db = get_db()
+./app.py:336:    db = get_db()
+./views/masters.py:30:        db = get_db()
+./views/masters.py:99:        db = get_db()
+./views/masters.py:256:        db = get_db()
+./views/masters.py:396:        db = get_db()
+./views/masters.py:626:        db = get_db()
+./views/masters.py:686:        db = get_db()
+./views/loc/locations_page.py:9:        db = get_db()
+./views/loc/locations_page.py:41:        db = get_db()
+./views/loc/locations_page.py:78:        db = get_db()
+./views/loc/locations_page.py:110:        db = get_db()
+./views/loc/locations_api.py:9:        db = get_db()
+./views/loc/sort/routes.py:26:        db = get_db()
+./views/loc/shelves_page.py:9:        db = get_db()
+./views/loc/locations_actions.py:9:        db = get_db()
+./views/loc/locations_actions.py:73:        db = get_db()
+./views/loc/zones_page.py:14:        db = get_db()
+./views/loc/admin_store_config.py:7:        db = get_db()
+./views/loc/admin_store_config.py:48:        db = get_db()
+./views/loc/admin_store_config.py:85:        db = get_db()
+./views/loc/admin_store_config.py:124:        db = get_db()
+./views/loc/item_location_api.py:7:        db = get_db()
+./views/inventory_v2_bk260121.py:50:        db = get_db()
+./views/auth/auth.py:19:        db = get_db()
+./views/auth/auth.py:79:        db = get_db()
+./views/auth/invite.py:57:        db = get_db()
+./views/auth/login.py:75:        db = get_db()
+./views/auth/login.py:236:        db = get_db()
+./views/auth/login.py:306:            db = get_db()
+./views/inventory_v2.py:26:        db = get_db()
+./views/admin/invites.py:15:        db = get_db()
+./views/admin/users.py:13:        db = get_db()
+./views/admin/users.py:98:        db = get_db()
+./views/admin/profit_settings.py:11:    db = get_db()
+./views/admin/system_companies.py:21:        db = get_db()
+./views/purchases.py:32:        db = get_db()
+./views/purchases.py:273:        db = get_db()
+./views/purchases.py:318:        db = get_db()
+./views/inv_sort/__init__.py:38:        conn = get_db()
+./views/reports/purchase_report.py:12:    db = get_db()
+./views/reports/__init__.py:14:    Register report routes via Blueprint, and inject get_db().
+./views/reports/__init__.py:28:def get_db():
+./views/reports/__init__.py:33:        raise RuntimeError("reports.get_db() is not injected. Call init_report_views(app, get_db) first.")
+./views/reports/__init__.py:34:    return _get_db()
+./views/reports/work_logs.py:11:    db = get_db()
+./views/reports/cost_report.py:23:    db = get_db()
+./views/reports/usage_report.py:12:    db = get_db()
+./views/reports/purchase_report_supplier.py:15:    db = get_db()
+./views/inventory.py:46:        db = get_db()
+
+==============================
+ COMPANY SCOPE USAGE
+==============================
+./app.py:188:    company_id = getattr(g, "current_company_id", None)
+./app.py:189:    if not company_id:
+./app.py:196:            (company_id,),
+./app.py:208:    company_id = getattr(g, "current_company_id", None)
+./app.py:209:    if not company_id:
+./app.py:220:              AND company_id = %s
+./app.py:223:            (company_id,),
+./views/auth/auth.py:22:            SELECT id, company_id, email, name, role, is_active
+./views/auth/auth.py:84:            SELECT id, company_id, email, name, role, is_active, password_hash
+./views/auth/invite.py:15:    def _create_session(db, user_id: int, company_id: int):
+./views/auth/invite.py:23:              (id, user_id, company_id, expires_at, last_seen_at, user_agent, ip, is_active)
+./views/auth/invite.py:30:                company_id,
+./views/auth/invite.py:61:            SELECT id, company_id, email, role, expires_at, used_at
+./views/auth/invite.py:123:            INSERT INTO sys_user_companies (user_id, company_id, role, is_active)
+./views/auth/invite.py:125:            ON CONFLICT (user_id, company_id)
+./views/auth/invite.py:128:            (user_id, inv["company_id"], inv["role"]),
+./views/auth/invite.py:136:        _create_session(db, user_id, inv["company_id"])
+./views/auth/invite.py:140:        g.current_company_id = inv["company_id"]
+./views/auth/login.py:19:      - before_request: load session -> g.current_user, g.current_company_id, g.current_role
+./views/auth/login.py:71:            g.current_company_id = None
+./views/auth/login.py:81:              s.company_id,
+./views/auth/login.py:93:              ON uc.user_id = s.user_id AND uc.company_id = s.company_id
+./views/auth/login.py:102:            g.current_company_id = None
+./views/auth/login.py:112:            g.current_company_id = None
+./views/auth/login.py:125:            g.current_company_id = None
+./views/auth/login.py:138:            g.current_company_id = None
+./views/auth/login.py:148:        g.current_company_id = row["company_id"]
+./views/auth/login.py:170:            "current_company_id": getattr(g, "current_company_id", None),
+./views/auth/login.py:178:    def _create_session(db, user_id: int, company_id: int):
+./views/auth/login.py:186:              (id, user_id, company_id, expires_at, last_seen_at, user_agent, ip, is_active)
+./views/auth/login.py:193:                company_id,
+./views/auth/login.py:279:            SELECT company_id, role
+./views/auth/login.py:282:            ORDER BY company_id
+./views/auth/login.py:292:        _create_session(db, u["id"], mem["company_id"])
+./views/admin/invites.py:16:        company_id = g.current_company_id
+./views/admin/invites.py:36:                  (company_id, email, role, token, invited_by_user_id, expires_at)
+./views/admin/invites.py:40:                (company_id, email, role, token, g.current_user["id"], expires_at),
+./views/admin/invites.py:51:            WHERE company_id = %s
+./views/admin/invites.py:55:            (company_id,),
+./views/admin/users.py:14:        company_id = getattr(g, "current_company_id", None)
+./views/admin/users.py:15:        if not company_id:
+./views/admin/users.py:53:                    (company_id, email, name, password_hash, role, is_active, created_at, updated_at)
+./views/admin/users.py:58:                    (company_id, email, name or None, pw_hash, role),
+./views/admin/users.py:65:                    INSERT INTO sys_user_companies (user_id, company_id, role, is_active)
+./views/admin/users.py:68:                    (new_user_id, company_id, role),
+./views/admin/users.py:87:            WHERE uc.company_id = %s AND uc.is_active = 1
+./views/admin/users.py:90:            (company_id,),
+./views/admin/users.py:99:        company_id = getattr(g, "current_company_id", None)
+./views/admin/users.py:100:        if not company_id:
+./views/admin/users.py:109:            WHERE user_id = %s AND company_id = %s
+./views/admin/users.py:111:            (user_id, company_id),
+./views/admin/system_companies.py:52:            company_id = crow["id"]
+./views/admin/system_companies.py:57:                INSERT INTO sys_users (company_id, email, name, password_hash, role, is_active, created_at, updated_at)
+./views/admin/system_companies.py:61:                (company_id, admin_email, admin_name, pw_hash),
+./views/admin/system_companies.py:68:                INSERT INTO sys_user_companies (user_id, company_id, role, is_active)
+./views/admin/system_companies.py:71:                (user_id, company_id),
+./views/admin/system_companies.py:79:                entity_id=str(company_id),
+./views/admin/system_companies.py:81:                company_id=company_id,
+./views/reports/work_logs.py:111:        company_id, store_id,
+./views/reports/audit_log.py:16:    company_id=None,
+./views/reports/audit_log.py:29:    if company_id is None:
+./views/reports/audit_log.py:30:        company_id = getattr(g, "current_company_id", None)
+./views/reports/audit_log.py:37:          (company_id, store_id,
+./views/reports/audit_log.py:50:            company_id, store_id,
+
+==============================
+ STORE SCOPE USAGE
+==============================
+./app.py:296:            store_id=(
+./app.py:297:                new_data.get("store_id")
+./views/masters.py:684:    @app.route("/mst_stores/<int:store_id>/edit", methods=["GET", "POST"], endpoint="edit_store")
+./views/masters.py:685:    def edit_store(store_id):
+./views/masters.py:695:            (store_id,),
+./views/masters.py:717:            WHERE store_id = %s
+./views/masters.py:720:            (store_id,),
+./views/masters.py:734:                    WHERE store_id = %s
+./views/masters.py:737:                    (store_id,),
+./views/masters.py:746:                    (store_id,),
+./views/masters.py:755:                        entity_id=str(store_id),
+./views/masters.py:804:                (code or None, name, seats_val, opened_on or None, closed_on or None, store_id),
+./views/masters.py:823:                    INSERT INTO store_suppliers (store_id, supplier_id, is_active)
+./views/masters.py:825:                    ON CONFLICT (store_id, supplier_id)
+./views/masters.py:828:                    (store_id, sid),
+./views/masters.py:837:                    WHERE store_id = %s AND supplier_id = %s
+./views/masters.py:839:                    (store_id, sid),
+./views/masters.py:848:                    entity_id=str(store_id),
+./views/loc/locations_page.py:10:        store_id = request.args.get("store_id", type=int)
+./views/loc/locations_page.py:13:        if not store_id or not temp_zone:
+./views/loc/locations_page.py:25:            WHERE sh.store_id = %s
+./views/loc/locations_page.py:31:            (store_id, temp_zone),
+./views/loc/locations_page.py:42:        store_id = request.args.get("store_id", type=int)
+./views/loc/locations_page.py:46:        if not store_id or not area_id:
+./views/loc/locations_page.py:49:        params = [store_id, area_id]
+./views/loc/locations_page.py:62:            WHERE sh.store_id = %s
+./views/loc/locations_page.py:79:        store_id = request.args.get("store_id", type=int)
+./views/loc/locations_page.py:80:        if not store_id:
+./views/loc/locations_page.py:91:            WHERE sh.store_id = %s
+./views/loc/locations_page.py:95:            (store_id,),
+./views/loc/locations_page.py:116:        store_id = request.args.get("store_id") or ""
+./views/loc/locations_page.py:117:        selected_store_id = int(store_id) if store_id else None
+./views/loc/locations_page.py:120:        if selected_store_id:
+./views/loc/locations_page.py:128:                WHERE sam.store_id = %s
+./views/loc/locations_page.py:132:                (selected_store_id,),
+./views/loc/locations_page.py:136:        if selected_store_id:
+./views/loc/locations_page.py:167:                   AND p.store_id = %s
+./views/loc/locations_page.py:171:                    ON pref.store_id = %s
+./views/loc/locations_page.py:175:                    ON m.store_id = %s
+./views/loc/locations_page.py:191:                (selected_store_id, selected_store_id, selected_store_id),
+./views/loc/locations_page.py:197:            selected_store_id=selected_store_id,
+./views/loc/locations_api.py:11:        store_id = request.args.get("store_id")
+./views/loc/locations_api.py:15:        if not store_id:
+./views/loc/locations_api.py:16:            return jsonify({"ok": False, "error": "missing store_id"}), 400
+./views/loc/locations_api.py:18:        params = [store_id]
+./views/loc/locations_api.py:19:        where = ["sh.store_id = %s", "COALESCE(sh.is_active, TRUE) = TRUE"]
+./views/loc/sort/sort_config.py:1:def get_sort_config(db, store_id: int):
+./views/loc/sort/sort_config.py:6:        WHERE store_id = %s
+./views/loc/sort/sort_config.py:8:        (store_id,),
+./views/loc/sort/sort_config.py:22:def save_sort_config(db, store_id: int, cfg: dict):
+./views/loc/sort/sort_config.py:26:          (store_id, sort_key, sort_dir, sort_key2, sort_dir2, updated_at)
+./views/loc/sort/sort_config.py:28:        ON CONFLICT (store_id)
+./views/loc/sort/sort_config.py:37:            store_id,
+./views/loc/sort/routes.py:10:        store_id = int(request.form["store_id"])
+./views/loc/sort/routes.py:27:        save_sort_config(db, store_id, {
+./views/loc/sort/routes.py:35:        return redirect(url_for("inventory_locations", store_id=store_id))
+./views/loc/shelves_page.py:12:        store_id = request.values.get("store_id")  # works for GET+POST
+./views/loc/shelves_page.py:13:        selected_store_id = int(store_id) if store_id else None
+./views/loc/shelves_page.py:21:        if selected_store_id:
+./views/loc/shelves_page.py:30:                WHERE sam.store_id = %s
+./views/loc/shelves_page.py:34:                (selected_store_id,),
+./views/loc/shelves_page.py:39:        if selected_store_id:
+./views/loc/shelves_page.py:44:                WHERE store_id = %s
+./views/loc/shelves_page.py:48:                (selected_store_id,),
+./views/loc/shelves_page.py:53:            if not selected_store_id:
+./views/loc/shelves_page.py:54:                flash("missing store_id")
+./views/loc/shelves_page.py:80:                        AND store_id = %s
+./views/loc/shelves_page.py:82:                    (name, sort_order, use_flag,temp_zone, sid, selected_store_id),
+./views/loc/shelves_page.py:89:            return redirect(url_for("shelf_master", store_id=selected_store_id))
+./views/loc/shelves_page.py:93:        if selected_store_id:
+./views/loc/shelves_page.py:98:                  sh.store_id,
+./views/loc/shelves_page.py:109:                WHERE sh.store_id = %s
+./views/loc/shelves_page.py:112:                (selected_store_id,),
+./views/loc/shelves_page.py:118:            selected_store_id=selected_store_id,
+./views/loc/locations_actions.py:11:        store_id = request.form.get("store_id")
+./views/loc/locations_actions.py:12:        if not store_id:
+./views/loc/locations_actions.py:13:            flash("missing store_id")
+./views/loc/locations_actions.py:30:                INSERT INTO item_location_prefs (store_id, item_id, temp_zone, store_area_map_id, updated_at)
+./views/loc/locations_actions.py:32:                ON CONFLICT (store_id, item_id)
+./views/loc/locations_actions.py:38:                (store_id, item_id, temp_zone, area_map_id),
+./views/loc/locations_actions.py:46:                 WHERE store_id = %s
+./views/loc/locations_actions.py:49:                (store_id, item_id),
+./views/loc/locations_actions.py:56:                INSERT INTO item_shelf_map (store_id, shelf_id, item_id, sort_order, is_active, updated_at)
+./views/loc/locations_actions.py:58:                ON CONFLICT (store_id, item_id, shelf_id)
+./views/loc/locations_actions.py:64:                (store_id, shelf_id, item_id),
+./views/loc/locations_actions.py:69:        return redirect(url_for("inventory_locations", store_id=store_id))
+./views/loc/locations_actions.py:76:        store_id = payload.get("store_id")
+./views/loc/locations_actions.py:80:        if not store_id or not shelf_id or not isinstance(item_ids, list) or not item_ids:
+./views/loc/locations_actions.py:88:                 WHERE store_id = %s
+./views/loc/locations_actions.py:93:                (idx, store_id, shelf_id, item_id),
+./views/loc/zones_page.py:16:        store_id = request.args.get("store_id")
+./views/loc/zones_page.py:17:        selected_store_id = int(store_id) if store_id else None
+./views/loc/zones_page.py:28:        if selected_store_id:
+./views/loc/zones_page.py:33:                WHERE store_id = %s AND is_active = TRUE
+./views/loc/zones_page.py:36:                (selected_store_id,),
+./views/loc/zones_page.py:42:            selected_store_id=selected_store_id,
+./views/loc/admin_store_config.py:8:        store_id = request.args.get("store_id") or ""
+./views/loc/admin_store_config.py:9:        selected_store_id = int(store_id) if store_id else None
+./views/loc/admin_store_config.py:23:        if selected_store_id:
+./views/loc/admin_store_config.py:31:                WHERE store_id = %s
+./views/loc/admin_store_config.py:34:                (selected_store_id,),
+./views/loc/admin_store_config.py:41:            selected_store_id=selected_store_id,
+./views/loc/admin_store_config.py:49:        store_id = request.form.get("store_id")
+./views/loc/admin_store_config.py:50:        if not store_id:
+./views/loc/admin_store_config.py:51:            flash("missing store_id")
+./views/loc/admin_store_config.py:66:                INSERT INTO inv_store_temp_zones (store_id, code, display_name, sort_order, is_active, updated_at)
+./views/loc/admin_store_config.py:68:                ON CONFLICT (store_id, code)
+./views/loc/admin_store_config.py:75:                (store_id, code, display_name, sort_order, use_flag),
+./views/loc/admin_store_config.py:80:        return redirect(url_for("store_temp_zones_admin", store_id=store_id))
+./views/loc/admin_store_config.py:86:        store_id = request.args.get("store_id") or ""
+./views/loc/admin_store_config.py:87:        selected_store_id = int(store_id) if store_id else None
+./views/loc/admin_store_config.py:100:        if selected_store_id:
+./views/loc/admin_store_config.py:108:                WHERE store_id = %s
+./views/loc/admin_store_config.py:110:                (selected_store_id,),
+./views/loc/admin_store_config.py:117:            selected_store_id=selected_store_id,
+./views/loc/admin_store_config.py:125:        store_id = request.form.get("store_id")
+./views/loc/admin_store_config.py:126:        if not store_id:
+./views/loc/admin_store_config.py:127:            flash("missing store_id")
+./views/loc/admin_store_config.py:143:                INSERT INTO inv_store_area_map (store_id, area_id, display_name, sort_order, is_active, created_at, updated_at)
+./views/loc/admin_store_config.py:145:                ON CONFLICT (store_id, area_id)
+./views/loc/admin_store_config.py:152:                (store_id, area_id, display_name, sort_order, use_flag),
+./views/loc/admin_store_config.py:157:        return redirect(url_for("store_areas_admin", store_id=store_id))
+./views/loc/item_location_api.py:9:        store_id = request.args.get("store_id")
+./views/loc/item_location_api.py:12:        if not store_id or not item_id:
+./views/loc/item_location_api.py:13:            return jsonify({"ok": False, "error": "missing store_id/item_id"}), 400
+./views/loc/item_location_api.py:33:              ON pref.store_id = %s
+./views/loc/item_location_api.py:37:              ON m.store_id = %s
+./views/loc/item_location_api.py:52:            (store_id, item_id, store_id, item_id, item_id),
+./views/inventory_v2_bk260121.py:17:def get_latest_stock_count_dates(db, store_id, limit=3):
+./views/inventory_v2_bk260121.py:25:        WHERE store_id = %s
+./views/inventory_v2_bk260121.py:29:        (store_id, limit),
+./views/inventory_v2_bk260121.py:69:            store_id = request.form.get("store_id") or None
+./views/inventory_v2_bk260121.py:72:            if not store_id:
+./views/inventory_v2_bk260121.py:100:                        (store_id, item_id, count_date,
+./views/inventory_v2_bk260121.py:105:                        store_id,
+./views/inventory_v2_bk260121.py:118:                url_for("inventory_count", store_id=store_id, count_date=count_date)
+./views/inventory_v2_bk260121.py:124:        store_id = request.args.get("store_id") or ""
+./views/inventory_v2_bk260121.py:128:        selected_store_id = int(store_id) if store_id else None
+./views/inventory_v2_bk260121.py:133:        if selected_store_id:
+./views/inventory_v2_bk260121.py:134:            latest_dates = get_latest_stock_count_dates(db, selected_store_id, limit=3)
+./views/inventory_v2_bk260121.py:137:        # ★ 温度帯ラベルと入れ物を先に用意しておく（store_id が空でも定義されるように）
+./views/inventory_v2_bk260121.py:146:        if store_id:
+./views/inventory_v2_bk260121.py:174:                ON pref.store_id = %s
+./views/inventory_v2_bk260121.py:178:                ON m.store_id   = %s
+./views/inventory_v2_bk260121.py:199:                    WHERE p.store_id = %s
+./views/inventory_v2_bk260121.py:220:                (store_id, store_id, store_id, count_date),
+./views/inventory_v2_bk260121.py:242:                    WHERE store_id = %s
+./views/inventory_v2_bk260121.py:248:                    (store_id, item_id, count_date),
+./views/inventory_v2_bk260121.py:264:                        WHERE store_id = %s
+./views/inventory_v2_bk260121.py:270:                        (store_id, item_id, start_date, count_date),
+./views/inventory_v2_bk260121.py:278:                        WHERE store_id = %s
+./views/inventory_v2_bk260121.py:283:                        (store_id, item_id, count_date),
+./views/inventory_v2_bk260121.py:303:                    WHERE store_id = %s
+./views/inventory_v2_bk260121.py:308:                    (store_id, item_id, count_date),
+./views/inventory_v2_bk260121.py:323:                    WHERE store_id   = %s
+./views/inventory_v2_bk260121.py:329:                    (store_id, item_id, count_date),
+./views/inventory_v2_bk260121.py:397:            selected_store_id=selected_store_id,
+./views/inventory_v2.py:9:def get_latest_stock_count_dates(db, store_id, limit=3):
+./views/inventory_v2.py:14:        WHERE store_id = %s
+./views/inventory_v2.py:18:        (store_id, limit),
+./views/inventory_v2.py:44:            store_id = request.form.get("store_id") or None
+./views/inventory_v2.py:47:            if not store_id:
+./views/inventory_v2.py:76:                        (store_id, item_id, count_date,
+./views/inventory_v2.py:81:                        store_id,
+./views/inventory_v2.py:95:                batch_id = f"{store_id}:{count_date}"
+./views/inventory_v2.py:103:                    store_id=int(store_id),
+./views/inventory_v2.py:117:            return redirect(url_for("inventory_count_v2", store_id=store_id, count_date=count_date))
+./views/inventory_v2.py:122:        store_id = request.args.get("store_id") or ""
+./views/inventory_v2.py:126:        selected_store_id = int(store_id) if store_id else None
+./views/inventory_v2.py:130:        if selected_store_id:
+./views/inventory_v2.py:131:            latest_dates = get_latest_stock_count_dates(db, selected_store_id, limit=3)
+./views/inventory_v2.py:134:        if not store_id:
+./views/inventory_v2.py:138:                selected_store_id=selected_store_id,
+./views/inventory_v2.py:176:              ON pref.store_id = %s
+./views/inventory_v2.py:180:              ON m.store_id   = %s
+./views/inventory_v2.py:200:                WHERE p.store_id = %s
+./views/inventory_v2.py:220:            (store_id, store_id, store_id, count_date),
+./views/inventory_v2.py:240:            WHERE store_id = %s
+./views/inventory_v2.py:245:            (store_id, item_ids, count_date),
+./views/inventory_v2.py:265:              WHERE store_id = %s
+./views/inventory_v2.py:275:            WHERE p.store_id = %s
+./views/inventory_v2.py:282:            (store_id, item_ids, count_date, store_id, item_ids, count_date),
+./views/inventory_v2.py:303:            WHERE store_id = %s
+./views/inventory_v2.py:309:            (store_id, item_ids, count_date),
+./views/inventory_v2.py:324:            WHERE store_id = %s
+./views/inventory_v2.py:328:            (store_id, item_ids, count_date),
+./views/inventory_v2.py:398:            selected_store_id=selected_store_id,
+./views/admin/profit_settings.py:9:@bp.route("/stores/<int:store_id>/profit-settings", methods=["GET", "POST"])
+./views/admin/profit_settings.py:10:def profit_settings(store_id):
+./views/admin/profit_settings.py:18:              (store_id, effective_from, fl_ratio, food_ratio, utility_ratio, fixed_cost_yen)
+./views/admin/profit_settings.py:23:                store_id,
+./views/admin/profit_settings.py:34:        return redirect(url_for("admin_profit_settings.profit_settings", store_id=store_id))
+./views/admin/profit_settings.py:45:          store_id
+./views/admin/profit_settings.py:47:        WHERE store_id = %s OR store_id IS NULL
+./views/admin/profit_settings.py:49:          (store_id IS NOT NULL) DESC,
+./views/admin/profit_settings.py:52:        (store_id,),
+./views/admin/profit_settings.py:58:        store_id=store_id,
+./views/purchases.py:34:        # --- 1) store_id を GET から取得して先に selected_store_id を定義 ---
+./views/purchases.py:35:        store_id = request.args.get("store_id")
+./views/purchases.py:36:        if store_id:
+./views/purchases.py:38:                selected_store_id = int(store_id)
+./views/purchases.py:40:                selected_store_id = None
+./views/purchases.py:42:            selected_store_id = None
+./views/purchases.py:55:        if selected_store_id:
+./views/purchases.py:62:                 AND ss.store_id = %s
+./views/purchases.py:67:                (selected_store_id,),
+./views/purchases.py:80:        #   ヘッダー：store_id, supplier_id, delivery_date
+./views/purchases.py:84:            store_id = (request.form.get("store_id") or "").strip()
+./views/purchases.py:89:            if not store_id or not header_supplier_id or not delivery_date:
+./views/purchases.py:91:                return redirect(url_for("new_purchase", store_id=store_id or ""))
+./views/purchases.py:140:                      (store_id, supplier_id, item_id,
+./views/purchases.py:146:                        store_id,
+./views/purchases.py:185:            return redirect(url_for("new_purchase", store_id=store_id or ""))
+./views/purchases.py:190:        store_id = request.args.get("store_id") or ""
+./views/purchases.py:191:        selected_store_id = int(store_id) if store_id else None
+./views/purchases.py:198:            if store_id:
+./views/purchases.py:199:                return redirect(url_for("new_purchase", store_id=store_id))
+./views/purchases.py:211:        if store_id:
+./views/purchases.py:212:            where_clauses.append("p.store_id = %s")
+./views/purchases.py:213:            params.append(store_id)
+./views/purchases.py:247:            LEFT JOIN mst_stores  st ON p.store_id    = st.id
+./views/purchases.py:260:            selected_store_id=selected_store_id,
+./views/purchases.py:334:              p.store_id,
+./views/purchases.py:392:                    url_for("new_purchase", store_id=purchase["store_id"])
+./views/purchases.py:398:            store_id = request.form.get("store_id") or None
+./views/purchases.py:435:                  store_id     = %s,
+./views/purchases.py:445:                    store_id,
+./views/purchases.py:473:            return redirect(url_for("new_purchase", store_id=store_id))
+./views/inv_sort/sort_config.py:1:def get_item_sort_config(conn, store_id: int):
+./views/inv_sort/sort_config.py:6:            WHERE store_id = %s
+./views/inv_sort/sort_config.py:7:        """, (store_id,))
+./views/inv_sort/sort_config.py:21:def save_item_sort_config(conn, store_id: int, cfg: dict):
+./views/inv_sort/sort_config.py:25:              (store_id, sort_key, sort_dir, sort_key2, sort_dir2, updated_at)
+./views/inv_sort/sort_config.py:27:            ON CONFLICT (store_id)
+./views/inv_sort/sort_config.py:35:            store_id,
+./views/inv_sort/__init__.py:14:        store_id = int(request.form["store_id"])
+./views/inv_sort/__init__.py:39:        save_item_sort_config(conn, store_id, cfg)
+./views/inv_sort/__init__.py:42:        return redirect(url_for("inventory_count", store_id=store_id, count_date=count_date))
+./views/reports/purchase_report.py:18:    store_id = request.args.get("store_id") or ""
+./views/reports/purchase_report.py:44:    if store_id:
+./views/reports/purchase_report.py:45:        where.append("p.store_id = %s")
+./views/reports/purchase_report.py:46:        params.append(int(store_id))
+./views/reports/purchase_report.py:91:        selected_store_id=int(store_id) if store_id else None,
+./views/reports/work_logs.py:16:    store_id = request.args.get("store_id") or ""
+./views/reports/work_logs.py:60:    if store_id:
+./views/reports/work_logs.py:61:        where.append("store_id = %s")
+./views/reports/work_logs.py:62:        params.append(int(store_id))
+./views/reports/work_logs.py:111:        company_id, store_id,
+./views/reports/work_logs.py:132:        selected_store_id=store_id,
+./views/reports/cost_report.py:31:    store_id = request.args.get("store_id") or ""
+./views/reports/cost_report.py:32:    selected_store_id = int(store_id) if store_id else None
+./views/reports/cost_report.py:35:    store_id_param = None if store_id == "" else int(store_id)
+./views/reports/cost_report.py:70:          AND ( %s IS NULL OR p.store_id = %s )
+./views/reports/cost_report.py:75:        [start_date, end_date, store_id_param, store_id_param],
+./views/reports/cost_report.py:89:              sc.store_id,
+./views/reports/cost_report.py:95:                PARTITION BY sc.store_id, sc.item_id, TO_CHAR(sc.count_date, 'YYYY-MM')
+./views/reports/cost_report.py:101:              AND ( %s IS NULL OR sc.store_id = %s )
+./views/reports/cost_report.py:105:              store_id,
+./views/reports/cost_report.py:115:              e.store_id,
+./views/reports/cost_report.py:124:                PARTITION BY e.store_id, e.item_id, e.ym
+./views/reports/cost_report.py:130:              ON p.store_id = e.store_id
+./views/reports/cost_report.py:136:              store_id,
+./views/reports/cost_report.py:146:                PARTITION BY store_id, item_id, ym
+./views/reports/cost_report.py:165:        [start_date, end_date, store_id_param, store_id_param],
+./views/reports/cost_report.py:203:        if selected_store_id:
+./views/reports/cost_report.py:212:                  store_id
+./views/reports/cost_report.py:214:                WHERE (store_id = %s OR store_id IS NULL)
+./views/reports/cost_report.py:218:                  (store_id IS NOT NULL) DESC,
+./views/reports/cost_report.py:222:                [selected_store_id, month_start, month_start],
+./views/reports/cost_report.py:233:                  store_id
+./views/reports/cost_report.py:235:                WHERE store_id IS NULL
+./views/reports/cost_report.py:270:                "setting_store_id": profit_setting_row["store_id"],
+./views/reports/cost_report.py:280:    def fetch_profit_setting(db, store_id: int, month_start: date):
+./views/reports/cost_report.py:289:          store_id
+./views/reports/cost_report.py:291:        WHERE (store_id = %s OR store_id IS NULL)
+./views/reports/cost_report.py:295:          (store_id IS NOT NULL) DESC,
+./views/reports/cost_report.py:299:        [store_id, month_start, month_start],
+./views/reports/cost_report.py:329:            "setting_store_id": setting_row["store_id"],  # None => global
+./views/reports/cost_report.py:344:        selected_store_id=selected_store_id,
+./views/reports/usage_report.py:25:    store_id = request.args.get("store_id") or ""
+./views/reports/usage_report.py:28:    selected_store_id = int(store_id) if store_id else None
+./views/reports/usage_report.py:61:    if store_id:
+./views/reports/usage_report.py:62:        where_pur.append("p.store_id = %s")
+./views/reports/usage_report.py:63:        params_pur.append(int(store_id))
+./views/reports/usage_report.py:95:    if store_id:
+./views/reports/usage_report.py:96:        where_inv.append("sc.store_id = %s")
+./views/reports/usage_report.py:97:        params_inv.append(int(store_id))
+./views/reports/usage_report.py:102:            sc.store_id,
+./views/reports/usage_report.py:108:          GROUP BY sc.store_id, sc.item_id, ym
+./views/reports/usage_report.py:116:          ON sc.store_id = lc.store_id
+./views/reports/usage_report.py:205:        selected_store_id=selected_store_id,
+./views/reports/purchase_report_supplier.py:28:    store_id = request.args.get("store_id") or ""
+./views/reports/purchase_report_supplier.py:83:        if store_id:
+./views/reports/purchase_report_supplier.py:84:            where_clauses.append("p.store_id = %s")
+./views/reports/purchase_report_supplier.py:85:            params.append(int(store_id))
+./views/reports/purchase_report_supplier.py:153:    selected_store_id = int(store_id) if store_id else None
+./views/reports/purchase_report_supplier.py:158:        selected_store_id=selected_store_id,
+./views/reports/audit_log.py:15:    store_id=None,
+./views/reports/audit_log.py:37:          (company_id, store_id,
+./views/reports/audit_log.py:50:            company_id, store_id,
+./views/inventory.py:13:def get_latest_stock_count_dates(db, store_id, limit=3):
+./views/inventory.py:21:        WHERE store_id = %s
+./views/inventory.py:25:        (store_id, limit),
+./views/inventory.py:65:            store_id = request.form.get("store_id") or None
+./views/inventory.py:68:            if not store_id:
+./views/inventory.py:96:                        (store_id, item_id, count_date,
+./views/inventory.py:101:                        store_id,
+./views/inventory.py:114:                url_for("inventory_count", store_id=store_id, count_date=count_date)
+./views/inventory.py:120:        store_id = request.args.get("store_id") or ""
+./views/inventory.py:124:        selected_store_id = int(store_id) if store_id else None
+./views/inventory.py:129:        if selected_store_id:
+./views/inventory.py:130:            latest_dates = get_latest_stock_count_dates(db, selected_store_id, limit=3)
+./views/inventory.py:133:        # ★ 温度帯ラベルと入れ物を先に用意しておく（store_id が空でも定義されるように）
+./views/inventory.py:137:        if store_id:
+./views/inventory.py:162:                 AND p.store_id = %s
+./views/inventory.py:169:                (store_id, count_date),
+./views/inventory.py:183:                    WHERE store_id = %s
+./views/inventory.py:189:                    (store_id, item_id, count_date),
+./views/inventory.py:200:                        WHERE store_id = %s
+./views/inventory.py:206:                        (store_id, item_id, start_date, count_date),
+./views/inventory.py:214:                        WHERE store_id = %s
+./views/inventory.py:219:                        (store_id, item_id, count_date),
+./views/inventory.py:235:                    WHERE store_id = %s
+./views/inventory.py:240:                    (store_id, item_id, count_date),
+./views/inventory.py:251:                    WHERE store_id   = %s
+./views/inventory.py:257:                    (store_id, item_id, count_date),
+./views/inventory.py:291:            selected_store_id=selected_store_id,
+
+==============================
+ LOGIN / SESSION CONTEXT
+==============================
+./app.py:188:    company_id = getattr(g, "current_company_id", None)
+./app.py:208:    company_id = getattr(g, "current_company_id", None)
+./views/auth/invite.py:140:        g.current_company_id = inv["company_id"]
+./views/auth/login.py:19:      - before_request: load session -> g.current_user, g.current_company_id, g.current_role
+./views/auth/login.py:71:            g.current_company_id = None
+./views/auth/login.py:102:            g.current_company_id = None
+./views/auth/login.py:112:            g.current_company_id = None
+./views/auth/login.py:125:            g.current_company_id = None
+./views/auth/login.py:138:            g.current_company_id = None
+./views/auth/login.py:148:        g.current_company_id = row["company_id"]
+./views/auth/login.py:170:            "current_company_id": getattr(g, "current_company_id", None),
+./views/admin/invites.py:16:        company_id = g.current_company_id
+./views/admin/users.py:14:        company_id = getattr(g, "current_company_id", None)
+./views/admin/users.py:99:        company_id = getattr(g, "current_company_id", None)
+./views/reports/audit_log.py:30:        company_id = getattr(g, "current_company_id", None)
+./views/auth/invite.py:53:        session["session_token"] = token
+./views/auth/login.py:68:        token = session.get("session_token")
+./views/auth/login.py:100:            session.pop("session_token", None)
+./views/auth/login.py:110:            session.pop("session_token", None)
+./views/auth/login.py:118:            session.pop("session_token", None)
+./views/auth/login.py:131:            session.pop("session_token", None)
+./views/auth/login.py:217:        session["session_token"] = token
+./views/auth/login.py:304:        token = session.pop("session_token", None)
+./views/reports/audit_log.py:26:    session_id = session.get("session_token") if hasattr(session, "get") else None
+
+==============================
+ PURCHASE MODULE
+==============================
+views/masters.py:123:                # purchases / mst_items のどちらかで使われていたら無効化禁止
+views/masters.py:127:                    FROM purchases
+views/masters.py:418:              i.purchase_unit,
+views/masters.py:420:              i.min_purchase_unit,
+views/masters.py:442:                # purchases / stock_counts で使われていたら無効化禁止
+views/masters.py:446:                    FROM purchases
+views/masters.py:527:            purchase_unit = to_int_or_none(request.form.get("purchase_unit"))
+views/masters.py:529:            min_purchase_unit = to_int_or_none(request.form.get("min_purchase_unit"))
+views/masters.py:560:                      purchase_unit     = %s,
+views/masters.py:562:                      min_purchase_unit = %s,
+views/masters.py:572:                        purchase_unit,
+views/masters.py:574:                        min_purchase_unit,
+views/masters.py:595:                            "purchase_unit": purchase_unit,
+views/masters.py:597:                            "min_purchase_unit": min_purchase_unit,
+views/masters.py:733:                    FROM purchases
+views/loc/locations_page.py:165:                  LEFT JOIN purchases p
+views/inventory_v2_bk260121.py:192:                -- show items that are placed/configured OR internal OR have purchase history
+views/inventory_v2_bk260121.py:198:                    FROM purchases p
+views/inventory_v2_bk260121.py:263:                        FROM purchases
+views/inventory_v2_bk260121.py:277:                        FROM purchases
+views/inventory_v2_bk260121.py:302:                    FROM purchases
+views/inventory_v2.py:199:                FROM purchases p
+views/inventory_v2.py:255:        # 3) Batch: purchases AFTER last_count_date (system_qty component)
+views/inventory_v2.py:273:            FROM purchases p
+views/inventory_v2.py:287:        print(f"[V2-1] 3 purchases-after batch elapsed: {time.perf_counter() - t2:.3f}s rows={len(after_rows)}")
+views/inventory_v2.py:302:            FROM purchases
+views/purchases.py:1:# views/purchases.py
+views/purchases.py:17:def init_purchase_views(app, get_db, log_purchase_change):
+views/purchases.py:21:        from views.purchases import init_purchase_views
+views/purchases.py:22:        init_purchase_views(app, get_db, log_purchase_change)
+views/purchases.py:28:    # /purchases/new
+views/purchases.py:30:    @app.route("/purchases/new", methods=["GET", "POST"])
+views/purchases.py:31:    def new_purchase():
+views/purchases.py:91:                return redirect(url_for("new_purchase", store_id=store_id or ""))
+views/purchases.py:139:                    INSERT INTO purchases
+views/purchases.py:162:                    "SELECT * FROM purchases WHERE id = %s",
+views/purchases.py:167:                log_purchase_change(
+views/purchases.py:169:                    purchase_id=new_id,
+views/purchases.py:185:            return redirect(url_for("new_purchase", store_id=store_id or ""))
+views/purchases.py:199:                return redirect(url_for("new_purchase", store_id=store_id))
+views/purchases.py:201:                return redirect(url_for("new_purchase"))
+views/purchases.py:244:            FROM purchases p
+views/purchases.py:252:        purchases = db.execute(sql, params).fetchall()
+views/purchases.py:255:            "pur/purchase_form.html",
+views/purchases.py:259:            purchases=purchases,
+views/purchases.py:283:            LEFT JOIN purchases p 
+views/purchases.py:310:    # /purchases/<id>/edit
+views/purchases.py:313:        "/purchases/<int:purchase_id>/edit",
+views/purchases.py:315:        endpoint="edit_purchase",        # ★ url_for('edit_purchase') を壊さない
+views/purchases.py:317:    def edit_purchase(purchase_id):
+views/purchases.py:330:        purchase = db.execute(
+views/purchases.py:343:            FROM purchases p
+views/purchases.py:348:            (purchase_id,),
+views/purchases.py:351:        if purchase is None:
+views/purchases.py:353:            return redirect(url_for("new_purchase"))
+views/purchases.py:361:                    "SELECT * FROM purchases WHERE id = %s",
+views/purchases.py:362:                    (purchase_id,),
+views/purchases.py:367:                    UPDATE purchases
+views/purchases.py:371:                    (purchase_id,),
+views/purchases.py:375:                    "SELECT * FROM purchases WHERE id = %s",
+views/purchases.py:376:                    (purchase_id,),
+views/purchases.py:379:                log_purchase_change(
+views/purchases.py:381:                    purchase_id=purchase_id,
+views/purchases.py:392:                    url_for("new_purchase", store_id=purchase["store_id"])
+views/purchases.py:408:                    "pur/purchase_edit.html",
+views/purchases.py:409:                    purchase=purchase,
+views/purchases.py:427:                "SELECT * FROM purchases WHERE id = %s",
+views/purchases.py:428:                (purchase_id,),
+views/purchases.py:433:                UPDATE purchases
+views/purchases.py:452:                    purchase_id,
+views/purchases.py:457:                "SELECT * FROM purchases WHERE id = %s",
+views/purchases.py:458:                (purchase_id,),
+views/purchases.py:461:            log_purchase_change(
+views/purchases.py:463:                purchase_id=purchase_id,
+views/purchases.py:473:            return redirect(url_for("new_purchase", store_id=store_id))
+views/purchases.py:477:            "pur/purchase_edit.html",
+views/purchases.py:478:            purchase=purchase,
+views/reports/purchase_report.py:10:@reports_bp.route("/purchases/report", methods=["GET"])
+views/reports/purchase_report.py:11:def purchase_report():
+views/reports/purchase_report.py:54:        FROM purchases p
+views/reports/purchase_report.py:89:        "pur/purchase_report.html",
+views/reports/__init__.py:22:    from . import purchase_report  # noqa: F401
+views/reports/__init__.py:23:    from . import purchase_report_supplier  # noqa: F401
+views/reports/cost_report.py:66:        FROM purchases p
+views/reports/cost_report.py:78:    purchases_by_month = {ym: 0 for ym in month_keys}
+views/reports/cost_report.py:82:        if ym in purchases_by_month:
+views/reports/cost_report.py:83:            purchases_by_month[ym] = amt
+views/reports/cost_report.py:119:              p.id AS purchase_id,
+views/reports/cost_report.py:129:            JOIN purchases p
+views/reports/cost_report.py:140:              purchase_id,
+views/reports/cost_report.py:147:                ORDER BY delivery_date DESC, purchase_id DESC
+views/reports/cost_report.py:184:        cogs_by_month[ym] = beg_inv_by_month[ym] + purchases_by_month[ym] - end_inv_by_month[ym]
+views/reports/cost_report.py:186:    purchases_total = sum(purchases_by_month.values())
+views/reports/cost_report.py:346:        purchases_by_month=purchases_by_month,
+views/reports/cost_report.py:350:        purchases_total=purchases_total,
+views/reports/usage_report.py:74:        FROM purchases p
+views/reports/usage_report.py:154:    # ④ Calculate begin/purchase/end/used
+views/reports/purchase_report_supplier.py:13:@reports_bp.route("/purchases/report/supplier/<int:supplier_id>", methods=["GET"])
+views/reports/purchase_report_supplier.py:14:def purchase_report_supplier(supplier_id: int):
+views/reports/purchase_report_supplier.py:39:            return redirect(url_for("reports.purchase_report"))
+views/reports/purchase_report_supplier.py:97:            FROM purchases p
+views/reports/purchase_report_supplier.py:156:        "pur/purchase_report_supplier.html",
+views/inventory.py:160:                JOIN purchases p
+views/inventory.py:199:                        FROM purchases
+views/inventory.py:213:                        FROM purchases
+views/inventory.py:234:                    FROM purchases
+
+==============================
+ SUPPLIER MODULE
+==============================
+views/masters.py:16:    マスタ系（suppliers/mst_items など）のルートを登録する初期化関数。
+views/masters.py:26:    # /suppliers
+views/masters.py:28:    @app.route("/suppliers", methods=["GET", "POST"])
+views/masters.py:29:    def suppliers_master():
+views/masters.py:45:                        INSERT INTO suppliers (code, name, phone, email, address)
+views/masters.py:50:                     # NEW: audit log (CREATE supplier)
+views/masters.py:56:                            entity_table="suppliers",
+views/masters.py:74:                    flash(f"suppliers テーブルへの登録でエラーが発生しました: {e}")
+views/masters.py:76:            return redirect(url_for("suppliers_master"))
+views/masters.py:79:        suppliers = db.execute(
+views/masters.py:82:            FROM suppliers
+views/masters.py:89:            "mst/suppliers_master.html",
+views/masters.py:90:            suppliers=suppliers,
+views/masters.py:95:    # /suppliers/<id>/edit
+views/masters.py:97:    @app.route("/suppliers/<int:supplier_id>/edit", methods=["GET", "POST"])
+views/masters.py:98:    def edit_supplier(supplier_id):
+views/masters.py:102:        supplier = db.execute(
+views/masters.py:105:            FROM suppliers
+views/masters.py:108:            (supplier_id,),
+views/masters.py:111:        if supplier is None:
+views/masters.py:113:            return redirect(url_for("suppliers_master"))
+views/masters.py:128:                    WHERE supplier_id = %s
+views/masters.py:131:                    (supplier_id,),
+views/masters.py:138:                    WHERE supplier_id = %s
+views/masters.py:140:                    (supplier_id,),
+views/masters.py:151:                    return redirect(url_for("suppliers_master"))
+views/masters.py:156:                        "UPDATE suppliers SET is_active = 0 WHERE id = %s",
+views/masters.py:157:                        (supplier_id,),
+views/masters.py:159:                     # NEW: audit log (DISABLE supplier)
+views/masters.py:165:                            entity_table="suppliers",
+views/masters.py:166:                            entity_id=str(supplier_id),
+views/masters.py:170:                                "name": supplier["name"],
+views/masters.py:171:                                "code": supplier["code"],
+views/masters.py:178:                    flash(f"仕入先（{supplier['name']}）を無効化しました。")
+views/masters.py:183:                return redirect(url_for("suppliers_master"))
+views/masters.py:197:                    "mst/suppliers_edit.html",
+views/masters.py:198:                    supplier=supplier,
+views/masters.py:204:                    UPDATE suppliers
+views/masters.py:213:                    (code if code else None, name, phone, email, address, supplier_id),
+views/masters.py:215:                # NEW: audit log (UPDATE supplier)
+views/masters.py:221:                        entity_table="suppliers",
+views/masters.py:222:                        entity_id=str(supplier_id),
+views/masters.py:241:            return redirect(url_for("suppliers_master"))
+views/masters.py:245:            "mst/suppliers_edit.html",
+views/masters.py:246:            supplier=supplier,
+views/masters.py:259:        suppliers = db.execute(
+views/masters.py:262:            FROM suppliers
+views/masters.py:278:              s.name AS supplier_name
+views/masters.py:280:            LEFT JOIN suppliers s ON i.supplier_id = s.id
+views/masters.py:288:            supplier_id = request.form.get("supplier_id")
+views/masters.py:297:            if not supplier_id or not name:
+views/masters.py:301:                    suppliers=suppliers,
+views/masters.py:306:            supplier = db.execute(
+views/masters.py:307:                "SELECT code FROM suppliers WHERE id = %s",
+views/masters.py:308:                (supplier_id,),
+views/masters.py:311:            if supplier is None or supplier["code"] is None:
+views/masters.py:315:                    suppliers=suppliers,
+views/masters.py:319:            code2 = str(supplier["code"]).zfill(2)[:2]
+views/masters.py:344:            # INSERT（code / name / unit / supplier_id / temp_zone / is_internal）
+views/masters.py:349:                        (code, name, unit, supplier_id, temp_zone, is_internal)
+views/masters.py:352:                    (new_code, name, unit_val, supplier_id, temp_zone, is_internal),
+views/masters.py:367:                            "supplier_id": int(supplier_id),
+views/masters.py:386:            suppliers=suppliers,
+views/masters.py:399:        suppliers = db.execute(
+views/masters.py:402:            FROM suppliers
+views/masters.py:416:              i.supplier_id,
+views/masters.py:491:                                "supplier_id": item["supplier_id"],
+views/masters.py:510:            supplier_id = request.form.get("supplier_id") or None
+views/masters.py:548:                    suppliers=suppliers,
+views/masters.py:558:                      supplier_id       = %s,
+views/masters.py:570:                        supplier_id,
+views/masters.py:593:                            "supplier_id": int(supplier_id) if supplier_id else None,
+views/masters.py:616:            suppliers=suppliers,
+views/masters.py:703:        suppliers = db.execute(
+views/masters.py:706:            FROM suppliers
+views/masters.py:715:            SELECT supplier_id
+views/masters.py:716:            FROM store_suppliers
+views/masters.py:722:        linked_supplier_ids = {row["supplier_id"] for row in linked_rows}
+views/masters.py:793:                    suppliers=suppliers,
+views/masters.py:794:                    linked_supplier_ids=linked_supplier_ids,
+views/masters.py:808:            # フォームから選択された supplier_ids（複数）
+views/masters.py:809:            form_supplier_ids = request.form.getlist("supplier_ids")
+views/masters.py:810:            form_supplier_ids = {int(sid) for sid in form_supplier_ids}  # set化
+views/masters.py:812:            current_ids = linked_supplier_ids  # 既存の有効な紐付け
+views/masters.py:815:            to_add = form_supplier_ids - current_ids
+views/masters.py:817:            to_remove = current_ids - form_supplier_ids
+views/masters.py:823:                    INSERT INTO store_suppliers (store_id, supplier_id, is_active)
+views/masters.py:825:                    ON CONFLICT (store_id, supplier_id)
+views/masters.py:835:                    UPDATE store_suppliers
+views/masters.py:837:                    WHERE store_id = %s AND supplier_id = %s
+views/masters.py:841:                 # NEW: audit log (UPDATE store + supplier links)
+views/masters.py:849:                    message="Store updated (including supplier links)",
+views/masters.py:857:                        "supplier_links_added": sorted(list(to_add)),
+views/masters.py:858:                        "supplier_links_removed": sorted(list(to_remove)),
+views/masters.py:873:            suppliers=suppliers,
+views/masters.py:874:            linked_supplier_ids=linked_supplier_ids,
+views/purchases.py:56:            suppliers = db.execute(
+views/purchases.py:59:                FROM suppliers s
+views/purchases.py:60:                JOIN store_suppliers ss
+views/purchases.py:61:                  ON s.id = ss.supplier_id
+views/purchases.py:70:            suppliers = db.execute(
+views/purchases.py:73:                FROM suppliers
+views/purchases.py:80:        #   ヘッダー：store_id, supplier_id, delivery_date
+views/purchases.py:85:            header_supplier_id = (request.form.get("supplier_id") or "").strip()
+views/purchases.py:89:            if not store_id or not header_supplier_id or not delivery_date:
+views/purchases.py:140:                      (store_id, supplier_id, item_id,
+views/purchases.py:147:                        header_supplier_id,
+views/purchases.py:193:        supplier_id = request.args.get("supplier_id") or ""
+views/purchases.py:194:        selected_supplier_id = int(supplier_id) if supplier_id else None
+views/purchases.py:215:        if supplier_id:
+views/purchases.py:216:            where_clauses.append("p.supplier_id = %s")
+views/purchases.py:217:            params.append(supplier_id)
+views/purchases.py:239:                s.name  AS supplier_name,
+views/purchases.py:245:            LEFT JOIN suppliers   s  ON p.supplier_id = s.id
+views/purchases.py:258:            suppliers=suppliers,               # for supplier dropdown
+views/purchases.py:261:            selected_supplier_id=selected_supplier_id,
+views/purchases.py:269:    # /api/mst_items/by_supplier/<supplier_id>
+views/purchases.py:271:    @app.route("/api/mst_items/by_supplier/<int:supplier_id>")
+views/purchases.py:272:    def api_items_by_supplier(supplier_id):
+views/purchases.py:285:                AND p.supplier_id = i.supplier_id
+views/purchases.py:288:            WHERE i.supplier_id = %s
+views/purchases.py:292:            (supplier_id,),
+views/purchases.py:325:        suppliers = db.execute(
+views/purchases.py:326:            "SELECT id, name FROM suppliers ORDER BY code"
+views/purchases.py:335:              p.supplier_id,
+views/purchases.py:400:            supplier_id = request.form.get("supplier_id") or None
+views/purchases.py:411:                    suppliers=suppliers,
+views/purchases.py:436:                  supplier_id  = %s,
+views/purchases.py:446:                    supplier_id,
+views/purchases.py:481:            suppliers=suppliers,
+views/reports/purchase_report.py:50:            s.id AS supplier_id,
+views/reports/purchase_report.py:51:            s.name AS supplier_name,
+views/reports/purchase_report.py:56:        LEFT JOIN suppliers s ON i.supplier_id = s.id
+views/reports/purchase_report.py:64:    supplier_map = {}
+views/reports/purchase_report.py:66:        sid = r["supplier_id"] or 0
+views/reports/purchase_report.py:67:        if sid not in supplier_map:
+views/reports/purchase_report.py:68:            supplier_map[sid] = {
+views/reports/purchase_report.py:69:                "supplier_id": sid,
+views/reports/purchase_report.py:70:                "supplier_name": r["supplier_name"] or "(Unknown)",
+views/reports/purchase_report.py:77:        if ym in supplier_map[sid]["values"]:
+views/reports/purchase_report.py:78:            supplier_map[sid]["values"][ym] = amt
+views/reports/purchase_report.py:79:        supplier_map[sid]["total"] += amt
+views/reports/purchase_report.py:81:    rows = list(supplier_map.values())
+views/reports/__init__.py:23:    from . import purchase_report_supplier  # noqa: F401
+views/reports/usage_report.py:20:    suppliers = db.execute(
+views/reports/usage_report.py:21:        "SELECT id, name FROM suppliers ORDER BY code"
+views/reports/usage_report.py:26:    supplier_id = request.args.get("supplier_id") or ""
+views/reports/usage_report.py:29:    selected_supplier_id = int(supplier_id) if supplier_id else None
+views/reports/usage_report.py:65:    if supplier_id:
+views/reports/usage_report.py:66:        where_pur.append("p.supplier_id = %s")
+views/reports/usage_report.py:67:        params_pur.append(int(supplier_id))
+views/reports/usage_report.py:137:            SELECT id, code, name, supplier_id
+views/reports/usage_report.py:143:        if supplier_id:
+views/reports/usage_report.py:144:            sql_items += " AND supplier_id = %s"
+views/reports/usage_report.py:145:            params_items.append(int(supplier_id))
+views/reports/usage_report.py:206:        suppliers=suppliers,
+views/reports/usage_report.py:207:        selected_supplier_id=selected_supplier_id,
+views/reports/purchase_report_supplier.py:13:@reports_bp.route("/purchases/report/supplier/<int:supplier_id>", methods=["GET"])
+views/reports/purchase_report_supplier.py:14:def purchase_report_supplier(supplier_id: int):
+views/reports/purchase_report_supplier.py:23:    suppliers = db.execute(
+views/reports/purchase_report_supplier.py:24:        "SELECT id, name FROM suppliers ORDER BY code"
+views/reports/purchase_report_supplier.py:31:    if supplier_id == 0:
+views/reports/purchase_report_supplier.py:32:        supplier_name = "（仕入先を選択してください）"
+views/reports/purchase_report_supplier.py:34:        supplier_row = db.execute(
+views/reports/purchase_report_supplier.py:35:            "SELECT id, name FROM suppliers WHERE id = %s",
+views/reports/purchase_report_supplier.py:36:            [supplier_id],
+views/reports/purchase_report_supplier.py:38:        if supplier_row is None:
+views/reports/purchase_report_supplier.py:40:        supplier_name = supplier_row["name"]
+views/reports/purchase_report_supplier.py:74:    if supplier_id != 0:
+views/reports/purchase_report_supplier.py:79:            "i.supplier_id = %s",
+views/reports/purchase_report_supplier.py:81:        params: list[object] = [start_date, end_date, supplier_id]
+views/reports/purchase_report_supplier.py:156:        "pur/purchase_report_supplier.html",
+views/reports/purchase_report_supplier.py:159:        supplier_id=supplier_id,
+views/reports/purchase_report_supplier.py:160:        supplier_name=supplier_name,
+views/reports/purchase_report_supplier.py:165:        suppliers=suppliers,
+
+==============================
+ INVENTORY MODULE
+==============================
+views/masters.py:419:              i.inventory_unit,
+views/masters.py:528:            inventory_unit = to_int_or_none(request.form.get("inventory_unit"))
+views/masters.py:561:                      inventory_unit    = %s,
+views/masters.py:573:                        inventory_unit,
+views/masters.py:596:                            "inventory_unit": inventory_unit,
+views/loc/locations_page.py:108:    @app.route("/inventory/locations", methods=["GET"])
+views/loc/locations_page.py:109:    def inventory_locations():
+views/loc/locations_api.py:7:    @app.route("/inventory/api/shelves", methods=["GET"], endpoint="inventory_api_shelves")
+views/loc/locations_api.py:8:    def inventory_api_shelves():
+views/loc/sort/sort_config.py:5:        FROM inventory_item_sort_config
+views/loc/sort/sort_config.py:25:        INSERT INTO inventory_item_sort_config
+views/loc/sort/routes.py:8:    @app.route("/inventory/locations/sort", methods=["POST"], endpoint="inventory_locations_sort_save")
+views/loc/sort/routes.py:9:    def inventory_locations_sort_save():
+views/loc/sort/routes.py:35:        return redirect(url_for("inventory_locations", store_id=store_id))
+views/loc/shelves_page.py:7:    @app.route("/inventory/shelves", methods=["GET", "POST"], endpoint="shelf_master")
+views/loc/locations_actions.py:1:# views/inventory_locations/locations_actions.py
+views/loc/locations_actions.py:7:    @app.route("/inventory/locations/save", methods=["POST"])
+views/loc/locations_actions.py:8:    def inventory_locations_save():
+views/loc/locations_actions.py:14:            return redirect(url_for("inventory_locations"))
+views/loc/locations_actions.py:68:        flash("Saved inventory locations.")
+views/loc/locations_actions.py:69:        return redirect(url_for("inventory_locations", store_id=store_id))
+views/loc/locations_actions.py:71:    @app.route("/inventory/reorder-mst_items", methods=["POST"])
+views/loc/locations_actions.py:72:    def inventory_reorder_items():
+views/loc/zones_page.py:1:# views/inventory_locations/zones_page.py
+views/loc/zones_page.py:12:    @app.route("/inventory/zones", methods=["GET"], endpoint="zone_master")
+views/loc/zones_page.py:40:            "inventory/zone_master.html",
+views/loc/admin_store_config.py:5:    @app.route("/inventory/store-temp-zones", methods=["GET"], endpoint="store_temp_zones_admin")
+views/loc/admin_store_config.py:46:    @app.route("/inventory/store-temp-zones/save", methods=["POST"], endpoint="store_temp_zones_admin_save")
+views/loc/admin_store_config.py:83:    @app.route("/inventory/store-areas", methods=["GET"], endpoint="store_areas_admin")
+views/loc/admin_store_config.py:122:    @app.route("/inventory/store-areas/save", methods=["POST"], endpoint="store_areas_admin_save")
+views/loc/item_location_api.py:5:    @app.route("/inventory/api/item-location", methods=["GET"], endpoint="inventory_api_item_location")
+views/loc/item_location_api.py:6:    def inventory_api_item_location():
+views/inventory_v2_bk260121.py:1:# views/inventory_v2.py
+views/inventory_v2_bk260121.py:34:def init_inventory_views_v2(app, get_db):
+views/inventory_v2_bk260121.py:38:        from views.inventory import init_inventory_views
+views/inventory_v2_bk260121.py:39:        init_inventory_views(app, get_db)
+views/inventory_v2_bk260121.py:46:    # /inventory/count
+views/inventory_v2_bk260121.py:48:    @app.route("/inventory/count_v2", methods=["GET", "POST"] )
+views/inventory_v2_bk260121.py:49:    def inventory_count_v2():
+views/inventory_v2_bk260121.py:74:                return redirect(url_for("inventory_count"))
+views/inventory_v2_bk260121.py:118:                url_for("inventory_count", store_id=store_id, count_date=count_date)
+views/inventory_v2_bk260121.py:395:            "inv/inventory_count_v2.html",
+views/inventory_v2.py:1:# views/inventory_v2.py
+views/inventory_v2.py:23:def init_inventory_views_v2(app, get_db):
+views/inventory_v2.py:24:    @app.route("/inventory/count_v2", methods=["GET", "POST"], endpoint="inventory_count_v2")
+views/inventory_v2.py:25:    def inventory_count_v2():
+views/inventory_v2.py:49:                return redirect(url_for("inventory_count_v2"))
+views/inventory_v2.py:117:            return redirect(url_for("inventory_count_v2", store_id=store_id, count_date=count_date))
+views/inventory_v2.py:136:                "inv/inventory_count_v2.html",
+views/inventory_v2.py:396:            "inv/inventory_count_v2.html",
+views/inv_sort/sort_config.py:5:            FROM inventory_item_sort_config
+views/inv_sort/sort_config.py:24:            INSERT INTO inventory_item_sort_config
+views/inv_sort/__init__.py:6:def init_inventory_sort_views(app, get_db, SORTABLE_KEYS: set[str]):
+views/inv_sort/__init__.py:8:    Register sorting-config routes for inventory_count.
+views/inv_sort/__init__.py:9:    Designed to be called from views/inventory.py (so app.py stays unchanged).
+views/inv_sort/__init__.py:12:    @app.route("/inventory/item-sort-config", methods=["POST"], endpoint="inventory_item_sort_config_save")
+views/inv_sort/__init__.py:13:    def inventory_item_sort_config_save():
+views/inv_sort/__init__.py:42:        return redirect(url_for("inventory_count", store_id=store_id, count_date=count_date))
+views/reports/cost_report.py:85:    # 2) Ending inventory (FIFO valuation)
+views/reports/cost_report.py:174:    # 3) Beginning inventory = previous month ending inventory
+views/reports/usage_report.py:87:    # ② Month-end inventory (latest count in month)
+views/inventory.py:1:# views/inventory.py
+views/inventory.py:30:def init_inventory_views(app, get_db):
+views/inventory.py:34:        from views.inventory import init_inventory_views
+views/inventory.py:35:        init_inventory_views(app, get_db)
+views/inventory.py:42:    # /inventory/count
+views/inventory.py:44:    @app.route("/inventory/count", methods=["GET", "POST"])
+views/inventory.py:45:    def inventory_count():
+views/inventory.py:70:                return redirect(url_for("inventory_count"))
+views/inventory.py:114:                url_for("inventory_count", store_id=store_id, count_date=count_date)
+views/inventory.py:289:            "inv/inventory_count.html",
+
+==============================
+ CONTEXT PROCESSORS
+==============================
+./app.py:49:@app.context_processor
+./app.py:65:@app.context_processor
+./app.py:78:@app.context_processor
+./app.py:186:@app.context_processor
+./app.py:202:@app.context_processor
+./views/auth/auth.py:42:    @app.context_processor
+./views/auth/login.py:166:    @app.context_processor

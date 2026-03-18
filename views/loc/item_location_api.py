@@ -6,7 +6,11 @@ def init_item_location_api(app, get_db):
     def inventory_api_item_location():
         db = get_db()
 
-        store_id = request.args.get("store_id")
+        selected_store_id = normalize_accessible_store_id(
+        request.args.get("store_id")
+        )
+        store_id = str(selected_store_id) if selected_store_id else None
+
         item_id = request.args.get("item_id")
 
         if not store_id or not item_id:

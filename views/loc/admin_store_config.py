@@ -1,14 +1,20 @@
 from flask import render_template, request, redirect, url_for, flash
+from utils.access_scope import (
+    get_accessible_stores,
+    normalize_accessible_store_id,
+)
 
 def init_admin_store_config(app, get_db):
 
     @app.route("/inventory/store-temp-zones", methods=["GET"], endpoint="store_temp_zones_admin")
     def store_temp_zones_admin():
         db = get_db()
-        store_id = request.args.get("store_id") or ""
-        selected_store_id = int(store_id) if store_id else None
+        selected_store_id = normalize_accessible_store_id(
+        request.args.get("store_id")
+        )
+        store_id = str(selected_store_id) if selected_store_id else ""
 
-        stores = db.execute("SELECT id, code, name FROM mst_stores ORDER BY code").fetchall()
+        stores = get_accessible_stores()
 
         tz_master = db.execute(
             """
@@ -46,7 +52,10 @@ def init_admin_store_config(app, get_db):
     @app.route("/inventory/store-temp-zones/save", methods=["POST"], endpoint="store_temp_zones_admin_save")
     def store_temp_zones_admin_save():
         db = get_db()
-        store_id = request.form.get("store_id")
+        selected_store_id = normalize_accessible_store_id(
+        request.form.get("store_id")
+        )
+        store_id = str(selected_store_id) if selected_store_id else None
         if not store_id:
             flash("missing store_id")
             return redirect(url_for("store_temp_zones_admin"))
@@ -83,10 +92,12 @@ def init_admin_store_config(app, get_db):
     @app.route("/inventory/store-areas", methods=["GET"], endpoint="store_areas_admin")
     def store_areas_admin():
         db = get_db()
-        store_id = request.args.get("store_id") or ""
-        selected_store_id = int(store_id) if store_id else None
+        selected_store_id = normalize_accessible_store_id(
+        request.args.get("store_id")
+        )
+        store_id = str(selected_store_id) if selected_store_id else ""
 
-        stores = db.execute("SELECT id, code, name FROM mst_stores ORDER BY code").fetchall()
+        stores = get_accessible_stores()
 
         areas_master = db.execute(
             """
@@ -122,7 +133,11 @@ def init_admin_store_config(app, get_db):
     @app.route("/inventory/store-areas/save", methods=["POST"], endpoint="store_areas_admin_save")
     def store_areas_admin_save():
         db = get_db()
-        store_id = request.form.get("store_id")
+        selected_store_id = normalize_accessible_store_id(
+        request.form.get("store_id")
+        )
+        store_id = str(selected_store_id) if selected_store_id else None
+        
         if not store_id:
             flash("missing store_id")
             return redirect(url_for("store_areas_admin"))

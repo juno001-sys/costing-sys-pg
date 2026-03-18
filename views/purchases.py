@@ -9,7 +9,14 @@ from flask import (
     url_for,
     flash,
     jsonify,
+    g,
 )
+from utils.access_scope import (
+    get_accessible_stores,
+    get_accessible_store_ids,
+    normalize_accessible_store_id,
+)
+
 
 
 def init_purchase_views(app, get_db, log_purchase_change):
@@ -30,32 +37,21 @@ def init_purchase_views(app, get_db, log_purchase_change):
         db = get_db()
     
         # --- 1) store_id を GET から取得して先に selected_store_id を定義 ---
-        store_id = request.args.get("store_id")
-        if store_id:
-            try:
-                selected_store_id = int(store_id)
-            except ValueError:
-                selected_store_id = None
-        else:
-            selected_store_id = None
+        selected_store_id = normalize_accessible_store_id(
+            request.args.get("store_id")
+        )
     
         # --- 2) 店舗一覧（固定） ---
-        mst_stores = db.execute(
-            """
-            SELECT id, code, name
-            FROM mst_stores
-            WHERE COALESCE(is_active, 1) = 1
-            ORDER BY code, id
-            """
-        ).fetchall()
+        mst_stores = get_accessible_stores()
+        accessible_store_ids = get_accessible_store_ids()
     
         # --- 3) 店舗に応じて仕入先を絞る ---
         if selected_store_id:
             suppliers = db.execute(
                 """
                 SELECT s.id, s.name
-                FROM suppliers s
-                JOIN store_suppliers ss
+                FROM pur_suppliers s
+                JOIN pur_store_suppliers ss
                   ON s.id = ss.supplier_id
                  AND ss.store_id = %s
                  AND ss.is_active = 1
@@ -68,7 +64,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
             suppliers = db.execute(
                 """
                 SELECT id, code, name
-                FROM suppliers
+                FROM pur_suppliers
                 WHERE is_active = 1
                 ORDER BY code
                 """
@@ -79,7 +75,11 @@ def init_purchase_views(app, get_db, log_purchase_change):
         #   明細   ：item_id_i, quantity_i, unit_price_i (i=1..row_count)
         # ----------------------------------------------------
         if request.method == "POST":
-            store_id = (request.form.get("store_id") or "").strip()
+            selected_post_store_id = normalize_accessible_store_id(
+                request.form.get("store_id")
+            )
+            store_id = str(selected_post_store_id) if selected_post_store_id else ""
+
             header_supplier_id = (request.form.get("supplier_id") or "").strip()
             delivery_date = (request.form.get("delivery_date") or "").strip()
 
@@ -185,8 +185,10 @@ def init_purchase_views(app, get_db, log_purchase_change):
         # ----------------------------------------------------
         # GET: 画面表示（フォーム + 検索付き直近50件）
         # ----------------------------------------------------
-        store_id = request.args.get("store_id") or ""
-        selected_store_id = int(store_id) if store_id else None
+        selected_store_id = normalize_accessible_store_id(
+            request.args.get("store_id")
+        )
+        store_id = str(selected_store_id) if selected_store_id else ""
 
         supplier_id = request.args.get("supplier_id") or ""
         selected_supplier_id = int(supplier_id) if supplier_id else None
@@ -205,6 +207,11 @@ def init_purchase_views(app, get_db, log_purchase_change):
 
         where_clauses = ["p.is_deleted = 0"]
         params = []
+
+        company_id = getattr(g, "current_company_id", None)
+        if company_id:
+            where_clauses.append("st.company_id = %s")
+            params.append(company_id)
 
         if store_id:
             where_clauses.append("p.store_id = %s")
@@ -240,7 +247,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
                 p.unit_price,
                 p.amount
             FROM purchases p
-            LEFT JOIN suppliers   s  ON p.supplier_id = s.id
+            LEFT JOIN pur_suppliers   s  ON p.supplier_id = s.id
             LEFT JOIN mst_items   i  ON p.item_id     = i.id
             LEFT JOIN mst_stores  st ON p.store_id    = st.id
             {where_sql}
@@ -321,7 +328,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
         ).fetchall()
 
         suppliers = db.execute(
-            "SELECT id, name FROM suppliers ORDER BY code"
+            "SELECT id, name FROM pur_suppliers ORDER BY code"
         ).fetchall()
 
         # 対象の取引を取得
@@ -393,7 +400,10 @@ def init_purchase_views(app, get_db, log_purchase_change):
             # -------------------------
             # 更新処理
             # -------------------------
-            store_id = request.form.get("store_id") or None
+            selected_store_id = normalize_accessible_store_id(
+            request.form.get("store_id")
+            )
+            store_id = str(selected_store_id) if selected_store_id else None
             delivery_date = (request.form.get("delivery_date") or "").strip()
             supplier_id = request.form.get("supplier_id") or None
             item_id = request.form.get("item_id") or None

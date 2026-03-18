@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from flask import render_template, request
+from flask import render_template, request,g
+from utils.access_scope import (
+    get_accessible_stores,
+    normalize_accessible_store_id,
+)
 
 from . import reports_bp, get_db
 
@@ -11,11 +15,12 @@ from . import reports_bp, get_db
 def purchase_report():
     db = get_db()
 
-    mst_stores = db.execute(
-        "SELECT id, name FROM mst_stores ORDER BY code"
-    ).fetchall()
+    mst_stores = get_accessible_stores()
 
-    store_id = request.args.get("store_id") or ""
+    selected_store_id = normalize_accessible_store_id(
+    request.args.get("store_id")
+    )
+    store_id = str(selected_store_id) if selected_store_id else ""
 
     # last 13 months
     today = datetime.now().date()
@@ -41,6 +46,11 @@ def purchase_report():
     ]
     params: list[object] = [start_date, end_date]
 
+    company_id = getattr(g, "current_company_id", None)
+    if company_id:
+        where.append("st.company_id = %s")
+        params.append(company_id)
+
     if store_id:
         where.append("p.store_id = %s")
         params.append(int(store_id))
@@ -53,7 +63,8 @@ def purchase_report():
             SUM(p.amount) AS total_amount
         FROM purchases p
         LEFT JOIN mst_items i ON p.item_id = i.id
-        LEFT JOIN suppliers s ON i.supplier_id = s.id
+        LEFT JOIN pur_suppliers s ON i.supplier_id = s.id
+        LEFT JOIN mst_stores st ON p.store_id = st.id
         WHERE {' AND '.join(where)}
         GROUP BY s.id, s.name, ym
         ORDER BY s.id, ym
@@ -88,7 +99,7 @@ def purchase_report():
     return render_template(
         "pur/purchase_report.html",
         mst_stores=mst_stores,
-        selected_store_id=int(store_id) if store_id else None,
+        selected_store_id=selected_store_id,
         rows=rows,
         month_keys=month_keys,
         month_totals=month_totals,

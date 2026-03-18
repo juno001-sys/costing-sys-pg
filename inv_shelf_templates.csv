@@ -1,0 +1,25 @@
+id,profile_code,area_id,temp_zone,code,name,sort_order,is_active
+2,DEFAULT,1,AMB,TOP,Top shelf,10,t
+3,DEFAULT,1,AMB,MID,Middle shelf,20,t
+4,DEFAULT,1,AMB,LOW,Bottom shelf,30,t
+5,DEFAULT,1,AMB,FLOOR,On floor,40,t
+6,DEFAULT,2,AMB,TOP,Top shelf,10,t
+7,DEFAULT,2,AMB,MID,Middle shelf,20,t
+8,DEFAULT,2,AMB,LOW,Bottom shelf,30,t
+9,DEFAULT,2,AMB,FLOOR,On floor,40,t
+10,DEFAULT,3,AMB,TOP,Top shelf,10,t
+11,DEFAULT,3,AMB,MID,Middle shelf,20,t
+12,DEFAULT,3,AMB,LOW,Bottom shelf,30,t
+13,DEFAULT,3,AMB,FLOOR,On floor,40,t
+14,DEFAULT,4,AMB,TOP,Top shelf,10,t
+15,DEFAULT,4,AMB,MID,Middle shelf,20,t
+16,DEFAULT,4,AMB,LOW,Bottom shelf,30,t
+17,DEFAULT,4,AMB,FLOOR,On floor,40,t
+18,DEFAULT,5,AMB,TOP,Top shelf,10,t
+19,DEFAULT,5,AMB,MID,Middle shelf,20,t
+20,DEFAULT,5,AMB,LOW,Bottom shelf,30,t
+21,DEFAULT,5,AMB,FLOOR,On floor,40,t
+22,DEFAULT,6,AMB,TOP,Top shelf,10,t
+23,DEFAULT,6,AMB,MID,Middle shelf,20,t
+24,DEFAULT,6,AMB,LOW,Bottom shelf,30,t
+25,DEFAULT,6,AMB,FLOOR,On floor,40,t

@@ -1,14 +1,16 @@
 # cost_report.py
 from __future__ import annotations
 
-from datetime import datetime
-
-from flask import render_template, request
-
-from . import reports_bp, get_db
-
 from datetime import datetime, date
 from decimal import Decimal, ROUND_HALF_UP
+
+from flask import render_template, request, g
+from utils.access_scope import (
+    get_accessible_stores,
+    normalize_accessible_store_id,
+)
+
+from . import reports_bp, get_db
 
 def ym_to_month_start(ym: str) -> date:
     y, m = ym.split("-")
@@ -23,16 +25,16 @@ def cost_report():
     db = get_db()
 
     # mst_stores list
-    mst_stores = db.execute(
-        "SELECT id, name FROM mst_stores ORDER BY code"
-    ).fetchall()
+    mst_stores = get_accessible_stores()
 
     # store filter (optional)
-    store_id = request.args.get("store_id") or ""
-    selected_store_id = int(store_id) if store_id else None
+    selected_store_id = normalize_accessible_store_id(
+    request.args.get("store_id")
+    )
+    store_id = str(selected_store_id) if selected_store_id else ""
 
-    # None means "all mst_stores"
-    store_id_param = None if store_id == "" else int(store_id)
+    # None means "all accessible stores"
+    store_id_param = None if selected_store_id is None else selected_store_id
 
     # last 13 months
     today = datetime.now().date()
@@ -64,16 +66,21 @@ def cost_report():
           TO_CHAR(p.delivery_date, 'YYYY-MM') AS ym,
           SUM(p.amount) AS total_amount
         FROM purchases p
+        LEFT JOIN mst_stores st ON p.store_id = st.id
         WHERE p.delivery_date >= %s
           AND p.delivery_date < %s
           AND p.is_deleted = 0
           AND ( %s IS NULL OR p.store_id = %s )
+          AND st.company_id = %s
         GROUP BY ym
     """
+    company_id = getattr(g, "current_company_id", None)
+
     pur_rows = db.execute(
         sql_pur,
-        [start_date, end_date, store_id_param, store_id_param],
+        [start_date, end_date, store_id_param, store_id_param, company_id],
     ).fetchall()
+
 
     purchases_by_month = {ym: 0 for ym in month_keys}
     for r in pur_rows:
@@ -96,9 +103,11 @@ def cost_report():
                 ORDER BY sc.count_date DESC, sc.id DESC
               ) AS rn
             FROM stock_counts sc
+            LEFT JOIN mst_stores st ON sc.store_id = st.id
             WHERE sc.count_date >= %s
               AND sc.count_date < %s
               AND ( %s IS NULL OR sc.store_id = %s )
+              AND st.company_id = %s
         ),
         end_stock AS (
             SELECT
@@ -128,8 +137,11 @@ def cost_report():
             FROM end_stock e
             JOIN purchases p
               ON p.store_id = e.store_id
-             AND p.item_id  = e.item_id
+             AND p.item_id = e.item_id
              AND p.delivery_date <= e.count_date
+            JOIN mst_stores stp
+              ON p.store_id = stp.id
+             AND stp.company_id = %s
         ),
         fifo_layers AS (
             SELECT
@@ -162,7 +174,7 @@ def cost_report():
     """
     inv_rows = db.execute(
         sql_inv_fifo,
-        [start_date, end_date, store_id_param, store_id_param],
+        [start_date, end_date, store_id_param, store_id_param, company_id, company_id],
     ).fetchall()
 
     end_inv_by_month = {ym: 0.0 for ym in month_keys}
@@ -242,11 +254,7 @@ def cost_report():
             ).fetchone()
 
         if profit_setting_row:
-            from decimal import Decimal, ROUND_HALF_UP
-
-            def yen(v):
-                return int(Decimal(v).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
-
+      
             fl = Decimal(str(profit_setting_row["fl_ratio"]))
             f  = Decimal(str(profit_setting_row["food_ratio"]))
             u  = Decimal(str(profit_setting_row["utility_ratio"]))
@@ -328,12 +336,12 @@ def cost_report():
             "fixed_cost_yen": int(setting_row["fixed_cost_yen"]),
             "setting_store_id": setting_row["store_id"],  # None => global
 
-            "ideal_sales_yen": _yen(ideal_sales),
-            "cogs_yen": _yen(cogs),
-            "ideal_labor_yen": _yen(ideal_labor),
-            "utility_yen": _yen(utility),
-            "contrib_yen": _yen(contrib),
-            "est_profit_yen": _yen(est_profit),
+            "ideal_sales_yen": yen(ideal_sales),
+            "cogs_yen": yen(cogs),
+            "ideal_labor_yen": yen(ideal_labor),
+            "utility_yen": yen(utility),
+            "contrib_yen": yen(contrib),
+            "est_profit_yen": yen(est_profit),
         }
 
 

@@ -1,6 +1,7 @@
 # views/loc/locations_api.py
 
 from flask import request, jsonify
+from utils.access_scope import normalize_accessible_store_id
 
 
 def init_location_api(app, get_db):
@@ -8,7 +9,11 @@ def init_location_api(app, get_db):
     def inventory_api_shelves():
         db = get_db()
 
-        store_id = request.args.get("store_id")
+        selected_store_id = normalize_accessible_store_id(
+        request.args.get("store_id")
+        )
+        store_id = str(selected_store_id) if selected_store_id else None
+
         store_area_map_id = request.args.get("store_area_map_id")
         temp_zone = request.args.get("temp_zone")
 

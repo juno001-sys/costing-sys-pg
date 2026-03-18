@@ -147,6 +147,7 @@ def init_auth_login_views(app, get_db):
         }
         g.current_company_id = row["company_id"]
         g.current_role = row["role"]
+        g.is_system_admin = session.get("is_system_admin", False)
 
         # refresh last_seen (cheap)
         try:
@@ -168,6 +169,7 @@ def init_auth_login_views(app, get_db):
             "current_user": getattr(g, "current_user", None),
             "current_company_id": getattr(g, "current_company_id", None),
             "current_role": getattr(g, "current_role", None),
+            "is_system_admin": getattr(g, "is_system_admin", False),
         }
 
     # -------------------------
@@ -225,6 +227,7 @@ def init_auth_login_views(app, get_db):
         email = (request.form.get("email") or "").strip().lower()
         password = request.form.get("password") or ""
         next_url = request.form.get("next") or url_for("index")
+        is_sys_admin_login = request.form.get("system_admin") == "1"
 
         if not email:
             flash("Emailを入力してください。")
@@ -233,21 +236,69 @@ def init_auth_login_views(app, get_db):
         db = get_db()
 
         u = db.execute(
-            "SELECT id, email, name, password_hash, is_active FROM sys_users WHERE lower(email)=%s",
+            """
+            SELECT id, email, name, password_hash, is_active, is_system_admin
+            FROM sys_users
+            WHERE lower(email)=%s
+            """,
             (email,),
         ).fetchone()
+
+        print("DEBUG USER:", u)
 
         if not u or u["is_active"] == 0:
             flash("ログインに失敗しました。")
             return redirect(url_for("login", next=next_url))
 
+#        if u["password_hash"]:
+#            if not password or not check_password_hash(u["password_hash"], password):
+#                flash("ログインに失敗しました。")
+#                return redirect(url_for("login", next=next_url))
+#
+#            # Determine which login form was used
+#            is_sys_admin_login = request.form.get("system_admin") == "1"
+#
+#            # System admin login form
+#            if is_sys_admin_login and not u["is_system_admin"]:
+#                flash("System admin login only.")
+#                return redirect(url_for("login", next=next_url))
+#
+#            # Normal company login form
+#            if not is_sys_admin_login and u["is_system_admin"]:
+#                flash("Please use the system admin login.")
+#                return redirect(url_for("login", next=next_url))
         if u["password_hash"]:
-            if not password or not check_password_hash(u["password_hash"], password):
+            password_ok = bool(password) and check_password_hash(u["password_hash"], password)
+            print("DEBUG password provided:", bool(password))
+            print("DEBUG password_ok:", password_ok)
+
+            if not password_ok:
                 flash("ログインに失敗しました。")
                 return redirect(url_for("login", next=next_url))
+
+            # Determine which login form was used
+            is_sys_admin_login = request.form.get("system_admin") == "1"
+            print("DEBUG is_sys_admin_login(after password):", is_sys_admin_login)
+            print("DEBUG user.is_system_admin:", u["is_system_admin"])
+
+            # System admin login form
+            if is_sys_admin_login and not u["is_system_admin"]:
+                print("DEBUG rejected: normal user tried system admin login")
+                flash("System admin login only.")
+                return redirect(url_for("login", next=next_url))
+
+            # Normal company login form
+            if not is_sys_admin_login and u["is_system_admin"]:
+                print("DEBUG rejected: system admin used normal login")
+                flash("Please use the system admin login.")
+                return redirect(url_for("login", next=next_url))
+
+
         else:
             flash("パスワード未設定です。招待リンクから有効化してください。")
             return redirect(url_for("login", next=next_url))
+
+
 
         mem = db.execute(
             """
@@ -265,8 +316,14 @@ def init_auth_login_views(app, get_db):
             return redirect(url_for("login", next=next_url))
 
         _create_session(db, u["id"], mem["company_id"])
+
+        session["is_system_admin"] = bool(u["is_system_admin"])
+        
         flash("ログインしました。")
         return redirect(next_url)
+
+        if is_sys_admin_login and u["is_system_admin"]:
+            return redirect("/admin/system") 
 
     @app.post("/logout")
     def logout():

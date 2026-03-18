@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from flask import render_template, request
+from flask import render_template, request,g
+from utils.access_scope import (
+    get_accessible_stores,
+    normalize_accessible_store_id,
+)
 
 from . import reports_bp, get_db
 
@@ -13,7 +17,11 @@ def work_logs():
     # -------------------------
     # Filters (GET params)
     # -------------------------
-    store_id = request.args.get("store_id") or ""
+    selected_store_id = normalize_accessible_store_id(
+        request.args.get("store_id")
+    )
+    store_id = str(selected_store_id) if selected_store_id else ""
+    
     action = request.args.get("action") or ""
     module = request.args.get("module") or ""
     q = request.args.get("q") or ""
@@ -42,13 +50,18 @@ def work_logs():
     offset = (page - 1) * per_page
 
     # stores for filter dropdown
-    stores = db.execute("SELECT id, name FROM mst_stores ORDER BY code").fetchall()
+    stores = get_accessible_stores()
 
     # -------------------------
     # Build WHERE
     # -------------------------
     where = []
     params = []
+
+    company_id = getattr(g, "current_company_id", None)
+    if company_id:
+        where.append("company_id = %s")
+        params.append(company_id)
 
     # date range: [from 00:00, to+1 00:00)
     where.append("created_at >= %s")
@@ -129,7 +142,7 @@ def work_logs():
     return render_template(
         "rpt/work_logs.html",
         stores=stores,
-        selected_store_id=store_id,
+        selected_store_id=selected_store_id,
         rows=rows,
         page=page,
         per_page=per_page,

@@ -1,6 +1,23 @@
 {% extends "layout/base_public.html" %} {% block title %}Login{% endblock %} {%
 block content %}
-<h2>Login</h2>
+
+<img
+          src="{{ url_for('static', filename='img/kurajika_logo.png') }}"
+          alt="Kurajika"
+          style="height: 36px; width: auto"
+        />
+
+        {% if env == "prod" %}
+        <h1>倉島事業開発 CMS – Postgres</h1>
+        {% elif env == "rft" %}
+        <h1>⚠ RFT – Refactor Environment</h1>
+        {% elif env == "local" %}
+        <h1>LOCAL – Your Machine</h1>
+        {% else %}
+        <h1>DEV – Test Environment</h1>
+        {% endif %}
+      </div>
+
 
 <div style="display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap">
   <!-- Normal users -->
@@ -20,12 +37,17 @@ block content %}
   <div class="card" style="flex: 1; min-width: 320px">
     <h3>System Admin</h3>
     <form method="post" action="{{ url_for('login') }}">
+      <!-- Tell backend this is a system admin login -->
+      <input type="hidden" name="system_admin" value="1" />
+
       <!-- Force sys-admin landing after login -->
       <input type="hidden" name="next" value="/admin/system" />
+
       <label>Email<br /><input name="email" required /></label><br /><br />
       <label
         >Password<br /><input name="password" type="password" required /></label
       ><br /><br />
+
       <button type="submit">Login as System Admin</button>
     </form>
   </div>
