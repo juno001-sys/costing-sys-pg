@@ -51,16 +51,25 @@ def init_purchase_views(app, get_db, log_purchase_change):
 
         company_id = getattr(g, "current_company_id", None)
 
-        suppliers = db.execute(
+
+        if selected_store_id:
+             suppliers = db.execute(
             """
-            SELECT id, code, name
-            FROM pur_suppliers
-            WHERE is_active = 1
-              AND company_id = %s
-            ORDER BY code
-            """,
-            (company_id,),
-        ).fetchall()
+            SELECT s.id, s.code, s.name
+            FROM pur_suppliers s
+            JOIN pur_store_suppliers ss
+            ON s.id = ss.supplier_id
+            AND ss.store_id = %s
+            AND ss.is_active = 1
+            WHERE s.is_active = 1
+            AND s.company_id = %s
+            ORDER BY s.code
+                """,
+            (selected_store_id, company_id),
+            ).fetchall()
+        else:
+            suppliers = []        
+
         # ----------------------------------------------------
         # POST: 登録（新規 INSERT）処理
         #   ヘッダー：store_id, supplier_id, delivery_date

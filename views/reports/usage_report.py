@@ -18,10 +18,36 @@ def usage_report():
     # Stores
     mst_stores = get_accessible_stores()
 
+    # Query params
+    selected_store_id = normalize_accessible_store_id(
+        request.args.get("store_id")
+    )
+    store_id = str(selected_store_id) if selected_store_id else ""
+
+    supplier_id = request.args.get("supplier_id") or ""
+    selected_supplier_id = int(supplier_id) if supplier_id else None
+
+
     # Suppliers (dropdown)
-    suppliers = db.execute(
-        "SELECT id, name FROM pur_suppliers ORDER BY code"
-    ).fetchall()
+    company_id = getattr(g, "current_company_id", None)
+
+    if selected_store_id:
+     suppliers = db.execute(
+        """
+        SELECT s.id, s.name, s.code
+        FROM pur_suppliers s
+        JOIN pur_store_suppliers ss
+          ON s.id = ss.supplier_id
+         AND ss.store_id = %s
+         AND ss.is_active = 1
+        WHERE s.is_active = 1
+          AND s.company_id = %s
+        ORDER BY s.code
+        """,
+        (selected_store_id, company_id),
+        ).fetchall()
+    else:
+        suppliers = []
 
     # Query params
     selected_store_id = normalize_accessible_store_id(

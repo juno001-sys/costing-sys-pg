@@ -20,17 +20,34 @@ def purchase_report_supplier(supplier_id: int):
     # 店舗一覧
     mst_stores = get_accessible_stores()
 
-    # 仕入先一覧
-    suppliers = db.execute(
-        "SELECT id, name FROM pur_suppliers ORDER BY code"
-    ).fetchall()
 
     # 店舗（クエリパラメータ）
     selected_store_id = normalize_accessible_store_id(
-    request.args.get("store_id")
+        request.args.get("store_id")
     )
     store_id = str(selected_store_id) if selected_store_id else ""
 
+    # 仕入先一覧
+    company_id = getattr(g, "current_company_id", None)
+
+    if selected_store_id:
+        suppliers = db.execute(
+        """
+        SELECT s.id, s.name, s.code
+        FROM pur_suppliers s
+        JOIN pur_store_suppliers ss
+          ON s.id = ss.supplier_id
+         AND ss.store_id = %s
+         AND ss.is_active = 1
+        WHERE s.is_active = 1
+          AND s.company_id = %s
+        ORDER BY s.code
+        """,
+            (selected_store_id, company_id),
+        ).fetchall()
+    else:
+        suppliers = []
+    
     # 仕入先名
     if supplier_id == 0:
         supplier_name = "（仕入先を選択してください）"
