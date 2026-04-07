@@ -1,6 +1,6 @@
 # views/purchases.py
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import (
     render_template,
@@ -204,6 +204,18 @@ def init_purchase_views(app, get_db, log_purchase_change):
         to_date = request.args.get("to_date") or ""
         search_q = (request.args.get("q") or "").strip()
 
+        # デフォルトは当月
+        if not from_date and not to_date:
+            today = datetime.today().date()
+            first_day = today.replace(day=1)
+            if today.month == 12:
+                next_month_first = today.replace(year=today.year + 1, month=1, day=1)
+            else:
+                next_month_first = today.replace(month=today.month + 1, day=1)
+
+            from_date = first_day.isoformat()
+            to_date = (next_month_first - timedelta(days=1)).isoformat()
+
         where_clauses = ["p.is_deleted = 0"]
         params = []
 
@@ -251,7 +263,7 @@ def init_purchase_views(app, get_db, log_purchase_change):
             LEFT JOIN mst_stores  st ON p.store_id    = st.id
             {where_sql}
             ORDER BY p.delivery_date DESC, p.id DESC
-            LIMIT 50
+            
         """
         purchases = db.execute(sql, params).fetchall()
 
