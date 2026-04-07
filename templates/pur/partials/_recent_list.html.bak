@@ -4,6 +4,18 @@
 <h2>{{ t("purchase.recent.title") }}</h2>
 
 <form method="get" style="margin-bottom: 12px">
+  <!-- Store -->
+  <label style="margin-right: 12px">
+    {{ t("form.store") }}：
+    <select name="store_id">
+      <option value="">{{ t("common.all_stores") }}</option>
+      {% for s in stores %}
+      <option value="{{ s.id }}" {% if selected_store_id == s.id %}selected{% endif %}>
+        {{ s.name }}
+      </option>
+      {% endfor %}
+    </select>
+  </label>
 
   <!-- Supplier -->
   <label style="margin-right: 12px">
