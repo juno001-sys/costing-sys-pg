@@ -71,25 +71,41 @@ def init_location_shelves_page(app, get_db):
                 except ValueError:
                     sort_order = 100
 
-                cur = db.execute(
-                    """
-                    UPDATE inv_store_shelves
-                       SET name = %s,
-                           sort_order = %s,
-                           is_active = %s,
-                           temp_zone = %s,
-                           updated_at = NOW()
-                       WHERE id = %s
-                        AND store_id = %s
-                    """,
-                    (name, sort_order, use_flag,temp_zone, sid, selected_store_id),
-                )
+                if temp_zone is not None:
+                    cur = db.execute(
+                        """
+                        UPDATE inv_store_shelves
+                           SET name = %s,
+                               sort_order = %s,
+                               is_active = %s,
+                               temp_zone = %s,
+                               updated_at = NOW()
+                           WHERE id = %s
+                            AND store_id = %s
+                        """,
+                        (name, sort_order, use_flag, temp_zone, sid, selected_store_id),
+                    )
+                else:
+                    # temp_zone is NOT NULL — skip updating it when blank is submitted
+                    cur = db.execute(
+                        """
+                        UPDATE inv_store_shelves
+                           SET name = %s,
+                               sort_order = %s,
+                               is_active = %s,
+                               updated_at = NOW()
+                           WHERE id = %s
+                            AND store_id = %s
+                        """,
+                        (name, sort_order, use_flag, sid, selected_store_id),
+                    )
 
                 print("UPDATE shelf", sid, "rowcount=", cur.rowcount, "temp_zone=", temp_zone)
 
             db.commit()
             flash("Updated shelves.")
-            return redirect(url_for("shelf_master", store_id=selected_store_id))
+            back = request.form.get("_back")
+            return redirect(back if back else url_for("shelf_master", store_id=selected_store_id))
 
         # GET: list shelves
         shelves = []

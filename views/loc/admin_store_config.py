@@ -86,7 +86,8 @@ def init_admin_store_config(app, get_db):
 
         db.commit()
         flash("Updated store temp zones.")
-        return redirect(url_for("store_temp_zones_admin", store_id=store_id))
+        back = request.form.get("_back")
+        return redirect(back if back else url_for("store_temp_zones_admin", store_id=store_id))
 
 
     @app.route("/inventory/store-areas", methods=["GET"], endpoint="store_areas_admin")
@@ -169,4 +170,5 @@ def init_admin_store_config(app, get_db):
 
         db.commit()
         flash("Updated store areas.")
-        return redirect(url_for("store_areas_admin", store_id=store_id))
+        back = request.form.get("_back")
+        return redirect(back if back else url_for("store_areas_admin", store_id=store_id))

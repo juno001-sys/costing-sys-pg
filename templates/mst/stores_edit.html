@@ -1,99 +1,372 @@
 {% extends "layout/base.html" %}
 {% block title %}{{ t("stores.edit.title") }}{% endblock %}
 
+{% block head_extra %}
+<style>
+  /* ── Tab bar ─────────────────────────────────── */
+  .store-tabs { display:flex; gap:4px; flex-wrap:wrap; border-bottom:2px solid #dee2e6; margin:20px 0 0; }
+  .store-tabs a {
+    padding:8px 16px; text-decoration:none; color:#495057;
+    border:1px solid transparent; border-bottom:none; border-radius:4px 4px 0 0;
+    background:#f8f9fa; font-size:0.9rem; white-space:nowrap;
+  }
+  .store-tabs a:hover  { background:#e9ecef; color:#212529; }
+  .store-tabs a.active { background:#fff; border-color:#dee2e6; color:#212529; font-weight:600; margin-bottom:-2px; }
+
+  /* ── Tab panels ──────────────────────────────── */
+  .tab-panel { display:none; padding:20px 0; }
+  .tab-panel.active { display:block; }
+
+  /* ── Save bar (sticky bottom inside panel) ───── */
+  .tab-save-bar { margin-top:16px; }
+
+  /* ── Shelves tab: unset zone highlight ───────── */
+  tr.shelf-zone-unset td { background-color:#fff3cd !important; }
+</style>
+{% endblock %}
+
 {% block content %}
 <h2>{{ t("stores.edit.heading") }}</h2>
 
-<form method="post">
-  <div class="form-group">
-    <label>{{ t("common.code") }}：</label>
-    <input type="text" name="code" value="{{ store.code or '' }}">
-  </div>
-
-  <div class="form-group">
-    <label>{{ t("stores.name") }}：</label>
-    <input type="text" name="name" value="{{ store.name or '' }}" required>
-  </div>
-
-  <div class="form-group">
-    <label>{{ t("stores.seats") }}：</label>
-    <input type="text" name="seats" value="{{ store.seats or '' }}">
-  </div>
-
-  <div class="form-group">
-    <label>{{ t("stores.opened_on") }}：</label>
-    <input type="date" name="opened_on" value="{{ store.opened_on or '' }}">
-  </div>
-
-  <div class="form-group">
-    <label>{{ t("stores.closed_on") }}：</label>
-    <input type="date" name="closed_on" value="{{ store.closed_on or '' }}">
-  </div>
-
-  <hr>
-<h3>{{ t("stores.config.title", "__stores.config.title__") }}</h3>
-
-<div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-  <span class="btn" style="pointer-events:none; opacity:0.7;">
-    {{ t("stores.suppliers.title", "__stores.suppliers.title__") }}
-  </span>
-
-  <a class="btn" href="{{ url_for('store_temp_zones_admin', store_id=store.id) }}">
-    {{ t("stores.config.temp_zones", "__stores.config.temp_zones__") }}
+<!-- Tab bar -->
+<nav class="store-tabs">
+  <a href="#tab-info"     class="tab-link">{{ t("stores.edit.tab_info",    "店舗情報") }}</a>
+  <a href="#tab-supplier" class="tab-link">{{ t("stores.suppliers.title",  "仕入れ先") }}</a>
+  <a href="#tab-zones"    class="tab-link">{{ t("stores.config.temp_zones","温度帯名称") }}</a>
+  <a href="#tab-areas"    class="tab-link">{{ t("stores.config.areas",     "エリア設定") }}</a>
+  <a href="#tab-shelves"  class="tab-link">{{ t("stores.config.shelves",   "棚設定") }}</a>
+  <a href="#tab-profit"   class="tab-link">{{ t("profit.settings.title",   "利益推計設定") }}</a>
+  <a href="{{ url_for('inventory_locations', store_id=store.id) }}" style="color:#0d6efd;">
+    {{ t("stores.config.item_locations", "品目配置") }} ↗
   </a>
+</nav>
 
-  <a class="btn" href="{{ url_for('store_areas_admin', store_id=store.id) }}">
-    {{ t("stores.config.areas", "__stores.config.areas__") }}
-  </a>
-
-  <a class="btn" href="{{ url_for('shelf_master', store_id=store.id) }}">
-    {{ t("stores.config.shelves", "__stores.config.shelves__") }}
-  </a>
-
-  <a class="btn" href="{{ url_for('inventory_locations', store_id=store.id) }}">
-    {{ t("stores.config.item_locations", "__stores.config.item_locations__") }}
-  </a>
-
-<a class="btn" href="{{ url_for('admin_profit_settings.profit_settings', store_id=store.id) }}">
-  {{ t("profit.settings.title") }}
-</a>
+<!-- ══════════════════════════════════════════════
+     TAB 1 — 店舗情報
+════════════════════════════════════════════════ -->
+<div id="tab-info" class="tab-panel">
+  <form method="post">
+    <div class="form-group">
+      <label>{{ t("common.code") }}：</label>
+      <input type="text" name="code" value="{{ store.code or '' }}">
+    </div>
+    <div class="form-group">
+      <label>{{ t("stores.name") }}：</label>
+      <input type="text" name="name" value="{{ store.name or '' }}" required>
+    </div>
+    <div class="form-group">
+      <label>{{ t("stores.seats") }}：</label>
+      <input type="text" name="seats" value="{{ store.seats or '' }}">
+    </div>
+    <div class="form-group">
+      <label>{{ t("stores.opened_on") }}：</label>
+      <input type="date" name="opened_on" value="{{ store.opened_on or '' }}">
+    </div>
+    <div class="form-group">
+      <label>{{ t("stores.closed_on") }}：</label>
+      <input type="date" name="closed_on" value="{{ store.closed_on or '' }}">
+    </div>
+    <div class="tab-save-bar">
+      <button type="submit" class="btn btn-primary">{{ t("common.update") }}</button>
+      <button type="submit" name="delete" value="1" class="btn"
+        onclick="return confirm('{{ t("stores.confirm_disable") }}');">
+        {{ t("stores.disable") }}
+      </button>
+    </div>
+  </form>
 </div>
 
-<hr>
+<!-- ══════════════════════════════════════════════
+     TAB 2 — 仕入れ先
+════════════════════════════════════════════════ -->
+<div id="tab-supplier" class="tab-panel">
+  <form method="post">
+    <input type="hidden" name="_tab" value="suppliers">
+    {% if suppliers %}
+      <div style="columns:2; column-gap:24px; margin-top:8px;">
+        {% for sup in suppliers %}
+          <label style="display:block; break-inside:avoid; margin:2px 0;">
+            <input type="checkbox" name="supplier_ids" value="{{ sup.id }}"
+              {% if linked_supplier_ids and (sup.id in linked_supplier_ids) %}checked{% endif %}>
+            {{ sup.code }} – {{ sup.name }}
+          </label>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="muted">{{ t("suppliers.empty", "__suppliers.empty__") }}</p>
+    {% endif %}
+    <div class="tab-save-bar">
+      <button type="submit" class="btn btn-primary">{{ t("common.update") }}</button>
+    </div>
+  </form>
+</div>
 
-{# ===== Store ⇄ Supplier tie (INLINE) ===== #}
+<!-- ══════════════════════════════════════════════
+     TAB 3 — 温度帯名称
+════════════════════════════════════════════════ -->
+<div id="tab-zones" class="tab-panel">
+  <form method="post" action="{{ url_for('store_temp_zones_admin_save') }}">
+    <input type="hidden" name="store_id" value="{{ store.id }}">
+    <input type="hidden" name="_back" value="{{ url_for('edit_store', store_id=store.id) }}#tab-zones">
+    {% if tz_master %}
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th style="width:80px;">{{ t("common.use","使用") }}</th>
+            <th style="width:110px;">Code</th>
+            <th>{{ t("common.name","名称") }}</th>
+            <th style="width:110px;">{{ t("common.sort_order","並び順") }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for z in tz_master %}
+            {% set srow = store_tz.get(z.code) %}
+            <tr>
+              <td><input type="checkbox" name="use_tz_{{ z.code }}" {% if srow and srow.is_active %}checked{% endif %}></td>
+              <td>{{ z.code }}<input type="hidden" name="tz_codes" value="{{ z.code }}"></td>
+              <td><input type="text" name="tz_name_{{ z.code }}" value="{{ srow.display_name if srow else z.default_name }}" style="width:100%;"></td>
+              <td><input type="number" name="tz_sort_{{ z.code }}" value="{{ srow.sort_order if srow else z.sort_order }}" style="width:100%;"></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="muted">{{ t("common.no_data","データなし") }}</p>
+    {% endif %}
+    <div class="tab-save-bar">
+      <button type="submit" class="btn btn-primary">{{ t("common.update") }}</button>
+    </div>
+  </form>
+</div>
 
-{% if suppliers %}
-  <div style="columns:2; column-gap:24px; margin-top:10px;">
-    {% for sup in suppliers %}
-      <label style="display:block; break-inside:avoid; margin:2px 0;">
-        <input
-          type="checkbox"
-          name="supplier_ids"
-          value="{{ sup.id }}"
-          {% if linked_supplier_ids and (sup.id in linked_supplier_ids) %}checked{% endif %}
-        >
-        {{ sup.code }} - {{ sup.name }}
-      </label>
-    {% endfor %}
-  </div>
-{% else %}
-  <div style="color:#666; margin-top:8px;">
-    {{ t("suppliers.empty", "__suppliers.empty__") }}
-  </div>
-{% endif %}
+<!-- ══════════════════════════════════════════════
+     TAB 4 — エリア設定
+════════════════════════════════════════════════ -->
+<div id="tab-areas" class="tab-panel">
+  <form method="post" action="{{ url_for('store_areas_admin_save') }}">
+    <input type="hidden" name="store_id" value="{{ store.id }}">
+    <input type="hidden" name="_back" value="{{ url_for('edit_store', store_id=store.id) }}#tab-areas">
+    {% if areas_master %}
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th style="width:80px;">{{ t("common.use","使用") }}</th>
+            <th>{{ t("masters.area","エリア") }}</th>
+            <th style="width:240px;">{{ t("common.name","表示名") }}</th>
+            <th style="width:110px;">{{ t("common.sort_order","並び順") }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in areas_master %}
+            {% set m = map_by_area.get(a.id) %}
+            <tr>
+              <td><input type="checkbox" name="use_area_{{ a.id }}" {% if m and m.is_active %}checked{% endif %}></td>
+              <td>{{ a.name }}<input type="hidden" name="area_ids" value="{{ a.id }}"></td>
+              <td><input type="text" name="display_name_{{ a.id }}" value="{{ m.display_name if m else '' }}" style="width:100%;"></td>
+              <td><input type="number" name="sort_order_{{ a.id }}" value="{{ m.sort_order if m else 100 }}" style="width:100%;"></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="muted">{{ t("common.no_data","データなし") }}</p>
+    {% endif %}
+    <div class="tab-save-bar">
+      <button type="submit" class="btn btn-primary">{{ t("common.update") }}</button>
+    </div>
+  </form>
+</div>
 
-  <hr>
+<!-- ══════════════════════════════════════════════
+     TAB 5 — 棚設定
+════════════════════════════════════════════════ -->
+<div id="tab-shelves" class="tab-panel">
+  <form method="post" action="{{ url_for('shelf_master') }}">
+    <input type="hidden" name="store_id" value="{{ store.id }}">
+    <input type="hidden" name="_back" value="{{ url_for('edit_store', store_id=store.id) }}#tab-shelves">
+    {% if shelves %}
+      <!-- Zone-unset warning banner (shown by JS when any row has no zone) -->
+      <div id="shelves-zone-warning" style="display:none; background:#fff3cd; border:1px solid #ffc107; border-radius:4px; padding:10px 14px; margin-bottom:12px;">
+        ⚠️ <strong><span id="shelves-zone-count">0</span> 棚の温度帯が未設定です。</strong>
+        該当行は黄色でハイライトされています。現状の温度帯設定は変更されずに保持されます。<br>
+        温度帯を割り当てるには「温度帯名称」タブで温度帯を設定してください。
+      </div>
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th style="width:140px;">{{ t("inventory.zone_master","温度帯") }}</th>
+            <th style="width:110px;">{{ t("common.code","コード") }}</th>
+            <th>{{ t("common.name","名称") }}</th>
+            <th style="width:110px;">{{ t("common.sort_order","並び順") }}</th>
+            <th style="width:80px;">{{ t("common.use","使用") }}</th>
+          </tr>
+        </thead>
+        {% set ns = namespace(prev_area='') %}
+        {% for sh in shelves %}
+          {% if sh.area_name != ns.prev_area %}
+            <tbody>
+              <tr class="table-secondary">
+                <td colspan="5" style="font-weight:600; padding:6px 10px; background:#e9ecef;">
+                  {{ sh.area_name }}
+                </td>
+              </tr>
+            </tbody>
+            {% set ns.prev_area = sh.area_name %}
+          {% endif %}
+          <tbody>
+            <tr data-shelf-row>
+              <td>
+                <select name="temp_zone_{{ sh.id }}" style="width:100%;">
+                  <option value="">—</option>
+                  {% for z in temp_zones_for_shelf %}
+                    <option value="{{ z.code }}" {% if z.code == sh.temp_zone %}selected{% endif %}>{{ z.name }}</option>
+                  {% endfor %}
+                </select>
+              </td>
+              <td>{{ sh.code }}</td>
+              <td><input type="text" name="name_{{ sh.id }}" value="{{ sh.name }}" style="width:100%;"></td>
+              <td><input type="number" name="sort_{{ sh.id }}" value="{{ sh.sort_order }}" style="width:100%;"></td>
+              <td>
+                <input type="checkbox" name="use_shelf_{{ sh.id }}" {% if sh.is_active %}checked{% endif %}>
+                <input type="hidden" name="shelf_ids" value="{{ sh.id }}">
+              </td>
+            </tr>
+          </tbody>
+        {% endfor %}
+      </table>
+    {% else %}
+      <p class="muted">{{ t("common.no_data","データなし") }}</p>
+    {% endif %}
+    <div class="tab-save-bar">
+      <button type="submit" class="btn btn-primary">{{ t("common.update") }}</button>
+    </div>
+  </form>
+</div>
 
-  <button type="submit">{{ t("common.update") }}</button>
+<!-- ══════════════════════════════════════════════
+     TAB 6 — 利益推計設定
+════════════════════════════════════════════════ -->
+<div id="tab-profit" class="tab-panel">
+  {% if profit_settings %}
+    <table class="table table-bordered" style="margin-bottom:24px;">
+      <thead>
+        <tr>
+          <th>{{ t("profit.settings.effective_from") }}</th>
+          <th>{{ t("profit.settings.fl_ratio") }}</th>
+          <th>{{ t("profit.settings.food_ratio") }}</th>
+          <th>{{ t("profit.settings.utility_ratio") }}</th>
+          <th>{{ t("profit.settings.fixed_cost") }}</th>
+          <th>{{ t("profit.settings.type") }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in profit_settings %}
+          <tr>
+            <td>{{ r.effective_from }}</td>
+            <td>{{ r.fl_ratio }}</td>
+            <td>{{ r.food_ratio }}</td>
+            <td>{{ r.utility_ratio }}</td>
+            <td class="num">{% if r.fixed_cost_yen is not none %}{{ "{:,}".format(r.fixed_cost_yen) }}{% endif %}</td>
+            <td>{% if r.store_id is none %}{{ t("profit.settings.global") }}{% else %}{{ t("profit.settings.store_specific") }}{% endif %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
 
-  <button
-    type="submit"
-    name="delete"
-    value="1"
-    onclick="return confirm('{{ t("stores.confirm_disable") }}');"
-  >
-    {{ t("stores.disable") }}
-  </button>
-</form>
+  <h4 style="margin-bottom:12px;">{{ t("profit.settings.new","新規追加") }}</h4>
+  <form method="post" action="{{ url_for('admin_profit_settings.profit_settings', store_id=store.id) }}">
+    <input type="hidden" name="_back" value="{{ url_for('edit_store', store_id=store.id) }}#tab-profit">
+    <div class="form-group">
+      <label>{{ t("profit.settings.effective_from") }}</label>
+      <input type="date" name="effective_from" required>
+    </div>
+    <div class="form-group">
+      <label>{{ t("profit.settings.fl_ratio") }}</label>
+      <input type="number" step="0.0001" name="fl_ratio" required>
+    </div>
+    <div class="form-group">
+      <label>{{ t("profit.settings.food_ratio") }}</label>
+      <input type="number" step="0.0001" name="food_ratio" required>
+    </div>
+    <div class="form-group">
+      <label>{{ t("profit.settings.utility_ratio") }}</label>
+      <input type="number" step="0.0001" name="utility_ratio" required>
+    </div>
+    <div class="form-group">
+      <label>{{ t("profit.settings.fixed_cost") }}</label>
+      <input type="number" name="fixed_cost_yen" required>
+    </div>
+    <div class="tab-save-bar">
+      <button type="submit" class="btn btn-primary">{{ t("profit.settings.save","保存") }}</button>
+    </div>
+  </form>
+</div>
+
+{% endblock %}
+
+{% block body_extra %}
+<script>
+(function () {
+  var tabs   = document.querySelectorAll('.tab-link');
+  var panels = document.querySelectorAll('.tab-panel');
+  var DEFAULT = '#tab-info';
+
+  function activate(hash) {
+    if (!hash || !document.querySelector(hash)) hash = DEFAULT;
+    tabs.forEach(function(a) {
+      a.classList.toggle('active', a.getAttribute('href') === hash);
+    });
+    panels.forEach(function(p) {
+      p.classList.toggle('active', '#' + p.id === hash);
+    });
+  }
+
+  // Activate on load (use hash from URL, e.g. after save redirect)
+  activate(window.location.hash || DEFAULT);
+
+  // Activate on tab click
+  tabs.forEach(function(a) {
+    if (a.getAttribute('href').startsWith('#')) {
+      a.addEventListener('click', function(e) {
+        e.preventDefault();
+        history.replaceState(null, '', a.getAttribute('href'));
+        activate(a.getAttribute('href'));
+        if (a.getAttribute('href') === '#tab-shelves') checkShelvesZones();
+      });
+    }
+  });
+
+  // ── Shelves tab: zone-unset validation ────────
+  function checkShelvesZones() {
+    var warning  = document.getElementById('shelves-zone-warning');
+    var countEl  = document.getElementById('shelves-zone-count');
+    if (!warning) return;
+    var rows  = document.querySelectorAll('#tab-shelves tr[data-shelf-row]');
+    var count = 0;
+    rows.forEach(function(row) {
+      var sel = row.querySelector('select[name^="temp_zone_"]');
+      if (!sel) return;
+      if (!sel.value) {
+        row.classList.add('shelf-zone-unset');
+        count++;
+      } else {
+        row.classList.remove('shelf-zone-unset');
+      }
+    });
+    warning.style.display = count > 0 ? 'block' : 'none';
+    if (countEl) countEl.textContent = count;
+  }
+
+  // Re-check when any zone select changes
+  document.getElementById('tab-shelves').addEventListener('change', function(e) {
+    if (e.target && e.target.name && e.target.name.startsWith('temp_zone_')) {
+      checkShelvesZones();
+    }
+  });
+
+  // Run once on load if shelves tab is active
+  if ((window.location.hash || DEFAULT) === '#tab-shelves') checkShelvesZones();
+})();
+</script>
 {% endblock %}

@@ -31,7 +31,8 @@ def profit_settings(store_id):
         db.commit()
 
         flash("利益推計設定を保存しました")
-        return redirect(url_for("admin_profit_settings.profit_settings", store_id=store_id))
+        back = request.form.get("_back")
+        return redirect(back if back else url_for("admin_profit_settings.profit_settings", store_id=store_id))
 
     # store-specific + global fallback
     cur.execute(
