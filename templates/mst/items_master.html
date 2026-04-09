@@ -27,10 +27,9 @@ endblock %} {% block content %}
     <label>{{ t("items.temp_zone") }}：</label>
     <select name="temp_zone">
       <option value="">{{ t("common.unset") }}</option>
-      <option value="冷凍">冷凍</option>
-      <option value="冷蔵">冷蔵</option>
-      <option value="常温">常温</option>
-      <option value="その他">その他</option>
+      {% for z in temp_zones %}
+        <option value="{{ z.default_name }}">{{ z.default_name }}</option>
+      {% endfor %}
     </select>
   </div>
 

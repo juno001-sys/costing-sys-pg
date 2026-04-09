@@ -32,9 +32,9 @@
       <label>{{ t("items.temp_zone") }}：</label>
       <select name="temp_zone">
         <option value="">{{ t("common.unset") }}</option>
-        {% for z in ["冷凍","冷蔵","常温","その他"] %}
-          <option value="{{ z }}" {% if item.temp_zone == z %}selected{% endif %}>
-            {{ z }}
+        {% for z in temp_zones %}
+          <option value="{{ z.default_name }}" {% if item.temp_zone == z.default_name %}selected{% endif %}>
+            {{ z.default_name }}
           </option>
         {% endfor %}
       </select>

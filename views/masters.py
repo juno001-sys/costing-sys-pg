@@ -289,6 +289,11 @@ def init_master_views(app, get_db):
              (company_id,),
         ).fetchall()
 
+        # 温度帯マスタ（プルダウン用）
+        temp_zones = db.execute(
+            "SELECT code, default_name FROM inv_temp_zone_master WHERE COALESCE(is_active,TRUE)=TRUE ORDER BY sort_order, code"
+        ).fetchall()
+
         # 登録済み品目一覧（有効なもののみ）
         mst_items = db.execute(
             """
@@ -326,6 +331,7 @@ def init_master_views(app, get_db):
                     "mst/items_master.html",
                     suppliers=suppliers,
                     mst_items=mst_items,
+                    temp_zones=temp_zones,
                 )
 
             # 仕入先コード2桁を取得（SS部分）
@@ -345,6 +351,7 @@ def init_master_views(app, get_db):
                     "mst/items_master.html",
                     suppliers=suppliers,
                     mst_items=mst_items,
+                    temp_zones=temp_zones,
                 )
 
             code2 = str(supplier["code"]).zfill(2)[:2]
@@ -421,6 +428,7 @@ def init_master_views(app, get_db):
             "mst/items_master.html",
             suppliers=suppliers,
             items=mst_items,
+            temp_zones=temp_zones,
         )
 
     # ----------------------------------------
@@ -431,6 +439,10 @@ def init_master_views(app, get_db):
     def edit_item(item_id):
         db = get_db()
         company_id = getattr(g, "current_company_id", None)
+        # 温度帯マスタ（プルダウン用）
+        temp_zones = db.execute(
+            "SELECT code, default_name FROM inv_temp_zone_master WHERE COALESCE(is_active,TRUE)=TRUE ORDER BY sort_order, code"
+        ).fetchall()
         # 仕入先一覧（プルダウン用：有効なもののみ）
         suppliers = db.execute(
             """
@@ -594,6 +606,7 @@ def init_master_views(app, get_db):
                     "mst/items_edit.html",
                     item=item,
                     suppliers=suppliers,
+                    temp_zones=temp_zones,
                 )
 
             try:
@@ -664,6 +677,7 @@ def init_master_views(app, get_db):
             "mst/items_edit.html",
             item=item,
             suppliers=suppliers,
+            temp_zones=temp_zones,
         )
 
 
