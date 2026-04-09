@@ -1,0 +1,24 @@
+/* static/inventory/inventory_count.css
+   Styles for inventory locations page (/inventory/locations)
+*/
+
+/* Sticky save button bar at the bottom of the page */
+.sticky-bar {
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+  padding: 12px 0;
+  border-top: 1px solid #dee2e6;
+  margin-top: 16px;
+  z-index: 10;
+}
+
+/* Inventory locations table */
+.table.inventory-locations th,
+.table.inventory-locations td {
+  vertical-align: middle;
+}
+
+.table.inventory-locations select.form-select {
+  min-width: 120px;
+}
