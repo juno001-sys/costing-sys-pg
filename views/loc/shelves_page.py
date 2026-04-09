@@ -57,7 +57,27 @@ def init_location_shelves_page(app, get_db):
                 flash("missing store_id")
                 return redirect(url_for("shelf_master"))
 
+            back = request.form.get("_back")
             shelf_ids = request.form.getlist("shelf_ids")
+
+            # ── In-use check: block deactivation if items still reference this shelf ──
+            errors = []
+            for sid in shelf_ids:
+                use_flag = request.form.get(f"use_shelf_{sid}") == "on"
+                if not use_flag:
+                    cnt = db.execute(
+                        "SELECT COUNT(*) AS cnt FROM inv_item_shelf_map WHERE store_id = %s AND shelf_id = %s AND is_active = TRUE",
+                        (selected_store_id, sid),
+                    ).fetchone()["cnt"]
+                    if cnt > 0:
+                        shelf_name = request.form.get(f"name_{sid}") or f"shelf {sid}"
+                        errors.append(f"「{shelf_name}」は {cnt} 件の品目で使用中のため無効化できません。")
+
+            if errors:
+                for msg in errors:
+                    flash(msg)
+                flash("先に品目配置画面で該当品目の棚を変更してください。")
+                return redirect(back if back else url_for("shelf_master", store_id=selected_store_id))
 
             for sid in shelf_ids:
                 use_flag = request.form.get(f"use_shelf_{sid}") == "on"
@@ -104,7 +124,6 @@ def init_location_shelves_page(app, get_db):
 
             db.commit()
             flash("Updated shelves.")
-            back = request.form.get("_back")
             return redirect(back if back else url_for("shelf_master", store_id=selected_store_id))
 
         # GET: list shelves

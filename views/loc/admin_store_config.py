@@ -60,7 +60,29 @@ def init_admin_store_config(app, get_db):
             flash("missing store_id")
             return redirect(url_for("store_temp_zones_admin"))
 
+        back = request.form.get("_back")
+
         codes = request.form.getlist("tz_codes")
+
+        # ── In-use check: block deactivation if items still reference this zone ──
+        errors = []
+        for code in codes:
+            use_flag = request.form.get(f"use_tz_{code}") == "on"
+            if not use_flag:
+                cnt = db.execute(
+                    "SELECT COUNT(*) AS cnt FROM inv_item_location_prefs WHERE store_id = %s AND temp_zone = %s",
+                    (store_id, code),
+                ).fetchone()["cnt"]
+                if cnt > 0:
+                    display_name = request.form.get(f"tz_name_{code}") or code
+                    errors.append(f"「{display_name}」は {cnt} 件の品目で使用中のため無効化できません。")
+
+        if errors:
+            for msg in errors:
+                flash(msg)
+            flash("先に品目配置画面で該当品目の温度帯を変更してください。")
+            return redirect(back if back else url_for("store_temp_zones_admin", store_id=store_id))
+
         for code in codes:
             use_flag = request.form.get(f"use_tz_{code}") == "on"
             display_name = request.form.get(f"tz_name_{code}") or None
@@ -86,7 +108,6 @@ def init_admin_store_config(app, get_db):
 
         db.commit()
         flash("Updated store temp zones.")
-        back = request.form.get("_back")
         return redirect(back if back else url_for("store_temp_zones_admin", store_id=store_id))
 
 
@@ -138,12 +159,40 @@ def init_admin_store_config(app, get_db):
         request.form.get("store_id")
         )
         store_id = str(selected_store_id) if selected_store_id else None
-        
+
         if not store_id:
             flash("missing store_id")
             return redirect(url_for("store_areas_admin"))
 
+        back = request.form.get("_back")
+
         area_ids = request.form.getlist("area_ids")
+
+        # ── In-use check: block deactivation if items still reference this area ──
+        errors = []
+        for area_id in area_ids:
+            use_flag = request.form.get(f"use_area_{area_id}") == "on"
+            if not use_flag:
+                # Get the store_area_map.id (not area_master.id) for this area
+                sam_row = db.execute(
+                    "SELECT id FROM inv_store_area_map WHERE store_id = %s AND area_id = %s",
+                    (store_id, area_id),
+                ).fetchone()
+                if sam_row:
+                    cnt = db.execute(
+                        "SELECT COUNT(*) AS cnt FROM inv_item_location_prefs WHERE store_id = %s AND store_area_map_id = %s",
+                        (store_id, sam_row["id"]),
+                    ).fetchone()["cnt"]
+                    if cnt > 0:
+                        display_name = request.form.get(f"display_name_{area_id}") or f"area {area_id}"
+                        errors.append(f"「{display_name}」は {cnt} 件の品目で使用中のため無効化できません。")
+
+        if errors:
+            for msg in errors:
+                flash(msg)
+            flash("先に品目配置画面で該当品目のエリアを変更してください。")
+            return redirect(back if back else url_for("store_areas_admin", store_id=store_id))
+
         for area_id in area_ids:
             use_flag = request.form.get(f"use_area_{area_id}") == "on"
             display_name = request.form.get(f"display_name_{area_id}") or None
@@ -170,5 +219,4 @@ def init_admin_store_config(app, get_db):
 
         db.commit()
         flash("Updated store areas.")
-        back = request.form.get("_back")
         return redirect(back if back else url_for("store_areas_admin", store_id=store_id))
