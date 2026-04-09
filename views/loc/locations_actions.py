@@ -1,6 +1,7 @@
 # views/inventory_locations/locations_actions.py
 
 from flask import request, redirect, url_for, flash, jsonify
+from utils.access_scope import normalize_accessible_store_id
 
 
 def init_location_actions(app, get_db):
