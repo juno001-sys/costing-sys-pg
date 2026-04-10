@@ -31,6 +31,7 @@ from views.auth.login import init_auth_login_views
 
 from views.admin.system_home import init_admin_system_home_views
 from views.admin.system_companies import init_admin_system_company_views
+from views.mst_items_csv import init_items_csv_views
 
 # ----------------------------------------
 # Flask app
@@ -385,6 +386,7 @@ init_master_views(app, get_db)
 init_inventory_views(app, get_db)
 init_inventory_views_v2(app, get_db)
 init_location_views(app, get_db)
+init_items_csv_views(app, get_db)
 
 
 # ----------------------------------------

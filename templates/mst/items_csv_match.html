@@ -1,0 +1,46 @@
+{% extends "layout/base.html" %}
+{% block title %}CSVインポート：列マッチング{% endblock %}
+{% block content %}
+
+<h3>CSVインポート：列マッチング</h3>
+<p style="color:#555;">CSVの列名とシステムのフィールドを対応させてください。<br>
+自動で推測しましたが、間違いがあれば変更してください。</p>
+<p><strong>読み込み行数：{{ row_count }}件</strong></p>
+
+<form method="post" action="{{ url_for('items_csv_preview') }}">
+  <table border="1" cellpadding="6" cellspacing="0" style="font-size:14px;">
+    <thead style="background:#f0f0f0;">
+      <tr>
+        <th>システムフィールド</th>
+        <th>必須</th>
+        <th>CSVの列を選択</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for field in system_fields %}
+      <tr {% if field.required %}style="background:#fffbe6;"{% endif %}>
+        <td><strong>{{ field.label }}</strong></td>
+        <td style="text-align:center;">{% if field.required %}★{% endif %}</td>
+        <td>
+          <select name="map_{{ field.key }}" style="min-width:180px;">
+            <option value="">（使用しない）</option>
+            {% for h in headers %}
+              <option value="{{ h }}"
+                {% if auto_mapping.get(h) == field.key %}selected{% endif %}>
+                {{ h }}
+              </option>
+            {% endfor %}
+          </select>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div style="margin-top:16px;">
+    <button type="submit">次へ：データ確認 →</button>
+    <a href="{{ url_for('items_csv_upload') }}" style="margin-left:12px;">← やり直す</a>
+  </div>
+</form>
+
+{% endblock %}

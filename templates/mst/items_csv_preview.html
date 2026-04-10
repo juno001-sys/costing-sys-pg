@@ -1,0 +1,82 @@
+{% extends "layout/base.html" %}
+{% block title %}CSVインポート：確認{% endblock %}
+{% block content %}
+
+<h3>CSVインポート：確認</h3>
+
+<div style="display:flex; gap:24px; margin-bottom:16px; font-size:15px;">
+  <span style="color:green;"><strong>✅ インポート可：{{ ok_count }}件</strong></span>
+  {% if ng_count > 0 %}
+  <span style="color:red;"><strong>⚠️ スキップ：{{ ng_count }}件</strong></span>
+  {% endif %}
+  {% if total_count > 200 %}
+  <span style="color:#888;">（先頭200件を表示中 / 全{{ total_count }}件）</span>
+  {% endif %}
+</div>
+
+{% if ng_count > 0 %}
+<p style="color:#c00; font-size:13px;">
+  ⚠️ エラー行はスキップしてインポートされます。修正してから再アップロードも可能です。
+</p>
+{% endif %}
+
+<form method="post" action="{{ url_for('items_csv_import') }}">
+  <table border="1" cellpadding="4" cellspacing="0" style="font-size:13px; width:100%;">
+    <thead style="background:#f0f0f0;">
+      <tr>
+        <th>行</th>
+        <th>状態</th>
+        <th>品名</th>
+        <th>仕入先</th>
+        <th>温度帯</th>
+        <th>入数</th>
+        <th>仕入単位</th>
+        <th>棚卸単位</th>
+        <th>内製</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in preview_rows %}
+      <tr style="{% if not r.ok %}background:#fff0f0;{% endif %}">
+        <td>{{ r.row_num }}</td>
+        <td>
+          {% if r.ok %}
+            <span style="color:green;">✅</span>
+          {% else %}
+            <span style="color:red;" title="{{ r.errors | join(', ') }}">
+              ⚠️ {{ r.errors | join(' / ') }}
+            </span>
+          {% endif %}
+        </td>
+        <td>{{ r.name or '—' }}</td>
+        <td>
+          {% if r.supplier_info %}
+            {{ r.supplier_info.name }}
+          {% else %}
+            <span style="color:red;">{{ r.supplier_raw or '—' }}</span>
+          {% endif %}
+        </td>
+        <td>{{ r.temp_zone_code or '—' }}</td>
+        <td style="text-align:right;">{{ r.unit if r.unit is not none else '—' }}</td>
+        <td>{{ r.purchase_unit or '—' }}</td>
+        <td>{{ r.inventory_unit or '—' }}</td>
+        <td style="text-align:center;">{% if r.is_internal %}◯{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div style="margin-top:20px; display:flex; gap:12px; align-items:center;">
+    {% if ok_count > 0 %}
+    <button type="submit"
+            onclick="return confirm('{{ ok_count }}件をインポートします。よろしいですか？')"
+            style="padding:8px 20px; font-size:15px; background:#2a7ae2; color:white; border:none; border-radius:4px; cursor:pointer;">
+      ✅ {{ ok_count }}件をインポート実行
+    </button>
+    {% endif %}
+    <a href="{{ url_for('items_csv_upload') }}">← やり直す</a>
+    <a href="{{ url_for('items_master') }}">キャンセル</a>
+  </div>
+</form>
+
+{% endblock %}
