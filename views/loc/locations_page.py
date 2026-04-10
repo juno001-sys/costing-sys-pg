@@ -142,7 +142,7 @@ def init_location_page(app, get_db):
                 """
                 SELECT
                   sam.id  AS store_area_map_id,
-                  am.name AS area_name
+                  COALESCE(sam.display_name, am.name) AS area_name
                 FROM store_area_map sam
                 JOIN area_master am ON am.id = sam.area_id
                 WHERE sam.store_id = %s
@@ -217,6 +217,24 @@ def init_location_page(app, get_db):
                 (selected_store_id, selected_store_id, selected_store_id, company_id),
             ).fetchall()
 
+        temp_zones = []
+        if selected_store_id:
+            temp_zones = db.execute(
+                """
+                SELECT
+                  tzm.code,
+                  COALESCE(stz.display_name, tzm.default_name) AS name
+                FROM inv_temp_zone_master tzm
+                LEFT JOIN inv_store_temp_zones stz
+                  ON stz.code = tzm.code
+                  AND stz.store_id = %s
+                  AND COALESCE(stz.is_active, TRUE) = TRUE
+                WHERE COALESCE(tzm.is_active, TRUE) = TRUE
+                ORDER BY COALESCE(stz.sort_order, tzm.sort_order), tzm.code
+                """,
+                (selected_store_id,),
+            ).fetchall()
+
         return render_template(
             "loc/locations.html",
             mst_stores=mst_stores,
@@ -224,5 +242,5 @@ def init_location_page(app, get_db):
             areas=areas,
             mst_items=mst_items,
             items=mst_items,
-            temp_zones=["AMB", "CHILL", "FREEZE"],
+            temp_zones=temp_zones,
         )

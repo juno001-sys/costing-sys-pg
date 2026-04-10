@@ -289,6 +289,11 @@ def init_master_views(app, get_db):
              (company_id,),
         ).fetchall()
 
+        # 温度帯マスタ（プルダウン用）
+        temp_zones = db.execute(
+            "SELECT code, default_name FROM inv_temp_zone_master WHERE COALESCE(is_active,TRUE)=TRUE ORDER BY sort_order, code"
+        ).fetchall()
+
         # 登録済み品目一覧（有効なもののみ）
         mst_items = db.execute(
             """
@@ -326,6 +331,7 @@ def init_master_views(app, get_db):
                     "mst/items_master.html",
                     suppliers=suppliers,
                     mst_items=mst_items,
+                    temp_zones=temp_zones,
                 )
 
             # 仕入先コード2桁を取得（SS部分）
@@ -345,6 +351,7 @@ def init_master_views(app, get_db):
                     "mst/items_master.html",
                     suppliers=suppliers,
                     mst_items=mst_items,
+                    temp_zones=temp_zones,
                 )
 
             code2 = str(supplier["code"]).zfill(2)[:2]
@@ -421,6 +428,7 @@ def init_master_views(app, get_db):
             "mst/items_master.html",
             suppliers=suppliers,
             items=mst_items,
+            temp_zones=temp_zones,
         )
 
     # ----------------------------------------
@@ -431,6 +439,10 @@ def init_master_views(app, get_db):
     def edit_item(item_id):
         db = get_db()
         company_id = getattr(g, "current_company_id", None)
+        # 温度帯マスタ（プルダウン用）
+        temp_zones = db.execute(
+            "SELECT code, default_name FROM inv_temp_zone_master WHERE COALESCE(is_active,TRUE)=TRUE ORDER BY sort_order, code"
+        ).fetchall()
         # 仕入先一覧（プルダウン用：有効なもののみ）
         suppliers = db.execute(
             """
@@ -594,6 +606,7 @@ def init_master_views(app, get_db):
                     "mst/items_edit.html",
                     item=item,
                     suppliers=suppliers,
+                    temp_zones=temp_zones,
                 )
 
             try:
@@ -664,6 +677,7 @@ def init_master_views(app, get_db):
             "mst/items_edit.html",
             item=item,
             suppliers=suppliers,
+            temp_zones=temp_zones,
         )
 
 
@@ -780,7 +794,81 @@ def init_master_views(app, get_db):
         ).fetchall()
         linked_supplier_ids = {row["supplier_id"] for row in linked_rows}
 
+        # ── Helper: fetch all tab data (used for both GET and failed POST render) ──
+        def _tab_data():
+            tz_master = db.execute(
+                "SELECT code, default_name, sort_order FROM inv_temp_zone_master WHERE COALESCE(is_active,TRUE)=TRUE ORDER BY sort_order, code"
+            ).fetchall()
+            store_tz_rows = db.execute(
+                "SELECT code, COALESCE(display_name,'') AS display_name, sort_order, is_active FROM inv_store_temp_zones WHERE store_id=%s ORDER BY sort_order, code",
+                (store_id,),
+            ).fetchall()
+            store_tz = {r["code"]: r for r in store_tz_rows}
+            areas_master = db.execute(
+                "SELECT id, name, sort_order FROM inv_area_master WHERE COALESCE(is_active,TRUE)=TRUE ORDER BY sort_order, name"
+            ).fetchall()
+            area_map_rows = db.execute(
+                "SELECT area_id, COALESCE(display_name,'') AS display_name, COALESCE(sort_order,100) AS sort_order, COALESCE(is_active,TRUE) AS is_active FROM inv_store_area_map WHERE store_id=%s",
+                (store_id,),
+            ).fetchall()
+            map_by_area = {m["area_id"]: m for m in area_map_rows}
+            temp_zones_for_shelf = db.execute(
+                "SELECT code, COALESCE(display_name, code) AS name, sort_order FROM inv_store_temp_zones WHERE store_id=%s AND COALESCE(is_active,TRUE)=TRUE ORDER BY sort_order, code",
+                (store_id,),
+            ).fetchall()
+            shelves = db.execute(
+                """
+                SELECT sh.id, COALESCE(sam.display_name, am.name) AS area_name,
+                       sh.temp_zone, sh.code, COALESCE(sh.name,'') AS name,
+                       sh.sort_order, COALESCE(sh.is_active,TRUE) AS is_active,
+                       sam.sort_order AS area_sort_order
+                FROM inv_store_shelves sh
+                JOIN inv_store_area_map sam ON sam.id = sh.store_area_map_id
+                JOIN inv_area_master am ON am.id = sam.area_id
+                WHERE sh.store_id = %s
+                  AND COALESCE(sam.is_active, TRUE) = TRUE
+                ORDER BY sam.sort_order, COALESCE(sam.display_name, am.name), sh.sort_order, sh.code
+                """,
+                (store_id,),
+            ).fetchall()
+            profit_settings = db.execute(
+                """
+                SELECT effective_from, fl_ratio, food_ratio, utility_ratio, fixed_cost_yen, store_id
+                FROM mst_profit_settings
+                WHERE store_id=%s OR store_id IS NULL
+                ORDER BY (store_id IS NOT NULL) DESC, effective_from DESC
+                """,
+                (store_id,),
+            ).fetchall()
+            return dict(
+                tz_master=tz_master, store_tz=store_tz,
+                areas_master=areas_master, map_by_area=map_by_area,
+                temp_zones_for_shelf=temp_zones_for_shelf,
+                shelves=shelves, profit_settings=profit_settings,
+            )
+
         if request.method == "POST":
+
+            # --------------------------
+            # 仕入れ先のみ更新（supplier tab）
+            # --------------------------
+            if request.form.get("_tab") == "suppliers":
+                form_supplier_ids = {int(sid) for sid in request.form.getlist("supplier_ids")}
+                to_add    = form_supplier_ids - linked_supplier_ids
+                to_remove = linked_supplier_ids - form_supplier_ids
+                for sid in to_add:
+                    db.execute(
+                        "INSERT INTO pur_store_suppliers (store_id, supplier_id, is_active) VALUES (%s,%s,1) ON CONFLICT (store_id, supplier_id) DO UPDATE SET is_active=1",
+                        (store_id, sid),
+                    )
+                for sid in to_remove:
+                    db.execute(
+                        "UPDATE pur_store_suppliers SET is_active=0 WHERE store_id=%s AND supplier_id=%s",
+                        (store_id, sid),
+                    )
+                db.commit()
+                flash("仕入れ先を更新しました。")
+                return redirect(url_for("edit_store", store_id=store_id) + "#tab-supplier")
 
             # --------------------------
             # 無効化ボタン（delete）
@@ -853,6 +941,7 @@ def init_master_views(app, get_db):
                     store=store,
                     suppliers=suppliers,
                     linked_supplier_ids=linked_supplier_ids,
+                    **_tab_data(),
                 )
 
             # ---- 店舗情報の更新 ----
@@ -924,8 +1013,7 @@ def init_master_views(app, get_db):
 
             db.commit()
             flash("店舗を更新しました。")
-
-            return redirect(url_for("stores_master"))
+            return redirect(url_for("edit_store", store_id=store_id) + "#tab-info")
 
         # GET のとき：編集画面表示
         return render_template(
@@ -933,4 +1021,5 @@ def init_master_views(app, get_db):
             store=store,
             suppliers=suppliers,
             linked_supplier_ids=linked_supplier_ids,
+            **_tab_data(),
         )

@@ -177,7 +177,7 @@ def init_inventory_views_v2(app, get_db):
               COALESCE(sh.sort_order, 9999) AS shelf_sort_order,
 
               COALESCE(sam.sort_order, 9999) AS area_sort_order,
-              COALESCE(am.name, '') AS area_name,
+              COALESCE(sam.display_name, am.name, '') AS area_name,
 
               i.is_internal
             FROM mst_items i
@@ -377,7 +377,7 @@ def init_inventory_views_v2(app, get_db):
             area_name = row["area_name"] or "—"
             shelf_code = row["shelf_code"] or ""
             shelf_name = row["shelf_name"] or ""
-            shelf_label = (f"{shelf_code} {shelf_name}").strip() or "—"
+            shelf_label = shelf_name or shelf_code or "—"
 
             if end_qty > 0 or is_internal:
                 mst_items.append(

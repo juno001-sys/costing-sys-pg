@@ -37,9 +37,9 @@
           <select name="zone_{{ it.id }}" class="form-select temp-zone">
             <option value=""></option>
             {% for z in temp_zones %}
-              <option value="{{ z }}"
-                {% if it.temp_zone_norm == z %}selected{% endif %}>
-                {{ z }}
+              <option value="{{ z.code }}"
+                {% if it.temp_zone_norm == z.code %}selected{% endif %}>
+                {{ z.name }}
               </option>
             {% endfor %}
           </select>
