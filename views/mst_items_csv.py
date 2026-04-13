@@ -155,18 +155,72 @@ def _validate_row(row, mapping, supplier_map, tz_map):
 
 def init_items_csv_views(app, get_db):
 
+    # ── API: suppliers by store (for dynamic sample table) ────────────────────
+    @app.route("/api/csv/suppliers_by_store", methods=["GET"], endpoint="api_csv_suppliers_by_store")
+    def api_csv_suppliers_by_store():
+        from flask import jsonify
+        from utils.access_scope import normalize_accessible_store_id
+        db         = get_db()
+        company_id = getattr(g, "current_company_id", None)
+        store_id   = normalize_accessible_store_id(request.args.get("store_id"))
+
+        if store_id:
+            rows = db.execute(
+                """
+                SELECT s.name
+                FROM pur_suppliers s
+                JOIN pur_store_suppliers ss ON ss.supplier_id = s.id
+                WHERE ss.store_id = %s
+                  AND ss.is_active = 1
+                  AND s.is_active  = 1
+                ORDER BY s.code
+                LIMIT 5
+                """,
+                (store_id,),
+            ).fetchall()
+        else:
+            rows = db.execute(
+                "SELECT name FROM pur_suppliers WHERE is_active=1 AND company_id=%s ORDER BY code LIMIT 5",
+                (company_id,),
+            ).fetchall()
+
+        return jsonify([r["name"] for r in rows])
+
     # ── Step 1: Upload ────────────────────────────────────────────────────────
     @app.route("/mst_items/csv/upload", methods=["GET", "POST"], endpoint="items_csv_upload")
     def items_csv_upload():
         if request.method == "GET":
             db         = get_db()
             company_id = getattr(g, "current_company_id", None)
-            suppliers  = db.execute(
-                "SELECT name FROM pur_suppliers WHERE is_active=1 AND company_id=%s ORDER BY code LIMIT 3",
-                (company_id,),
-            ).fetchall()
+            from utils.access_scope import get_accessible_stores
+            stores     = get_accessible_stores()
+            # default: first store's suppliers
+            first_store_id = stores[0]["id"] if stores else None
+            if first_store_id:
+                suppliers = db.execute(
+                    """
+                    SELECT s.name
+                    FROM pur_suppliers s
+                    JOIN pur_store_suppliers ss ON ss.supplier_id = s.id
+                    WHERE ss.store_id = %s
+                      AND ss.is_active = 1
+                      AND s.is_active  = 1
+                    ORDER BY s.code LIMIT 5
+                    """,
+                    (first_store_id,),
+                ).fetchall()
+            else:
+                suppliers = db.execute(
+                    "SELECT name FROM pur_suppliers WHERE is_active=1 AND company_id=%s ORDER BY code LIMIT 5",
+                    (company_id,),
+                ).fetchall()
             sample_suppliers = [s["name"] for s in suppliers]
-            return render_template("mst/items_csv_upload.html", sample_suppliers=sample_suppliers)
+            return render_template(
+                "mst/items_csv_upload.html",
+                stores=stores,
+                selected_store_id=first_store_id,
+                sample_suppliers=sample_suppliers,
+            )
 
         f = request.files.get("csv_file")
         if not f or not f.filename:
