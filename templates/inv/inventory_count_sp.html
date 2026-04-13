@@ -268,7 +268,7 @@
 
         <div class="item-card {{ 'counted' if item.counted_qty is not none }}"
              id="card-{{ ns.row_idx }}"
-             onclick="selectRow(this)"
+             onclick="selectRow(this)">
           <div class="item-info">
             <div class="item-name" title="{{ item.item_name }}">{{ item.item_name }}</div>
             <div class="item-meta">{{ item.area_name }} / {{ item.shelf_label }}</div>
