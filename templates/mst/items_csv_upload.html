@@ -30,16 +30,23 @@
     </tr>
   </thead>
   <tbody>
+    {% set s0 = sample_suppliers[0] if sample_suppliers|length > 0 else "○○商事" %}
+    {% set s1 = sample_suppliers[1] if sample_suppliers|length > 1 else "△△食品" %}
+    {% set s2 = sample_suppliers[2] if sample_suppliers|length > 2 else "□□フーズ" %}
     <tr>
-      <td>UCCコーヒー</td><td>○○商事</td><td>常温</td>
+      <td>（品名を入力）</td><td>{{ s0 }}</td><td>常温</td>
       <td>24</td><td>ケース</td><td>本</td><td>1</td><td>0</td>
     </tr>
     <tr>
-      <td>冷凍パスタ</td><td>△△食品</td><td>冷凍</td>
+      <td>（品名を入力）</td><td>{{ s1 }}</td><td>冷凍</td>
       <td>10</td><td>kg</td><td>g</td><td></td><td>0</td>
+    </tr>
+    <tr>
+      <td>（品名を入力）</td><td>{{ s2 }}</td><td>冷蔵</td>
+      <td></td><td>個</td><td>個</td><td></td><td>0</td>
     </tr>
   </tbody>
 </table>
-<p style="font-size:12px; color:#888; margin-top:6px;">* 必須項目。列名は異なっていても次の画面でマッチングできます。</p>
+<p style="font-size:12px; color:#888; margin-top:6px;">* 必須項目。仕入先名はシステムに登録済みのものを使用してください。列名が異なっていても次の画面でマッチングできます。</p>
 
 {% endblock %}

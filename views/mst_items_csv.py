@@ -159,12 +159,19 @@ def init_items_csv_views(app, get_db):
     @app.route("/mst_items/csv/upload", methods=["GET", "POST"], endpoint="items_csv_upload")
     def items_csv_upload():
         if request.method == "GET":
-            return render_template("mst/items_csv_upload.html")
+            db         = get_db()
+            company_id = getattr(g, "current_company_id", None)
+            suppliers  = db.execute(
+                "SELECT name FROM pur_suppliers WHERE is_active=1 AND company_id=%s ORDER BY code LIMIT 3",
+                (company_id,),
+            ).fetchall()
+            sample_suppliers = [s["name"] for s in suppliers]
+            return render_template("mst/items_csv_upload.html", sample_suppliers=sample_suppliers)
 
         f = request.files.get("csv_file")
         if not f or not f.filename:
             flash("CSVファイルを選択してください。")
-            return render_template("mst/items_csv_upload.html")
+            return render_template("mst/items_csv_upload.html", sample_suppliers=[])
 
         try:
             content = f.read().decode("utf-8-sig")
@@ -178,12 +185,12 @@ def init_items_csv_views(app, get_db):
 
         if not headers:
             flash("CSVのヘッダー行が読み取れませんでした。")
-            return render_template("mst/items_csv_upload.html")
+            return render_template("mst/items_csv_upload.html", sample_suppliers=[])
 
         rows = list(reader)
         if not rows:
             flash("データ行が0件です。")
-            return render_template("mst/items_csv_upload.html")
+            return render_template("mst/items_csv_upload.html", sample_suppliers=[])
 
         # Save to temp file
         temp_id   = str(uuid.uuid4())
