@@ -23,8 +23,8 @@ SYSTEM_FIELDS = [
 ]
 
 FIELD_ALIASES = {
-    "name":              ["品名", "品目名", "商品名", "アイテム名", "item_name", "name", "品目"],
-    "supplier":          ["仕入先", "仕入先名", "取引先", "メーカー", "supplier", "vendor"],
+    "name":              ["品名", "品名 *", "品目名", "商品名", "アイテム名", "item_name", "name", "品目"],
+    "supplier":          ["仕入先", "仕入先 *", "仕入先名", "取引先", "メーカー", "supplier", "vendor"],
     "temp_zone":         ["温度帯", "保管温度帯", "保管区分", "temp_zone", "zone", "温度"],
     "unit":              ["ケース入数", "入数", "unit", "case_size"],
     "purchase_unit":     ["仕入れ単位", "仕入単位", "purchase_unit"],
@@ -125,6 +125,21 @@ def _validate_row(row, mapping, supplier_map, tz_map):
         except ValueError:
             errors.append(f"ケース入数「{unit_raw}」は整数で入力")
 
+    # purchase_unit and inventory_unit are INTEGER columns in mst_items
+    pu_val = None
+    if purchase_unit:
+        try:
+            pu_val = int(purchase_unit)
+        except ValueError:
+            errors.append(f"仕入れ単位「{purchase_unit}」は整数で入力（例: 1, 5, 10）")
+
+    iu_val = None
+    if inventory_unit:
+        try:
+            iu_val = int(inventory_unit)
+        except ValueError:
+            errors.append(f"棚卸し単位「{inventory_unit}」は整数で入力（例: 1, 5, 10）")
+
     min_pu_val = None
     if min_pu_raw:
         try:
@@ -142,8 +157,8 @@ def _validate_row(row, mapping, supplier_map, tz_map):
         "temp_zone_raw":     temp_zone_raw,
         "temp_zone_code":    temp_zone_code,
         "unit":              unit_val,
-        "purchase_unit":     purchase_unit or None,
-        "inventory_unit":    inventory_unit or None,
+        "purchase_unit":     pu_val,
+        "inventory_unit":    iu_val,
         "min_purchase_unit": min_pu_val,
         "is_internal":       is_internal,
         "errors":            errors,
