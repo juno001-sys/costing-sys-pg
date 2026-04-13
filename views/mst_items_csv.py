@@ -309,8 +309,12 @@ def init_items_csv_views(app, get_db):
     # ── Step 3: Import ────────────────────────────────────────────────────────
     @app.route("/mst_items/csv/import", methods=["POST"], endpoint="items_csv_import")
     def items_csv_import():
+        import sys
+
         temp_id = session.get("csv_temp_id")
         mapping = session.get("csv_mapping", {})
+
+        print(f"[CSV import] temp_id={temp_id!r}  mapping={mapping!r}", file=sys.stderr)
 
         if not temp_id or not mapping:
             flash("セッションが切れました。もう一度アップロードしてください。")
@@ -326,6 +330,10 @@ def init_items_csv_views(app, get_db):
         supplier_map = _build_supplier_map(db, company_id)
         tz_map       = _build_tz_map(db)
 
+        print(f"[CSV import] company_id={company_id}  suppliers_in_map={len(supplier_map)}  rows={len(data['rows'])}", file=sys.stderr)
+        if data["rows"]:
+            print(f"[CSV import] first row keys: {list(data['rows'][0].keys())}", file=sys.stderr)
+
         counters  = {}   # code2 -> current max seq
         inserted  = 0
         skipped   = 0
@@ -336,7 +344,10 @@ def init_items_csv_views(app, get_db):
                 parsed = _validate_row(row, mapping, supplier_map, tz_map)
                 if not parsed["ok"]:
                     skipped += 1
-                    err_msgs.append(f"行{i+2}: {' / '.join(parsed['errors'])} → スキップ")
+                    msg = f"行{i+2}: {' / '.join(parsed['errors'])} → スキップ"
+                    err_msgs.append(msg)
+                    if skipped <= 3:
+                        print(f"[CSV import] SKIP {msg}", file=sys.stderr)
                     continue
 
                 si     = parsed["supplier_info"]
@@ -377,11 +388,14 @@ def init_items_csv_views(app, get_db):
                     ),
                 )
                 inserted += 1
+                print(f"[CSV import] INSERT row {i+2}: code={new_code} name={parsed['name']!r}", file=sys.stderr)
 
             db.commit()
+            print(f"[CSV import] COMMIT done — inserted={inserted} skipped={skipped}", file=sys.stderr)
 
         except Exception as e:
             db.rollback()
+            print(f"[CSV import] EXCEPTION: {e}", file=sys.stderr)
             flash(f"インポート中にエラーが発生しました: {e}")
             return redirect(url_for("items_master"))
 
@@ -393,8 +407,14 @@ def init_items_csv_views(app, get_db):
         session.pop("csv_temp_id", None)
         session.pop("csv_mapping", None)
 
-        flash(f"✅ {inserted}件をインポートしました。{skipped}件はスキップしました。")
-        for msg in err_msgs[:5]:
+        if inserted == 0 and skipped > 0:
+            flash(f"⚠️ 0件のインポート。{skipped}件すべてスキップされました。エラー内容を確認してください。")
+        elif inserted == 0:
+            flash("⚠️ インポートするデータが0件でした。")
+        else:
+            flash(f"✅ {inserted}件をインポートしました。{skipped}件はスキップしました。")
+
+        for msg in err_msgs[:10]:
             flash(f"⚠️ {msg}")
 
         return redirect(url_for("items_master"))
