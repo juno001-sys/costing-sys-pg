@@ -280,17 +280,19 @@
             <div class="item-meta">{{ item.area_name }} / {{ item.shelf_label }}</div>
             <div class="system-qty">帳簿：{{ item.system_qty }}</div>
           </div>
-          <div class="count-wrap {{ 'active' if item.counted_qty is not none }}"
+          {% set is_counted = item.counted_qty is not none %}
+          {% set display_val = item.counted_qty if is_counted else item.system_qty %}
+          <div class="count-wrap {{ 'active' if is_counted }}"
                id="wrap-{{ ns.row_idx }}">
             <button type="button" class="btn-minus"
                     onclick="stepCount(this, -1)">－</button>
             <input type="number"
-                   class="count-input {{ 'has-value' if item.counted_qty is not none }}"
+                   class="count-input {{ 'has-value' if is_counted }}"
                    name="count_qty_{{ ns.row_idx }}"
                    id="inp-{{ ns.row_idx }}"
-                   value="{{ item.counted_qty if item.counted_qty is not none else '' }}"
+                   value="{{ display_val }}"
                    min="0" step="1" inputmode="numeric"
-                   placeholder="—"
+                   data-system="{{ item.system_qty }}"
                    data-idx="{{ ns.row_idx }}"
                    data-zone="{{ loop.index0 }}"
                    onfocus="activate(this)"
@@ -347,14 +349,12 @@ function deactivate(inp) {
 
 // ── Input change ──────────────────────────────────────────────────────────
 function onCountInput(inp) {
-  const card = document.getElementById('card-' + inp.dataset.idx);
-  if (inp.value !== '') {
-    inp.classList.add('has-value');
-    if (card) card.classList.add('counted');
-  } else {
-    inp.classList.remove('has-value');
-    if (card) card.classList.remove('counted');
-  }
+  const card      = document.getElementById('card-' + inp.dataset.idx);
+  const sysQty    = inp.dataset.system;
+  // Mark as "counted" (green) only when user has changed it from the system value
+  const isChanged = inp.value !== '' && inp.value !== sysQty;
+  inp.classList.toggle('has-value', isChanged);
+  if (card) card.classList.toggle('counted', isChanged);
   updateProgress();
 }
 
