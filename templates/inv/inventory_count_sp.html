@@ -92,8 +92,14 @@
       border-radius: 8px; padding: 8px 10px;
       display: flex; align-items: center; gap: 10px;
       box-shadow: 0 1px 3px rgba(0,0,0,.08);
+      border-left: 4px solid transparent;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
     }
-    .item-card.counted { border-left: 4px solid #2ecc71; }
+    .item-card.counted  { border-left-color: #2ecc71; }
+    .item-card.selected { border-left-color: #2980b9; background: #f0f7ff; }
+    /* selected takes priority over counted */
+    .item-card.selected.counted { border-left-color: #2980b9; }
 
     .item-info { flex: 1; min-width: 0; }
     .item-name  { font-size: 15px; font-weight: 600;
@@ -274,7 +280,8 @@
         {% endfor %}
 
         <div class="item-card {{ 'counted' if item.counted_qty is not none }}"
-             id="card-{{ ns.row_idx }}">
+             id="card-{{ ns.row_idx }}"
+             onclick="selectRow(this)"
           <div class="item-info">
             <div class="item-name" title="{{ item.item_name }}">{{ item.item_name }}</div>
             <div class="item-meta">{{ item.area_name }} / {{ item.shelf_label }}</div>
@@ -285,7 +292,7 @@
           <div class="count-wrap {{ 'active' if is_counted }}"
                id="wrap-{{ ns.row_idx }}">
             <button type="button" class="btn-minus"
-                    onclick="stepCount(this, -1)">－</button>
+                    onclick="stepCount(this, -1); event.stopPropagation()">－</button>
             <input type="number"
                    class="count-input {{ 'has-value' if is_counted }}"
                    name="count_qty_{{ ns.row_idx }}"
@@ -295,12 +302,10 @@
                    data-system="{{ item.system_qty }}"
                    data-idx="{{ ns.row_idx }}"
                    data-zone="{{ loop.index0 }}"
-                   onfocus="activate(this)"
-                   onblur="deactivate(this)"
                    oninput="onCountInput(this)"
                    onkeydown="onKeyDown(event,this)">
             <button type="button" class="btn-plus"
-                    onclick="stepCount(this, +1)">＋</button>
+                    onclick="stepCount(this, +1); event.stopPropagation()">＋</button>
           </div>
         </div>
       {% endfor %}
@@ -337,14 +342,24 @@
 <script>
 const TOTAL = {{ items|length }};
 
-// ── Activate / deactivate button reveal ───────────────────────────────────
-function activate(inp) {
-  inp.closest('.count-wrap').classList.add('active');
-}
-function deactivate(inp) {
-  setTimeout(() => {
-    if (!inp.value) inp.closest('.count-wrap').classList.remove('active');
-  }, 200);
+// ── Row selection ─────────────────────────────────────────────────────────
+function selectRow(card) {
+  // Deselect all rows
+  document.querySelectorAll('.item-card.selected').forEach(c => {
+    c.classList.remove('selected');
+    c.querySelector('.count-wrap').classList.remove('active');
+  });
+  // Select tapped row
+  card.classList.add('selected');
+  const wrap = card.querySelector('.count-wrap');
+  wrap.classList.add('active');
+  // Focus & select input text
+  const inp = card.querySelector('.count-input');
+  if (inp) {
+    inp.focus();
+    inp.select();
+    inp.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 }
 
 // ── Input change ──────────────────────────────────────────────────────────
@@ -360,11 +375,12 @@ function onCountInput(inp) {
 
 // ── Stepper buttons ───────────────────────────────────────────────────────
 function stepCount(btn, delta) {
+  const card = btn.closest('.item-card');
+  if (card && !card.classList.contains('selected')) selectRow(card);
   const wrap = btn.closest('.count-wrap');
   const inp  = wrap.querySelector('.count-input');
   const cur  = inp.value === '' ? 0 : (parseInt(inp.value) || 0);
   inp.value  = Math.max(0, cur + delta);
-  wrap.classList.add('active');
   onCountInput(inp);
 }
 
