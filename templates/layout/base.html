@@ -377,6 +377,7 @@
       {% endif %}
 
       <!-- Navigation -->
+      {% block nav %}
       <nav>
         <ul class="nav-tabs">
           <li>
@@ -445,6 +446,7 @@
           {% endif %}
         </ul>
       </nav>
+      {% endblock %}
     </header>
     {% block content %}{% endblock %} {% block body_extra %}{% endblock %}
 
