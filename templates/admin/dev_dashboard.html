@@ -1,0 +1,220 @@
+{% extends "layout/base.html" %}
+{% block content %}
+
+<style>
+  .dash-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 12px; margin-bottom: 24px; }
+  .kpi { background:#fff; border:1px solid #ddd; border-radius:8px; padding:16px; text-align:center; }
+  .kpi .val { font-size:28px; font-weight:700; color:#2c3e50; }
+  .kpi .lbl { font-size:12px; color:#888; margin-top:4px; }
+  .kpi.err  .val { color:#e74c3c; }
+  .kpi.slow .val { color:#e67e22; }
+
+  .section { background:#fff; border:1px solid #ddd; border-radius:8px; padding:16px; margin-bottom:20px; }
+  .section h3 { margin:0 0 12px; font-size:15px; color:#2c3e50; }
+
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { background:#f5f5f5; padding:6px 8px; text-align:left; border-bottom:2px solid #ddd; white-space:nowrap; }
+  td { padding:5px 8px; border-bottom:1px solid #f0f0f0; }
+  tr:hover td { background:#fafafa; }
+  .bar-wrap { background:#eee; border-radius:3px; height:10px; min-width:60px; }
+  .bar-fill  { background:#3498db; height:10px; border-radius:3px; }
+  .bar-fill.err { background:#e74c3c; }
+  .badge-err { background:#fdecea; color:#e74c3c; padding:1px 6px; border-radius:4px; font-size:11px; }
+  .badge-ok  { background:#eafaf1; color:#27ae60; padding:1px 6px; border-radius:4px; font-size:11px; }
+
+  /* Heatmap */
+  .heatmap-table { border-collapse:collapse; font-size:11px; }
+  .heatmap-table th { padding:2px 4px; font-weight:normal; color:#888; }
+  .heatmap-table td { width:22px; height:20px; border-radius:3px; }
+  .dow-label { font-weight:600; padding-right:8px !important; color:#555; }
+
+  .period-tabs { display:flex; gap:6px; margin-bottom:16px; }
+  .period-tabs a {
+    padding:5px 14px; border:1px solid #ddd; border-radius:20px;
+    text-decoration:none; font-size:13px; color:#555; background:#fff;
+  }
+  .period-tabs a.active { background:#2c3e50; color:#fff; border-color:#2c3e50; }
+</style>
+
+<h2>Developer Dashboard</h2>
+
+<div class="period-tabs">
+  {% for d in [7, 30, 90] %}
+    <a href="?days={{ d }}" class="{{ 'active' if days == d }}">{{ d }} days</a>
+  {% endfor %}
+</div>
+
+{# ── KPI row ──────────────────────────────────────────────────────────── #}
+<div class="dash-grid">
+  <div class="kpi">
+    <div class="val">{{ summary.total_hits or 0 }}</div>
+    <div class="lbl">Total Requests</div>
+  </div>
+  <div class="kpi err">
+    <div class="val">{{ summary.total_errors or 0 }}</div>
+    <div class="lbl">4xx / 5xx Errors</div>
+  </div>
+  <div class="kpi err">
+    <div class="val">{{ summary.total_500s or 0 }}</div>
+    <div class="lbl">500 Errors</div>
+  </div>
+  <div class="kpi">
+    <div class="val">{{ summary.unique_users or 0 }}</div>
+    <div class="lbl">Unique Users</div>
+  </div>
+  <div class="kpi slow">
+    <div class="val">{{ summary.avg_ms or '—' }}</div>
+    <div class="lbl">Avg Response (ms)</div>
+  </div>
+</div>
+
+{# ── Top pages ────────────────────────────────────────────────────────── #}
+<div class="section">
+  <h3>Top Pages (last {{ days }} days)</h3>
+  {% if top_pages %}
+  {% set max_hits = top_pages[0].hits %}
+  <table>
+    <thead>
+      <tr>
+        <th>Method</th>
+        <th>Path</th>
+        <th>Hits</th>
+        <th style="width:120px"></th>
+        <th>Errors</th>
+        <th>Avg ms</th>
+        <th>Max ms</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in top_pages %}
+      <tr>
+        <td><span class="badge-ok">{{ r.method }}</span></td>
+        <td>{{ r.path }}</td>
+        <td>{{ r.hits }}</td>
+        <td>
+          <div class="bar-wrap">
+            <div class="bar-fill" style="width:{{ (r.hits / max_hits * 100)|int }}%"></div>
+          </div>
+        </td>
+        <td>
+          {% if r.errors > 0 %}
+            <span class="badge-err">{{ r.errors }}</span>
+          {% else %}
+            <span style="color:#aaa">0</span>
+          {% endif %}
+        </td>
+        <td>{{ r.avg_ms or '—' }}</td>
+        <td>{{ r.max_ms or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p style="color:#aaa">No data yet.</p>
+  {% endif %}
+</div>
+
+{# ── Activity heatmap ─────────────────────────────────────────────────── #}
+<div class="section">
+  <h3>Hourly Activity (last 7 days)</h3>
+  {% set dow_labels = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] %}
+  <table class="heatmap-table">
+    <thead>
+      <tr>
+        <th></th>
+        {% for h in range(24) %}
+          <th>{{ '%02d'|format(h) }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for dow in range(7) %}
+      <tr>
+        <th class="dow-label">{{ dow_labels[dow] }}</th>
+        {% for h in range(24) %}
+          {% set v = heatmap[dow][h] %}
+          {% set intensity = (v / heatmap_max * 100)|int %}
+          <td title="{{ v }} hits"
+              style="background: rgba(52,152,219,{{ '%.2f'|format(v / heatmap_max) }})">
+          </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p style="font-size:11px;color:#aaa;margin-top:6px;">Darker = more activity. Hour is server time (UTC).</p>
+</div>
+
+{# ── Recent errors ────────────────────────────────────────────────────── #}
+<div class="section">
+  <h3>Recent Errors (last {{ days }} days)</h3>
+  {% if recent_errors %}
+  <table>
+    <thead>
+      <tr>
+        <th>Time</th>
+        <th>Method</th>
+        <th>Path</th>
+        <th>Status</th>
+        <th>User</th>
+        <th>ms</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in recent_errors %}
+      <tr>
+        <td style="white-space:nowrap">{{ r.created_at.strftime('%m/%d %H:%M') if r.created_at else '—' }}</td>
+        <td>{{ r.method }}</td>
+        <td>{{ r.path }}</td>
+        <td><span class="badge-err">{{ r.status_code }}</span></td>
+        <td style="color:#888">{{ r.actor_email or '—' }}</td>
+        <td>{{ r.elapsed_ms or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p style="color:#27ae60">No errors in this period.</p>
+  {% endif %}
+</div>
+
+{# ── Slow requests ────────────────────────────────────────────────────── #}
+<div class="section">
+  <h3>Slow Requests ≥ 800ms (last {{ days }} days)</h3>
+  {% if slow %}
+  <table>
+    <thead>
+      <tr>
+        <th>Time</th>
+        <th>Method</th>
+        <th>Path</th>
+        <th>Status</th>
+        <th>ms</th>
+        <th>User</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in slow %}
+      <tr>
+        <td style="white-space:nowrap">{{ r.created_at.strftime('%m/%d %H:%M') if r.created_at else '—' }}</td>
+        <td>{{ r.method }}</td>
+        <td>{{ r.path }}</td>
+        <td>
+          {% if r.status_code >= 400 %}
+            <span class="badge-err">{{ r.status_code }}</span>
+          {% else %}
+            <span class="badge-ok">{{ r.status_code }}</span>
+          {% endif %}
+        </td>
+        <td style="color:#e67e22;font-weight:700">{{ r.elapsed_ms }}</td>
+        <td style="color:#888">{{ r.actor_email or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p style="color:#27ae60">No slow requests in this period.</p>
+  {% endif %}
+</div>
+
+{% endblock %}

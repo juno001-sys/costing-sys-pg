@@ -31,6 +31,7 @@ from views.auth.login import init_auth_login_views
 
 from views.admin.system_home import init_admin_system_home_views
 from views.admin.system_companies import init_admin_system_company_views
+from views.admin.dev_dashboard import init_dev_dashboard_views
 from views.mst_items_csv import init_items_csv_views
 from views.pur_delivery_paste import init_delivery_paste_views
 
@@ -379,6 +380,7 @@ init_admin_invites_views(app, get_db)
 init_admin_user_views(app, get_db)
 init_admin_system_home_views(app, get_db)
 init_admin_system_company_views(app, get_db)
+init_dev_dashboard_views(app, get_db)
 
 # Existing modules
 init_purchase_views(app, get_db, log_purchase_change)
