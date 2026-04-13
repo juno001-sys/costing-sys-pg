@@ -1,6 +1,13 @@
 {% extends "layout/base.html" %} {% block title %}{{ t("purchase.form.title")
 }}{% endblock %} {% block content %}
-<h2>{{ t("purchase.form.title") }}</h2>
+<h2>{{ t("purchase.form.title") }}
+  <a href="{{ url_for('delivery_paste') }}"
+     style="font-size:13px; font-weight:normal; margin-left:14px;
+            background:#f0f7ff; border:1px solid #a8c8f0; border-radius:4px;
+            padding:3px 10px; color:#2a7ae2; text-decoration:none;">
+    📋 納品書から一括入力
+  </a>
+</h2>
 
 <!-- NEW ENTRY FORM (POST) -->
 <form method="post" id="purchase-form">

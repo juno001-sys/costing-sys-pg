@@ -1,0 +1,319 @@
+{% extends "layout/base.html" %}
+{% block title %}納品書テキスト読み込み{% endblock %}
+{% block content %}
+
+<h3>納品書テキスト読み込み
+  <a href="{{ url_for('new_purchase') }}"
+     style="font-size:13px; font-weight:normal; margin-left:12px;">← 仕入れ入力へ戻る</a>
+</h3>
+
+<p style="color:#555; margin-bottom:16px;">
+  タノムなどの納品書メールをコピー＆ペーストしてください。<br>
+  品名・数量・単価を自動で読み取り、仕入れデータとして登録します。
+</p>
+
+<!-- ── Step 1: Paste ──────────────────────────────────────────────────────── -->
+<div id="step1">
+
+  <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:12px;">
+    <label><strong>店舗：</strong>
+      <select id="sel_store" style="min-width:140px;">
+        <option value="">（全社共通）</option>
+        {% for s in stores %}
+        <option value="{{ s.id }}">{{ s.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label><strong>仕入先：</strong>
+      <select id="sel_supplier" style="min-width:200px;">
+        <option value="">（選択してください）</option>
+        {% for s in suppliers %}
+        <option value="{{ s.id }}">{{ s.code }} {{ s.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label><strong>納品日：</strong>
+      <input type="date" id="inp_date" style="min-width:140px;">
+    </label>
+  </div>
+
+  <textarea id="paste_area"
+    placeholder="ここに納品書メールのテキストを丸ごとコピー＆ペーストしてください…"
+    style="width:100%; height:220px; font-size:13px; padding:10px;
+           border:1px solid #ccc; border-radius:4px; box-sizing:border-box;"></textarea>
+
+  <div style="margin-top:10px;">
+    <button onclick="parseText()"
+      style="padding:7px 22px; font-size:14px; background:#444; color:white;
+             border:none; border-radius:4px; cursor:pointer;">
+      📋 読み取る
+    </button>
+    <span style="font-size:12px; color:#888; margin-left:10px;">
+      ※ タノム形式（商品コード：XXXXX）のテキストに対応しています
+    </span>
+  </div>
+</div>
+
+<!-- ── Step 2: Preview & confirm ─────────────────────────────────────────── -->
+<div id="step2" style="display:none; margin-top:24px;">
+
+  <h4>読み取り結果
+    <span id="parse_summary" style="font-size:13px; font-weight:normal; color:#555;"></span>
+  </h4>
+
+  <table border="1" cellpadding="5" cellspacing="0"
+         style="width:100%; font-size:13px; border-collapse:collapse;">
+    <thead style="background:#f0f0f0;">
+      <tr>
+        <th style="min-width:120px;">品名（納品書）</th>
+        <th>数量</th>
+        <th>単位</th>
+        <th>単価（円）</th>
+        <th>小計（円）</th>
+        <th style="min-width:220px;">品目マスタ（選択）</th>
+      </tr>
+    </thead>
+    <tbody id="preview_body"></tbody>
+  </table>
+
+  <div style="margin-top:20px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+    <button onclick="saveAll()"
+      style="padding:8px 24px; font-size:15px; background:#2a7ae2; color:white;
+             border:none; border-radius:4px; cursor:pointer;">
+      ✅ 仕入れデータとして保存
+    </button>
+    <button onclick="resetAll()"
+      style="padding:8px 16px; background:#888; color:white;
+             border:none; border-radius:4px; cursor:pointer;">
+      やり直す
+    </button>
+    <a href="{{ url_for('new_purchase') }}" style="color:#555;">キャンセル</a>
+  </div>
+</div>
+
+<!-- Hidden submit form -->
+<form id="save_form" method="post" action="{{ url_for('delivery_paste_save') }}"
+      style="display:none;">
+  <input type="hidden" name="store_id"      id="form_store">
+  <input type="hidden" name="supplier_id"   id="form_supplier">
+  <input type="hidden" name="delivery_date" id="form_date">
+  <input type="hidden" name="rows_json"     id="form_rows">
+</form>
+
+{% endblock %}
+{% block body_extra %}
+<script>
+// ── Item master (pre-loaded for client-side matching) ──────────────────────
+const ALL_ITEMS = {{ items_json|safe }};
+
+// ── Parser ─────────────────────────────────────────────────────────────────
+function parseTanomText(rawText) {
+  const text = rawText;
+
+  // Delivery date: 納品日 2026/04/10(金)
+  const dateM = text.match(/納品日[\s\u3000]+(\d{4})\/(\d{2})\/(\d{2})/);
+  const deliveryDate = dateM ? `${dateM[1]}-${dateM[2]}-${dateM[3]}` : '';
+
+  // Find all （商品コード：NNNNN） markers
+  const codeRe = /（商品コード[：:]\s*(\d+)）/g;
+  const codeMatches = [...text.matchAll(codeRe)];
+
+  const items = [];
+
+  for (let i = 0; i < codeMatches.length; i++) {
+    const cm = codeMatches[i];
+    const supplierCode = cm[1];
+
+    // ── Item name: text before （商品コード：, after last ¥NNN ──────────────
+    const textBefore = text.substring(0, cm.index);
+    // Take text after the last ¥NNN occurrence (= previous subtotal)
+    const afterPrice = textBefore.split(/¥[\d,]+/).pop() || '';
+    // Split by newlines, take last non-empty segment
+    let name = afterPrice.split(/[\n\r]/).map(s => s.trim()).filter(Boolean).pop() || '';
+    // Strip common prefixes that bleed in from previous lines
+    name = name.replace(/^.*\d+件[）)]\s*/, '');     // "N件）  品名"
+    name = name.replace(/^消費税[：:]\d+%\s*/, '');  // "消費税：8%  品名"
+    name = name.replace(/^\d+\S+\s+/, '');            // "4kg  品名" etc.
+    name = name.trim();
+
+    // ── Price / qty data: text after code marker until next marker ─────────
+    const dataStart = cm.index + cm[0].length;
+    const dataEnd   = i + 1 < codeMatches.length
+      ? codeMatches[i + 1].index
+      : text.length;
+    const dataText = text.substring(dataStart, dataEnd);
+
+    // Unit price: ¥NNN /unit
+    const priceM   = dataText.match(/[¥￥]([\d,]+)\s*\/\s*(\S+)/);
+    const unitPrice = priceM ? parseInt(priceM[1].replace(/,/g, '')) : 0;
+    const priceUnit = priceM ? priceM[2] : '';
+
+    // Quantity + unit (first NUMBER+UNIT in data block)
+    const UNITS = 'kg|g|本|個|束|パック|玉|枚|袋|缶|箱|ケース|合|cc|ml|L';
+    const qtyM  = dataText.match(new RegExp(`(\\d+(?:\\.\\d+)?)\\s*(${UNITS})`));
+    const quantity = qtyM ? parseFloat(qtyM[1]) : 0;
+    const unit     = qtyM ? qtyM[2] : priceUnit;
+
+    // Subtotal: last ¥NNN in data block
+    const allPrices = [...dataText.matchAll(/[¥￥]([\d,]+)/g)];
+    let subtotal = unitPrice * quantity;
+    if (allPrices.length >= 2) {
+      subtotal = parseInt(allPrices[allPrices.length - 1][1].replace(/,/g, ''));
+    }
+
+    if (name) {
+      items.push({ name, supplierCode, unitPrice, unit, quantity, subtotal });
+    }
+  }
+
+  return { deliveryDate, items };
+}
+
+// ── Auto-match item name to mst_items ──────────────────────────────────────
+function autoMatch(name) {
+  if (!name) return null;
+  const n = name.replace(/\s/g, '');
+  // 1. Exact
+  let hit = ALL_ITEMS.find(i => i.name === name);
+  if (hit) return hit;
+  // 2. Ignore whitespace exact
+  hit = ALL_ITEMS.find(i => i.name.replace(/\s/g, '') === n);
+  if (hit) return hit;
+  // 3. Master name contains delivery name (or vice versa)
+  hit = ALL_ITEMS.find(i =>
+    i.name.replace(/\s/g, '').includes(n) || n.includes(i.name.replace(/\s/g, ''))
+  );
+  return hit || null;
+}
+
+// ── Build item selector options ────────────────────────────────────────────
+function buildOpts(matchedId) {
+  return ALL_ITEMS.map(i =>
+    `<option value="${i.id}" ${i.id === matchedId ? 'selected' : ''}>`
+    + `${i.code} ${i.name}（${i.supplier_name}）</option>`
+  ).join('');
+}
+
+// ── Parse button ───────────────────────────────────────────────────────────
+function parseText() {
+  const raw = document.getElementById('paste_area').value;
+  if (!raw.trim()) { alert('テキストを貼り付けてください。'); return; }
+
+  const { deliveryDate, items } = parseTanomText(raw);
+
+  if (items.length === 0) {
+    alert('品目が読み取れませんでした。\nタノムの納品書メール本文をそのまま貼り付けてください。');
+    return;
+  }
+
+  // Fill delivery date if found
+  if (deliveryDate) document.getElementById('inp_date').value = deliveryDate;
+
+  // Build rows
+  const tbody = document.getElementById('preview_body');
+  tbody.innerHTML = '';
+  let autoCount = 0;
+
+  items.forEach((item) => {
+    const matched = autoMatch(item.name);
+    if (matched) autoCount++;
+
+    const tr = document.createElement('tr');
+    tr.style.background = matched ? '' : '#fffbe6';
+    tr.dataset.unit = item.unit;
+
+    tr.innerHTML = `
+      <td>
+        <strong>${item.name}</strong><br>
+        <small style="color:#999;">仕入先コード：${item.supplierCode}</small>
+      </td>
+      <td>
+        <input type="number" value="${item.quantity}" min="0" step="0.1"
+          style="width:64px; text-align:right;"
+          oninput="recalc(this)">
+      </td>
+      <td style="text-align:center; color:#666;">${item.unit}</td>
+      <td>
+        <input type="number" value="${item.unitPrice}" min="0" step="1"
+          style="width:80px; text-align:right;"
+          oninput="recalc(this)">
+      </td>
+      <td class="amt" style="text-align:right; padding-right:8px;">
+        ${item.subtotal.toLocaleString()}
+      </td>
+      <td>
+        <select style="width:100%; font-size:12px; max-width:240px;">
+          <option value="">— スキップ —</option>
+          ${buildOpts(matched ? matched.id : null)}
+        </select>
+        <div style="font-size:11px; margin-top:2px;">
+          ${matched
+            ? `<span style="color:green;">✅ ${matched.name}</span>`
+            : `<span style="color:orange;">⚠️ マッチなし — 手動で選択してください</span>`}
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const unmatched = items.length - autoCount;
+  document.getElementById('parse_summary').textContent =
+    `${items.length}件を読み取り ／ 自動マッチ ${autoCount}件`
+    + (unmatched ? ` ／ ⚠️ 要確認 ${unmatched}件` : ' ／ ✅ 全件マッチ');
+
+  document.getElementById('step2').style.display = '';
+  document.getElementById('step2').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── Recalculate subtotal on qty/price change ───────────────────────────────
+function recalc(input) {
+  const tr     = input.closest('tr');
+  const inputs = tr.querySelectorAll('input[type=number]');
+  const qty    = parseFloat(inputs[0].value) || 0;
+  const price  = parseFloat(inputs[1].value) || 0;
+  tr.querySelector('.amt').textContent = Math.round(qty * price).toLocaleString();
+}
+
+// ── Save button ────────────────────────────────────────────────────────────
+function saveAll() {
+  const supplierId = document.getElementById('sel_supplier').value;
+  const date       = document.getElementById('inp_date').value;
+  const storeId    = document.getElementById('sel_store').value;
+
+  if (!supplierId) { alert('仕入先を選択してください。'); return; }
+  if (!date)       { alert('納品日を入力してください。'); return; }
+
+  const rows = [];
+  document.querySelectorAll('#preview_body tr').forEach(tr => {
+    const itemId = tr.querySelector('select').value;
+    if (!itemId) return;   // skipped
+    const inputs = tr.querySelectorAll('input[type=number]');
+    const qty    = parseFloat(inputs[0].value) || 0;
+    const price  = parseFloat(inputs[1].value) || 0;
+    if (!qty) return;
+    rows.push({ item_id: parseInt(itemId), quantity: qty, unit_price: price });
+  });
+
+  if (rows.length === 0) {
+    alert('保存する行がありません。\n品目マスタ列で品目を選択してください。');
+    return;
+  }
+
+  if (!confirm(`${rows.length}件の仕入れ記録を登録します。よろしいですか？`)) return;
+
+  document.getElementById('form_store').value    = storeId;
+  document.getElementById('form_supplier').value = supplierId;
+  document.getElementById('form_date').value     = date;
+  document.getElementById('form_rows').value     = JSON.stringify(rows);
+  document.getElementById('save_form').submit();
+}
+
+// ── Reset ──────────────────────────────────────────────────────────────────
+function resetAll() {
+  document.getElementById('step2').style.display = 'none';
+  document.getElementById('paste_area').value = '';
+}
+</script>
+{% endblock %}
