@@ -25,6 +25,147 @@ def get_latest_stock_count_dates(db, store_id, limit=3):
     return [r["count_date"] for r in rows]
 
 
+def _fetch_count_data(db, store_id, count_date):
+    """
+    Shared data-fetching logic for both the desktop (v2) and
+    smartphone (sp) inventory count screens.
+    Returns a list of item dicts ready for rendering.
+    """
+    base_rows = db.execute(
+        """
+        SELECT
+          i.id   AS item_id,
+          i.code AS item_code,
+          i.name AS item_name,
+          COALESCE(NULLIF(pref.temp_zone,''),NULLIF(i.temp_zone,''),'その他') AS tz_raw,
+          m.shelf_id,
+          COALESCE(m.sort_order, 9999) AS item_sort_order,
+          sh.code AS shelf_code,
+          sh.name AS shelf_name,
+          COALESCE(sh.sort_order, 9999) AS shelf_sort_order,
+          COALESCE(sam.sort_order, 9999) AS area_sort_order,
+          COALESCE(sam.display_name, am.name, '') AS area_name,
+          i.is_internal
+        FROM mst_items i
+        LEFT JOIN item_location_prefs pref
+          ON pref.store_id = %s AND pref.item_id = i.id
+        LEFT JOIN item_shelf_map m
+          ON m.store_id = %s AND m.item_id = i.id AND m.is_active = TRUE
+        LEFT JOIN store_shelves sh ON sh.id = m.shelf_id
+        LEFT JOIN store_area_map sam ON sam.id = sh.store_area_map_id
+        LEFT JOIN area_master am ON am.id = sam.area_id
+        WHERE
+          pref.item_id IS NOT NULL OR m.item_id IS NOT NULL
+          OR i.is_internal = 1
+          OR EXISTS (
+            SELECT 1 FROM purchases p
+            WHERE p.store_id = %s AND p.item_id = i.id
+              AND p.is_deleted = 0 AND p.delivery_date <= %s
+          )
+        ORDER BY
+          CASE
+            WHEN COALESCE(NULLIF(pref.temp_zone,''),NULLIF(i.temp_zone,''),'その他') IN ('冷凍','FREEZE') THEN 1
+            WHEN COALESCE(NULLIF(pref.temp_zone,''),NULLIF(i.temp_zone,''),'その他') IN ('冷蔵','CHILL')  THEN 2
+            WHEN COALESCE(NULLIF(pref.temp_zone,''),NULLIF(i.temp_zone,''),'その他') IN ('常温','AMB')    THEN 3
+            ELSE 9
+          END,
+          COALESCE(sam.sort_order,9999), COALESCE(am.name,''),
+          COALESCE(sh.sort_order,9999),  COALESCE(sh.code,''),
+          COALESCE(m.sort_order,9999),   i.code
+        """,
+        (store_id, store_id, store_id, count_date),
+    ).fetchall()
+
+    item_ids = [r["item_id"] for r in base_rows] or []
+
+    # Last counted qty per item
+    last_rows = db.execute(
+        """
+        SELECT DISTINCT ON (item_id) item_id,
+               count_date AS last_count_date, counted_qty AS opening_qty
+        FROM stock_counts
+        WHERE store_id = %s AND item_id = ANY(%s) AND count_date <= %s
+        ORDER BY item_id, count_date DESC, id DESC
+        """,
+        (store_id, item_ids, count_date),
+    ).fetchall()
+    last_map = {r["item_id"]: (r["opening_qty"] or 0, r["last_count_date"]) for r in last_rows}
+
+    # Purchases after last count
+    after_rows = db.execute(
+        """
+        WITH last_cnt AS (
+          SELECT DISTINCT ON (item_id) item_id, count_date AS last_count_date
+          FROM stock_counts
+          WHERE store_id = %s AND item_id = ANY(%s) AND count_date <= %s
+          ORDER BY item_id, count_date DESC, id DESC
+        )
+        SELECT p.item_id, COALESCE(SUM(p.quantity),0) AS qty_after
+        FROM purchases p
+        LEFT JOIN last_cnt lc ON lc.item_id = p.item_id
+        WHERE p.store_id = %s AND p.item_id = ANY(%s)
+          AND p.is_deleted = 0 AND p.delivery_date <= %s
+          AND (lc.last_count_date IS NULL OR p.delivery_date > lc.last_count_date)
+        GROUP BY p.item_id
+        """,
+        (store_id, item_ids, count_date, store_id, item_ids, count_date),
+    ).fetchall()
+    after_map = {r["item_id"]: (r["qty_after"] or 0) for r in after_rows}
+
+    # Weighted avg unit price
+    price_rows = db.execute(
+        """
+        SELECT item_id,
+               CASE WHEN SUM(quantity)>0
+                    THEN SUM(quantity*unit_price)::numeric/SUM(quantity)
+                    ELSE 0 END AS unit_price
+        FROM purchases
+        WHERE store_id = %s AND item_id = ANY(%s)
+          AND is_deleted = 0 AND delivery_date <= %s
+        GROUP BY item_id
+        """,
+        (store_id, item_ids, count_date),
+    ).fetchall()
+    price_map = {r["item_id"]: float(r["unit_price"] or 0) for r in price_rows}
+
+    # Already counted today
+    counted_rows = db.execute(
+        "SELECT item_id, counted_qty FROM stock_counts "
+        "WHERE store_id = %s AND item_id = ANY(%s) AND count_date = %s",
+        (store_id, item_ids, count_date),
+    ).fetchall()
+    counted_map = {r["item_id"]: r["counted_qty"] for r in counted_rows}
+
+    # Build item list
+    TZ_MAP = {
+        "冷凍": "冷凍", "FREEZE": "冷凍",
+        "冷蔵": "冷蔵", "CHILL":  "冷蔵",
+        "常温": "常温", "AMB":    "常温",
+    }
+    items = []
+    for row in base_rows:
+        item_id    = row["item_id"]
+        opening, _ = last_map.get(item_id, (0, None))
+        system_qty = opening + after_map.get(item_id, 0)
+        if system_qty <= 0 and not row["is_internal"]:
+            continue
+        shelf_name = row["shelf_name"] or row["shelf_code"] or "—"
+        items.append({
+            "item_id":     item_id,
+            "item_code":   row["item_code"],
+            "item_name":   row["item_name"],
+            "temp_zone":   TZ_MAP.get(row["tz_raw"] or "", "その他"),
+            "area_name":   row["area_name"] or "—",
+            "shelf_label": shelf_name,
+            "system_qty":  system_qty,
+            "unit_price":  price_map.get(item_id, 0.0),
+            "stock_amount": system_qty * price_map.get(item_id, 0.0),
+            "counted_qty": counted_map.get(item_id),
+            "is_internal": row["is_internal"],
+        })
+    return items
+
+
 def init_inventory_views_v2(app, get_db):
     @app.route("/inventory/count_v2", methods=["GET", "POST"], endpoint="inventory_count_v2")
     def inventory_count_v2():
@@ -414,5 +555,106 @@ def init_inventory_views_v2(app, get_db):
         )
         print(f"[V2-1] 7 render elapsed: {time.perf_counter() - t6:.3f}s")
         print(f"[V2-1] TOTAL elapsed: {time.perf_counter() - t0:.3f}s")
+
+        return html
+
+    # ── Smartphone-optimised inventory count ──────────────────────────────────
+    @app.route("/inventory/count_sp", methods=["GET", "POST"], endpoint="inventory_count_sp")
+    def inventory_count_sp():
+        db      = get_db()
+        stores  = get_accessible_stores()
+        today   = datetime.today().strftime("%Y-%m-%d")
+
+        # ── POST: save counts (same logic as v2) ──────────────────────────────
+        if request.method == "POST":
+            store_id = str(
+                normalize_accessible_store_id(request.form.get("store_id")) or ""
+            )
+            count_date = request.form.get("count_date") or today
+
+            if not store_id:
+                flash("店舗を選択してください。")
+                return redirect(url_for("inventory_count_sp"))
+
+            row_count    = int(request.form.get("row_count", 0))
+            inserted_rows = 0
+
+            for i in range(1, row_count + 1):
+                item_id    = request.form.get(f"item_id_{i}")
+                system_qty = request.form.get(f"system_qty_{i}")
+                counted_qty = request.form.get(f"count_qty_{i}")
+
+                if not item_id or counted_qty is None or counted_qty == "":
+                    continue
+                try:
+                    sys_val = int(system_qty or 0)
+                    cnt_val = int(counted_qty)
+                except ValueError:
+                    continue
+
+                db.execute(
+                    """
+                    INSERT INTO stock_counts
+                        (store_id, item_id, count_date,
+                         system_qty, counted_qty, diff_qty, created_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (store_id, item_id, count_date,
+                     sys_val, cnt_val, cnt_val - sys_val,
+                     datetime.now().isoformat(timespec="seconds")),
+                )
+                inserted_rows += 1
+
+            try:
+                log_event(db, action="SUBMIT", module="inv",
+                          entity_table="stock_counts",
+                          entity_id=f"{store_id}:{count_date}",
+                          message=f"Inventory count submitted (sp) {count_date}",
+                          store_id=int(store_id), status_code=200,
+                          meta={"count_date": str(count_date),
+                                "row_count": row_count,
+                                "inserted_rows": inserted_rows,
+                                "version": "sp"})
+            except Exception:
+                pass
+
+            db.commit()
+            flash(f"✅ {inserted_rows}件の棚卸し結果を登録しました。")
+            return redirect(url_for("inventory_count_sp",
+                                    store_id=store_id, count_date=count_date))
+
+        # ── GET: render ───────────────────────────────────────────────────────
+        selected_store_id = normalize_accessible_store_id(
+            request.args.get("store_id")
+        )
+        store_id   = str(selected_store_id) if selected_store_id else ""
+        count_date = request.args.get("count_date") or today
+
+        latest_dates = []
+        items        = []
+
+        if selected_store_id:
+            latest_dates = get_latest_stock_count_dates(db, selected_store_id, limit=3)
+            items = _fetch_count_data(db, store_id, count_date)
+
+        # Group items by temp zone for the template
+        from collections import OrderedDict
+        ZONE_ORDER = ["冷凍", "冷蔵", "常温", "その他"]
+        zones: dict = OrderedDict((z, []) for z in ZONE_ORDER)
+        for item in items:
+            tz = item["temp_zone"] if item["temp_zone"] in zones else "その他"
+            zones[tz].append(item)
+        # Remove empty zones
+        zones = {z: v for z, v in zones.items() if v}
+
+        return render_template(
+            "inv/inventory_count_sp.html",
+            stores=stores,
+            selected_store_id=selected_store_id,
+            count_date=count_date,
+            items=items,
+            zones=zones,
+            latest_dates=latest_dates,
+        )
 
         return html

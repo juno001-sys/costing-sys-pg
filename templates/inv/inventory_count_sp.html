@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>棚卸し</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans",
+                   "Noto Sans JP", sans-serif;
+      background: #f0f2f5;
+      color: #1a1a1a;
+      padding-bottom: 80px;
+      min-height: 100vh;
+    }
+
+    /* ── Sticky top bar ─────────────────────────────────────────── */
+    .topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: #2c3e50; color: white;
+      padding: 10px 14px;
+      display: flex; justify-content: space-between; align-items: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,.3);
+    }
+    .topbar-left  { font-size: 15px; font-weight: 600; }
+    .topbar-left small { display: block; font-size: 11px; font-weight: 400;
+                         opacity: .8; margin-top: 1px; }
+    .topbar-right { text-align: right; }
+    .progress-bar { width: 100px; height: 6px; background: rgba(255,255,255,.25);
+                    border-radius: 3px; overflow: hidden;
+                    margin-bottom: 3px; margin-left: auto; }
+    .progress-fill { height: 100%; background: #2ecc71; border-radius: 3px;
+                     transition: width .3s; }
+    .prog-text { font-size: 11px; color: rgba(255,255,255,.8); }
+
+    /* ── Flash messages ─────────────────────────────────────────── */
+    .flash-ok  { background: #d4edda; color: #155724;
+                 padding: 10px 14px; font-size: 13px; }
+    .flash-err { background: #f8d7da; color: #721c24;
+                 padding: 10px 14px; font-size: 13px; }
+
+    /* ── Selector panel ─────────────────────────────────────────── */
+    .selector-panel {
+      background: white; padding: 14px; margin: 8px;
+      border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.1);
+    }
+    .selector-panel label { display: block; font-size: 12px;
+                            color: #888; margin-bottom: 3px; }
+    .selector-panel select,
+    .selector-panel input[type=date] {
+      width: 100%; padding: 10px; font-size: 15px;
+      border: 1px solid #ddd; border-radius: 8px;
+      background: #fafafa; margin-bottom: 10px;
+      -webkit-appearance: none; appearance: none;
+    }
+    .prev-dates { font-size: 12px; color: #888; margin-top: 2px; }
+    .prev-dates a { color: #2980b9; text-decoration: none; margin-right: 8px; }
+
+    /* ── Empty state ────────────────────────────────────────────── */
+    .empty-state { text-align: center; padding: 48px 24px; color: #999; }
+    .empty-state .icon { font-size: 40px; }
+    .empty-state p { font-size: 14px; margin-top: 8px; }
+
+    /* ── Zone section ───────────────────────────────────────────── */
+    .zone-section { margin: 8px 8px 0; }
+    .zone-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 14px; border-radius: 10px 10px 0 0;
+      font-size: 14px; font-weight: 700; color: white;
+      cursor: pointer; user-select: none;
+    }
+    .zone-count   { font-size: 12px; font-weight: 400; opacity: .85; }
+    .zone-chevron { font-size: 12px; transition: transform .2s; }
+    .zone-header.collapsed .zone-chevron { transform: rotate(-90deg); }
+
+    .zone-freeze  { background: #1a6db5; }
+    .zone-chill   { background: #0097a7; }
+    .zone-ambient { background: #2e7d32; }
+    .zone-other   { background: #546e7a; }
+
+    .zone-body { background: #e8ecf0; border-radius: 0 0 10px 10px;
+                 padding: 4px 0 6px; }
+    .zone-body.hidden { display: none; }
+
+    /* ── Item card ──────────────────────────────────────────────── */
+    .item-card {
+      background: white; margin: 3px 6px;
+      border-radius: 8px; padding: 8px 10px;
+      display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    }
+    .item-card.counted { border-left: 4px solid #2ecc71; }
+
+    .item-info { flex: 1; min-width: 0; }
+    .item-name  { font-size: 15px; font-weight: 600;
+                  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .item-meta  { font-size: 11px; color: #888; margin-top: 2px; }
+    .system-qty { font-size: 12px; color: #aaa; margin-top: 3px; }
+
+    /* ── Count controls ─────────────────────────────────────────── */
+    .count-wrap {
+      flex-shrink: 0;
+      display: flex; flex-direction: row; align-items: center; gap: 4px;
+    }
+
+    .count-input {
+      width: 68px; height: 48px;
+      text-align: center; font-size: 22px; font-weight: 700;
+      border: 2px solid #ddd; border-radius: 8px;
+      background: #fafafa; color: #1a1a1a;
+      -webkit-appearance: none; appearance: none;
+      outline: none; padding: 0;
+      transition: width .15s;
+    }
+    .count-wrap.active .count-input { width: 54px; }
+    .count-input:focus {
+      border-color: #2980b9; background: #eaf4ff;
+      box-shadow: 0 0 0 3px rgba(41,128,185,.15);
+    }
+    .count-input.has-value { border-color: #2ecc71; background: #f0fff4; }
+
+    /* Buttons: hidden until active */
+    .btn-minus, .btn-plus {
+      border: none; border-radius: 8px; height: 48px;
+      font-weight: 800; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      user-select: none; -webkit-tap-highlight-color: transparent;
+      line-height: 1;
+      opacity: 0; pointer-events: none;
+      transform: scale(0.6);
+      transition: opacity .15s, transform .15s;
+    }
+    .count-wrap.active .btn-minus,
+    .count-wrap.active .btn-plus {
+      opacity: 1; pointer-events: auto; transform: scale(1);
+    }
+
+    /* － BIG: primary action (inventory decreases) */
+    .btn-minus {
+      width: 48px; font-size: 26px;
+      background: #fdecea; color: #e74c3c;
+      border: 1.5px solid #f5b7b1;
+    }
+    .btn-minus:active { background: #f9c0bb; }
+
+    /* ＋ small: correction */
+    .btn-plus {
+      width: 34px; font-size: 18px;
+      background: #f0f0f0; color: #888;
+    }
+    .btn-plus:active { background: #ddd; }
+
+    /* ── Sticky save bar ────────────────────────────────────────── */
+    .save-bar {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+      background: white; padding: 10px 14px;
+      border-top: 1px solid #ddd;
+      box-shadow: 0 -2px 8px rgba(0,0,0,.1);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .btn-save {
+      flex: 1; padding: 13px; font-size: 16px; font-weight: 700;
+      background: #27ae60; color: white; border: none;
+      border-radius: 10px; cursor: pointer;
+    }
+    .btn-save:active { background: #219150; }
+    .btn-desktop {
+      padding: 13px 14px; font-size: 13px;
+      background: #ecf0f1; color: #555; border: none;
+      border-radius: 10px; cursor: pointer; white-space: nowrap;
+      text-decoration: none; display: inline-block; text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+{# ── Flash messages ───────────────────────────────────────────────────────── #}
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in msgs %}
+    <div class="{{ 'flash-ok' if cat == 'message' else 'flash-err' }}">{{ msg }}</div>
+  {% endfor %}
+{% endwith %}
+
+{# ── Top bar ──────────────────────────────────────────────────────────────── #}
+<div class="topbar">
+  <div class="topbar-left">
+    棚卸し
+    <small>
+      {% if selected_store_id %}
+        {% for s in stores %}{% if s.id == selected_store_id %}{{ s.name }}{% endif %}{% endfor %}
+        &nbsp;{{ count_date }}
+      {% else %}
+        店舗・日付を選択
+      {% endif %}
+    </small>
+  </div>
+  <div class="topbar-right">
+    <div class="progress-bar">
+      <div class="progress-fill" id="prog-fill" style="width:0%"></div>
+    </div>
+    <span id="prog-text" class="prog-text">—</span>
+  </div>
+</div>
+
+{# ── Store / date selector ────────────────────────────────────────────────── #}
+<form method="get" id="filter-form">
+  <div class="selector-panel">
+    <label>店舗</label>
+    <select name="store_id" onchange="this.form.submit()">
+      <option value="">（選択してください）</option>
+      {% for s in stores %}
+        <option value="{{ s.id }}" {{ 'selected' if selected_store_id == s.id }}>
+          {{ s.name }}
+        </option>
+      {% endfor %}
+    </select>
+
+    <label>棚卸し日</label>
+    <input type="date" name="count_date" value="{{ count_date }}"
+           onchange="this.form.submit()">
+
+    {% if latest_dates %}
+    <div class="prev-dates">
+      過去：
+      {% for d in latest_dates %}
+        <a href="?store_id={{ selected_store_id }}&count_date={{ d }}">{{ d }}</a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</form>
+
+{# ── Main count form ──────────────────────────────────────────────────────── #}
+{% if selected_store_id and items %}
+
+<form method="post" id="count-form">
+  <input type="hidden" name="store_id"   value="{{ selected_store_id }}">
+  <input type="hidden" name="count_date" value="{{ count_date }}">
+  <input type="hidden" name="row_count"  value="{{ items|length }}">
+
+  {# Hidden per-row item_id + system_qty #}
+  {% for item in items %}
+    <input type="hidden" name="item_id_{{ loop.index }}"    value="{{ item.item_id }}">
+    <input type="hidden" name="system_qty_{{ loop.index }}" value="{{ item.system_qty }}">
+  {% endfor %}
+
+  {# Zone config #}
+  {% set zone_cls  = {"冷凍":"zone-freeze","冷蔵":"zone-chill","常温":"zone-ambient","その他":"zone-other"} %}
+  {% set zone_icon = {"冷凍":"❄️","冷蔵":"🧊","常温":"🌿","その他":"📦"} %}
+
+  {% for zone_name, zone_items in zones.items() %}
+  <div class="zone-section">
+    <div class="zone-header {{ zone_cls.get(zone_name,'zone-other') }}"
+         onclick="toggleZone(this)">
+      <span>{{ zone_icon.get(zone_name,'📦') }} {{ zone_name }}</span>
+      <span>
+        <span class="zone-count" id="zcnt-{{ loop.index }}">
+          0/{{ zone_items|length }}件
+        </span>
+        &nbsp;<span class="zone-chevron">▼</span>
+      </span>
+    </div>
+
+    <div class="zone-body" id="zbody-{{ loop.index }}">
+      {% for item in zone_items %}
+        {# Find global row index for this item #}
+        {% set ns = namespace(row_idx=0) %}
+        {% for gi in items %}
+          {% if gi.item_id == item.item_id %}{% set ns.row_idx = loop.index %}{% endif %}
+        {% endfor %}
+
+        <div class="item-card {{ 'counted' if item.counted_qty is not none }}"
+             id="card-{{ ns.row_idx }}">
+          <div class="item-info">
+            <div class="item-name" title="{{ item.item_name }}">{{ item.item_name }}</div>
+            <div class="item-meta">{{ item.area_name }} / {{ item.shelf_label }}</div>
+            <div class="system-qty">帳簿：{{ item.system_qty }}</div>
+          </div>
+          <div class="count-wrap {{ 'active' if item.counted_qty is not none }}"
+               id="wrap-{{ ns.row_idx }}">
+            <button type="button" class="btn-minus"
+                    onclick="stepCount(this, -1)">－</button>
+            <input type="number"
+                   class="count-input {{ 'has-value' if item.counted_qty is not none }}"
+                   name="count_qty_{{ ns.row_idx }}"
+                   id="inp-{{ ns.row_idx }}"
+                   value="{{ item.counted_qty if item.counted_qty is not none else '' }}"
+                   min="0" step="1" inputmode="numeric"
+                   placeholder="—"
+                   data-idx="{{ ns.row_idx }}"
+                   data-zone="{{ loop.index0 }}"
+                   onfocus="activate(this)"
+                   onblur="deactivate(this)"
+                   oninput="onCountInput(this)"
+                   onkeydown="onKeyDown(event,this)">
+            <button type="button" class="btn-plus"
+                    onclick="stepCount(this, +1)">＋</button>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <div class="save-bar">
+    <button type="submit" class="btn-save" onclick="return confirmSave()">
+      ✅ 棚卸しを保存する
+    </button>
+    <a href="{{ url_for('inventory_count_v2', store_id=selected_store_id, count_date=count_date) }}"
+       class="btn-desktop">PC版</a>
+  </div>
+</form>
+
+{% elif selected_store_id %}
+<div class="empty-state">
+  <div class="icon">📋</div>
+  <p>この条件で表示できる品目がありません。<br>仕入れ記録または品目マスタを確認してください。</p>
+</div>
+<div class="save-bar">
+  <a href="{{ url_for('inventory_count_v2', store_id=selected_store_id) }}"
+     class="btn-desktop" style="flex:1; text-align:center;">PC版に切り替え</a>
+</div>
+
+{% else %}
+<div class="empty-state">
+  <div class="icon">🏪</div>
+  <p>上の選択肢から店舗を選んでください。</p>
+</div>
+{% endif %}
+
+<script>
+const TOTAL = {{ items|length }};
+
+// ── Activate / deactivate button reveal ───────────────────────────────────
+function activate(inp) {
+  inp.closest('.count-wrap').classList.add('active');
+}
+function deactivate(inp) {
+  setTimeout(() => {
+    if (!inp.value) inp.closest('.count-wrap').classList.remove('active');
+  }, 200);
+}
+
+// ── Input change ──────────────────────────────────────────────────────────
+function onCountInput(inp) {
+  const card = document.getElementById('card-' + inp.dataset.idx);
+  if (inp.value !== '') {
+    inp.classList.add('has-value');
+    if (card) card.classList.add('counted');
+  } else {
+    inp.classList.remove('has-value');
+    if (card) card.classList.remove('counted');
+  }
+  updateProgress();
+}
+
+// ── Stepper buttons ───────────────────────────────────────────────────────
+function stepCount(btn, delta) {
+  const wrap = btn.closest('.count-wrap');
+  const inp  = wrap.querySelector('.count-input');
+  const cur  = inp.value === '' ? 0 : (parseInt(inp.value) || 0);
+  inp.value  = Math.max(0, cur + delta);
+  wrap.classList.add('active');
+  onCountInput(inp);
+}
+
+// ── Keyboard nav: Enter / arrows ──────────────────────────────────────────
+function onKeyDown(e, inp) {
+  const idx = parseInt(inp.dataset.idx);
+  if (e.key === 'Enter' || e.key === 'ArrowDown') {
+    e.preventDefault();
+    const next = document.getElementById('inp-' + (idx + 1));
+    if (next) { next.focus(); next.select();
+                next.scrollIntoView({behavior:'smooth', block:'center'}); }
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    const prev = document.getElementById('inp-' + (idx - 1));
+    if (prev) { prev.focus(); prev.select();
+                prev.scrollIntoView({behavior:'smooth', block:'center'}); }
+  }
+}
+
+// ── Zone collapse ─────────────────────────────────────────────────────────
+function toggleZone(header) {
+  const body = header.nextElementSibling;
+  body.classList.toggle('hidden');
+  header.classList.toggle('collapsed');
+}
+
+// ── Progress bar + per-zone counters ──────────────────────────────────────
+function updateProgress() {
+  const filled = document.querySelectorAll('.count-input.has-value').length;
+  const pct    = TOTAL > 0 ? Math.round(filled / TOTAL * 100) : 0;
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-text').textContent  = filled + '/' + TOTAL + '件';
+
+  // Per-zone
+  document.querySelectorAll('.zone-section').forEach((sec, i) => {
+    const el    = document.getElementById('zcnt-' + (i + 1));
+    if (!el) return;
+    const total = sec.querySelectorAll('.count-input').length;
+    const done  = sec.querySelectorAll('.count-input.has-value').length;
+    el.textContent = done + '/' + total + '件';
+  });
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+updateProgress();
+window.addEventListener('load', () => {
+  const first = document.querySelector('.count-input:not(.has-value)');
+  if (first) first.scrollIntoView({behavior:'smooth', block:'center'});
+});
+</script>
+</body>
+</html>

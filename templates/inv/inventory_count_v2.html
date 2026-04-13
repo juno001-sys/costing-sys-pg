@@ -12,6 +12,8 @@
 <a href="{{ url_for('inventory_locations', store_id=selected_store_id) }}">
   {{ t("inventory.locations_view") }}
 </a>
+<a href="{{ url_for('inventory_count_sp', store_id=selected_store_id, count_date=count_date) }}"
+   style="margin-left:12px; font-size:13px;">📱 スマホ版</a>
 </div>
 
 <!-- Store + date selector (GET) -->
