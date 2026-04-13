@@ -174,13 +174,12 @@ def init_items_csv_views(app, get_db):
                   AND ss.is_active = 1
                   AND s.is_active  = 1
                 ORDER BY s.code
-                LIMIT 5
                 """,
                 (store_id,),
             ).fetchall()
         else:
             rows = db.execute(
-                "SELECT name FROM pur_suppliers WHERE is_active=1 AND company_id=%s ORDER BY code LIMIT 5",
+                "SELECT name FROM pur_suppliers WHERE is_active=1 AND company_id=%s ORDER BY code",
                 (company_id,),
             ).fetchall()
 
@@ -205,13 +204,13 @@ def init_items_csv_views(app, get_db):
                     WHERE ss.store_id = %s
                       AND ss.is_active = 1
                       AND s.is_active  = 1
-                    ORDER BY s.code LIMIT 5
+                    ORDER BY s.code
                     """,
                     (first_store_id,),
                 ).fetchall()
             else:
                 suppliers = db.execute(
-                    "SELECT name FROM pur_suppliers WHERE is_active=1 AND company_id=%s ORDER BY code LIMIT 5",
+                    "SELECT name FROM pur_suppliers WHERE is_active=1 AND company_id=%s ORDER BY code",
                     (company_id,),
                 ).fetchall()
             sample_suppliers = [s["name"] for s in suppliers]

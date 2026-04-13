@@ -54,17 +54,19 @@
     </tr>
   </thead>
   <tbody id="sample_body">
-    {% set zones = ["常温", "冷凍", "冷蔵", "常温", "常温"] %}
-    {% for i in range([sample_suppliers|length, 3]|max if sample_suppliers else 3) %}
-      {% if i < sample_suppliers|length %}
+    {% set zones = ["常温", "冷凍", "冷蔵", "その他"] %}
+    {% if sample_suppliers %}
+      {% for sup in sample_suppliers %}
       <tr>
         <td>（品名を入力）</td>
-        <td>{{ sample_suppliers[i] }}</td>
-        <td>{{ zones[i] }}</td>
+        <td>{{ sup }}</td>
+        <td>{{ zones[loop.index0 % 4] }}</td>
         <td></td><td></td><td></td><td></td><td>0</td>
       </tr>
-      {% endif %}
-    {% endfor %}
+      {% endfor %}
+    {% else %}
+      <tr><td colspan="8" style="color:#aaa;">仕入先が登録されていません</td></tr>
+    {% endif %}
   </tbody>
 </table>
 <p style="font-size:12px; color:#888; margin-top:6px;">
@@ -79,7 +81,7 @@
   const storeSelect = document.getElementById("store_select");
   const sampleBody  = document.getElementById("sample_body");
   const storeLabel  = document.getElementById("store_label");
-  const zones = ["常温", "冷凍", "冷蔵", "常温", "常温"];
+  const zones = ["常温", "冷凍", "冷蔵", "その他"];
 
   function buildRows(suppliers) {
     if (!suppliers.length) {
@@ -90,7 +92,7 @@
       <tr>
         <td>（品名を入力）</td>
         <td>${name}</td>
-        <td>${zones[i] || "常温"}</td>
+        <td>${zones[i % zones.length]}</td>
         <td></td><td></td><td></td><td></td><td>0</td>
       </tr>
     `).join("");
