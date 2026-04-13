@@ -122,14 +122,14 @@
       outline: none; padding: 0;
       transition: width .15s;
     }
-    .count-wrap.active .count-input { width: 54px; }
+    .item-card.selected .count-input { width: 54px; }
     .count-input:focus {
       border-color: #2980b9; background: #eaf4ff;
       box-shadow: 0 0 0 3px rgba(41,128,185,.15);
     }
     .count-input.has-value { border-color: #2ecc71; background: #f0fff4; }
 
-    /* Buttons: hidden until active */
+    /* Buttons: hidden until row is selected */
     .btn-minus, .btn-plus {
       border: none; border-radius: 8px; height: 48px;
       font-weight: 800; cursor: pointer;
@@ -140,8 +140,8 @@
       transform: scale(0.6);
       transition: opacity .15s, transform .15s;
     }
-    .count-wrap.active .btn-minus,
-    .count-wrap.active .btn-plus {
+    .item-card.selected .btn-minus,
+    .item-card.selected .btn-plus {
       opacity: 1; pointer-events: auto; transform: scale(1);
     }
 
@@ -347,12 +347,9 @@ function selectRow(card) {
   // Deselect all rows
   document.querySelectorAll('.item-card.selected').forEach(c => {
     c.classList.remove('selected');
-    c.querySelector('.count-wrap').classList.remove('active');
   });
-  // Select tapped row
+  // Select tapped row (blue border + light bg)
   card.classList.add('selected');
-  const wrap = card.querySelector('.count-wrap');
-  wrap.classList.add('active');
   // Focus & select input text
   const inp = card.querySelector('.count-input');
   if (inp) {
@@ -375,8 +372,6 @@ function onCountInput(inp) {
 
 // ── Stepper buttons ───────────────────────────────────────────────────────
 function stepCount(btn, delta) {
-  const card = btn.closest('.item-card');
-  if (card && !card.classList.contains('selected')) selectRow(card);
   const wrap = btn.closest('.count-wrap');
   const inp  = wrap.querySelector('.count-input');
   const cur  = inp.value === '' ? 0 : (parseInt(inp.value) || 0);
