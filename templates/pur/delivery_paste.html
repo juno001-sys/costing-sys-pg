@@ -246,28 +246,47 @@ function buildDpSuggestions(input, forceOpen) {
 // Attach search handlers once after rows are rendered
 function attachSearchHandlers() {
   const tbody = document.getElementById('preview_body');
+  let isComposing = false;
 
-  tbody.addEventListener('input', e => {
+  // ── IME composition guards ───────────────────────────────────
+  tbody.addEventListener('compositionstart', e => {
+    if (e.target.classList.contains('dp-search')) isComposing = true;
+  });
+  tbody.addEventListener('compositionend', e => {
     if (!e.target.classList.contains('dp-search')) return;
+    isComposing = false;
+    // Trigger search now that conversion is confirmed
     e.target.closest('.item-cell').querySelector('.dp-item-id').value = '';
     buildDpSuggestions(e.target, false);
   });
 
+  // ── Input: skip while IME is composing ───────────────────────
+  tbody.addEventListener('input', e => {
+    if (!e.target.classList.contains('dp-search')) return;
+    if (isComposing || e.isComposing) return;
+    e.target.closest('.item-cell').querySelector('.dp-item-id').value = '';
+    buildDpSuggestions(e.target, false);
+  });
+
+  // ── Focus: open full list ────────────────────────────────────
   tbody.addEventListener('focusin', e => {
     if (!e.target.classList.contains('dp-search')) return;
     buildDpSuggestions(e.target, true);
   });
 
+  // ── Blur: close suggestions ──────────────────────────────────
   tbody.addEventListener('focusout', e => {
     if (!e.target.classList.contains('dp-search')) return;
     setTimeout(() => {
-      const box = e.target.closest('.item-cell').querySelector('.item-suggestions');
+      const box = e.target.closest('.item-cell')?.querySelector('.item-suggestions');
       if (box) { box.hidden = true; box.innerHTML = ''; }
     }, 150);
   });
 
+  // ── Keyboard: navigate & select (IME-safe) ───────────────────
   tbody.addEventListener('keydown', e => {
     if (!e.target.classList.contains('dp-search')) return;
+    if (isComposing || e.isComposing || e.key === 'Process') return;
     const box   = e.target.closest('.item-cell').querySelector('.item-suggestions');
     if (box.hidden) return;
     const items = Array.from(box.querySelectorAll('.item-suggest-item'));
