@@ -96,10 +96,10 @@
       cursor: pointer;
       transition: border-color .15s, background .15s;
     }
-    .item-card.counted  { border-left-color: #2ecc71; }
+    .item-card.changed  { border-left-color: #2ecc71; }
     .item-card.selected { border-left-color: #2980b9; background: #f0f7ff; }
-    /* selected takes priority over counted */
-    .item-card.selected.counted { border-left-color: #2980b9; }
+    /* selected takes priority over changed */
+    .item-card.selected.changed { border-left-color: #2980b9; }
 
     .item-info { flex: 1; min-width: 0; }
     .item-name  { font-size: 15px; font-weight: 600;
@@ -120,6 +120,7 @@
       background: #fafafa; color: #1a1a1a;
       -webkit-appearance: none; appearance: none;
       outline: none; padding: 0;
+      pointer-events: none; user-select: none; caret-color: transparent;
     }
     .count-input:focus { outline: none; }
     .count-input.has-value { border-color: #2ecc71; background: #f0fff4; }
@@ -266,7 +267,7 @@
           {% if gi.item_id == item.item_id %}{% set ns.row_idx = loop.index %}{% endif %}
         {% endfor %}
 
-        <div class="item-card {{ 'counted' if item.counted_qty is not none }}"
+        <div class="item-card {{ 'changed' if item.counted_qty is not none and item.counted_qty != item.system_qty }}"
              id="card-{{ ns.row_idx }}"
              onclick="selectRow(this)">
           <div class="item-info">
@@ -337,23 +338,17 @@ function selectRow(card) {
   });
   // Select tapped row (blue border + light bg)
   card.classList.add('selected');
-  // Focus & select input text
-  const inp = card.querySelector('.count-input');
-  if (inp) {
-    inp.focus();
-    inp.select();
-    inp.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 // ── Input change ──────────────────────────────────────────────────────────
 function onCountInput(inp) {
   const card      = document.getElementById('card-' + inp.dataset.idx);
   const sysQty    = inp.dataset.system;
-  // Mark as "counted" (green) only when user has changed it from the system value
+  // Green border + green edge when value differs from system qty
   const isChanged = inp.value !== '' && inp.value !== sysQty;
   inp.classList.toggle('has-value', isChanged);
-  if (card) card.classList.toggle('counted', isChanged);
+  if (card) card.classList.toggle('changed', isChanged);
   updateProgress();
 }
 
