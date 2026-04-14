@@ -188,12 +188,110 @@ function autoMatch(name) {
   return hit || null;
 }
 
-// ── Build item selector options ────────────────────────────────────────────
-function buildOpts(matchedId) {
-  return ALL_ITEMS.map(i =>
-    `<option value="${i.id}" ${i.id === matchedId ? 'selected' : ''}>`
-    + `${i.code} ${i.name}（${i.supplier_name}）</option>`
-  ).join('');
+// ── Build fuzzy search widget (replaces dropdown) ─────────────────────────
+function buildSearchWidget(matched) {
+  const label = matched
+    ? `${matched.code} ${matched.name}（${matched.supplier_name}）`
+    : '';
+  const id = matched ? matched.id : '';
+  return `
+    <div class="item-cell" style="position:relative;">
+      <input type="text" class="item-autocomplete dp-search"
+             value="${label}" autocomplete="off"
+             placeholder="品名・コードで検索…"
+             style="width:100%; font-size:12px; box-sizing:border-box; padding:4px 6px;">
+      <input type="hidden" class="dp-item-id" value="${id}">
+      <div class="item-suggestions" hidden></div>
+    </div>`;
+}
+
+function buildDpSuggestions(input, forceOpen) {
+  const cell   = input.closest('.item-cell');
+  const box    = cell.querySelector('.item-suggestions');
+  const hidden = cell.querySelector('.dp-item-id');
+  const q      = (input.value || '').trim().toLowerCase();
+
+  box.innerHTML = '';
+  if (!forceOpen && !q) { box.hidden = true; return; }
+
+  const hits = ALL_ITEMS.filter(it =>
+    forceOpen ? true :
+    (it.name + ' ' + (it.code || '') + ' ' + (it.supplier_name || ''))
+      .toLowerCase().includes(q)
+  ).slice(0, 25);
+
+  if (!hits.length) { box.hidden = true; return; }
+
+  hits.forEach(it => {
+    const div = document.createElement('div');
+    div.className = 'item-suggest-item';
+    div.textContent = `${it.code} ${it.name}（${it.supplier_name}）`;
+    div.addEventListener('mousedown', ev => {
+      ev.preventDefault();
+      input.value  = div.textContent;
+      hidden.value = it.id;
+      box.hidden   = true;
+      box.innerHTML = '';
+      input.closest('tr').style.background = '';  // clear warning highlight
+    });
+    box.appendChild(div);
+  });
+
+  box.hidden = false;
+  // highlight first
+  const first = box.querySelector('.item-suggest-item');
+  if (first) first.classList.add('active');
+}
+
+// Attach search handlers once after rows are rendered
+function attachSearchHandlers() {
+  const tbody = document.getElementById('preview_body');
+
+  tbody.addEventListener('input', e => {
+    if (!e.target.classList.contains('dp-search')) return;
+    e.target.closest('.item-cell').querySelector('.dp-item-id').value = '';
+    buildDpSuggestions(e.target, false);
+  });
+
+  tbody.addEventListener('focusin', e => {
+    if (!e.target.classList.contains('dp-search')) return;
+    buildDpSuggestions(e.target, true);
+  });
+
+  tbody.addEventListener('focusout', e => {
+    if (!e.target.classList.contains('dp-search')) return;
+    setTimeout(() => {
+      const box = e.target.closest('.item-cell').querySelector('.item-suggestions');
+      if (box) { box.hidden = true; box.innerHTML = ''; }
+    }, 150);
+  });
+
+  tbody.addEventListener('keydown', e => {
+    if (!e.target.classList.contains('dp-search')) return;
+    const box   = e.target.closest('.item-cell').querySelector('.item-suggestions');
+    if (box.hidden) return;
+    const items = Array.from(box.querySelectorAll('.item-suggest-item'));
+    let idx     = items.findIndex(el => el.classList.contains('active'));
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      items.forEach(el => el.classList.remove('active'));
+      idx = Math.min(idx + 1, items.length - 1);
+      items[idx]?.classList.add('active');
+      items[idx]?.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      items.forEach(el => el.classList.remove('active'));
+      idx = Math.max(idx - 1, 0);
+      items[idx]?.classList.add('active');
+      items[idx]?.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      items[idx]?.dispatchEvent(new MouseEvent('mousedown'));
+    } else if (e.key === 'Escape') {
+      box.hidden = true; box.innerHTML = '';
+    }
+  });
 }
 
 // ── Parse button ───────────────────────────────────────────────────────────
@@ -244,14 +342,11 @@ function parseText() {
         ${item.subtotal.toLocaleString()}
       </td>
       <td>
-        <select style="width:100%; font-size:12px; max-width:240px;">
-          <option value="">— スキップ —</option>
-          ${buildOpts(matched ? matched.id : null)}
-        </select>
-        <div style="font-size:11px; margin-top:2px;">
+        ${buildSearchWidget(matched)}
+        <div style="font-size:11px; margin-top:3px;">
           ${matched
-            ? `<span style="color:green;">✅ ${matched.name}</span>`
-            : `<span style="color:orange;">⚠️ マッチなし — 手動で選択してください</span>`}
+            ? `<span style="color:green;">✅ 自動マッチ</span>`
+            : `<span style="color:orange;">⚠️ 品名を入力して検索してください</span>`}
         </div>
       </td>
     `;
@@ -263,6 +358,7 @@ function parseText() {
     `${items.length}件を読み取り ／ 自動マッチ ${autoCount}件`
     + (unmatched ? ` ／ ⚠️ 要確認 ${unmatched}件` : ' ／ ✅ 全件マッチ');
 
+  attachSearchHandlers();
   document.getElementById('step2').style.display = '';
   document.getElementById('step2').scrollIntoView({ behavior: 'smooth' });
 }
@@ -287,7 +383,7 @@ function saveAll() {
 
   const rows = [];
   document.querySelectorAll('#preview_body tr').forEach(tr => {
-    const itemId = tr.querySelector('select').value;
+    const itemId = tr.querySelector('.dp-item-id').value;
     if (!itemId) return;   // skipped
     const inputs = tr.querySelectorAll('input[type=number]');
     const qty    = parseFloat(inputs[0].value) || 0;
