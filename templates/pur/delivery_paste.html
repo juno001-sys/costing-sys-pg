@@ -76,6 +76,14 @@
       </tr>
     </thead>
     <tbody id="preview_body"></tbody>
+    <tfoot style="background:#f0f0f0; font-weight:bold;">
+      <tr>
+        <td style="text-align:right;">合計</td>
+        <td></td><td></td><td></td>
+        <td id="grand_total" style="text-align:right; padding-right:8px; font-size:15px;">0</td>
+        <td></td>
+      </tr>
+    </tfoot>
   </table>
 
   <div style="margin-top:20px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
@@ -378,6 +386,7 @@ function parseText() {
     + (unmatched ? ` ／ ⚠️ 要確認 ${unmatched}件` : ' ／ ✅ 全件マッチ');
 
   attachSearchHandlers();
+  updateGrandTotal();
   document.getElementById('step2').style.display = '';
   document.getElementById('step2').scrollIntoView({ behavior: 'smooth' });
 }
@@ -389,6 +398,15 @@ function recalc(input) {
   const qty    = parseFloat(inputs[0].value) || 0;
   const price  = parseFloat(inputs[1].value) || 0;
   tr.querySelector('.amt').textContent = Math.round(qty * price).toLocaleString();
+  updateGrandTotal();
+}
+
+function updateGrandTotal() {
+  let total = 0;
+  document.querySelectorAll('#preview_body .amt').forEach(td => {
+    total += parseInt((td.textContent || '0').replace(/,/g, '')) || 0;
+  });
+  document.getElementById('grand_total').textContent = total.toLocaleString();
 }
 
 // ── Save button ────────────────────────────────────────────────────────────
