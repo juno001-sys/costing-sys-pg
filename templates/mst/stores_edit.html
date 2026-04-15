@@ -109,13 +109,12 @@
     <input type="hidden" name="store_id" value="{{ store.id }}">
     <input type="hidden" name="_back" value="{{ url_for('edit_store', store_id=store.id) }}#tab-zones">
     {% if tz_master %}
-      <table class="table table-bordered">
+      <table class="table table-bordered" data-no-sort="1" id="edit-tz-table">
         <thead>
           <tr>
             <th style="width:80px;">{{ t("common.use","使用") }}</th>
             <th style="width:110px;">Code</th>
             <th>{{ t("common.name","名称") }}</th>
-            <th style="width:110px;">{{ t("common.sort_order","並び順") }}</th>
           </tr>
         </thead>
         <tbody>
@@ -125,11 +124,13 @@
               <td><input type="checkbox" name="use_tz_{{ z.code }}" {% if srow and srow.is_active %}checked{% endif %}></td>
               <td>{{ z.code }}<input type="hidden" name="tz_codes" value="{{ z.code }}"></td>
               <td><input type="text" name="tz_name_{{ z.code }}" value="{{ srow.display_name if srow else z.default_name }}" style="width:100%;"></td>
-              <td><input type="number" name="tz_sort_{{ z.code }}" value="{{ srow.sort_order if srow else z.sort_order }}" style="width:100%;"></td>
+              <input type="hidden" name="tz_sort_{{ z.code }}" value="{{ srow.sort_order if srow else z.sort_order }}">
             </tr>
           {% endfor %}
         </tbody>
       </table>
+      <script src="{{ url_for('static', filename='inventory/drag_sort.js') }}"></script>
+      <script>initDragSort('#edit-tz-table');</script>
     {% else %}
       <p class="muted">{{ t("common.no_data","データなし") }}</p>
     {% endif %}
@@ -147,13 +148,12 @@
     <input type="hidden" name="store_id" value="{{ store.id }}">
     <input type="hidden" name="_back" value="{{ url_for('edit_store', store_id=store.id) }}#tab-areas">
     {% if areas_master %}
-      <table class="table table-bordered">
+      <table class="table table-bordered" data-no-sort="1" id="edit-area-table">
         <thead>
           <tr>
             <th style="width:80px;">{{ t("common.use","使用") }}</th>
             <th>{{ t("masters.area","エリア") }}</th>
             <th style="width:240px;">{{ t("common.name","表示名") }}</th>
-            <th style="width:110px;">{{ t("common.sort_order","並び順") }}</th>
           </tr>
         </thead>
         <tbody>
@@ -163,11 +163,12 @@
               <td><input type="checkbox" name="use_area_{{ a.id }}" {% if m and m.is_active %}checked{% endif %}></td>
               <td>{{ a.name }}<input type="hidden" name="area_ids" value="{{ a.id }}"></td>
               <td><input type="text" name="display_name_{{ a.id }}" value="{{ m.display_name if m else '' }}" style="width:100%;"></td>
-              <td><input type="number" name="sort_order_{{ a.id }}" value="{{ m.sort_order if m else 100 }}" style="width:100%;"></td>
+              <input type="hidden" name="sort_order_{{ a.id }}" value="{{ m.sort_order if m else 100 }}">
             </tr>
           {% endfor %}
         </tbody>
       </table>
+      <script>initDragSort('#edit-area-table');</script>
     {% else %}
       <p class="muted">{{ t("common.no_data","データなし") }}</p>
     {% endif %}
@@ -191,13 +192,12 @@
         該当行は黄色でハイライトされています。現状の温度帯設定は変更されずに保持されます。<br>
         温度帯を割り当てるには「温度帯名称」タブで温度帯を設定してください。
       </div>
-      <table class="table table-bordered">
+      <table class="table table-bordered" data-no-sort="1" id="edit-shelf-table">
         <thead>
           <tr>
             <th style="width:140px;">{{ t("inventory.zone_master","温度帯") }}</th>
             <th style="width:110px;">{{ t("common.code","コード") }}</th>
             <th>{{ t("common.name","名称") }}</th>
-            <th style="width:110px;">{{ t("common.sort_order","並び順") }}</th>
             <th style="width:80px;">{{ t("common.use","使用") }}</th>
           </tr>
         </thead>
@@ -225,15 +225,16 @@
               </td>
               <td>{{ sh.code }}</td>
               <td><input type="text" name="name_{{ sh.id }}" value="{{ sh.name }}" style="width:100%;"></td>
-              <td><input type="number" name="sort_{{ sh.id }}" value="{{ sh.sort_order }}" style="width:100%;"></td>
               <td>
                 <input type="checkbox" name="use_shelf_{{ sh.id }}" {% if sh.is_active %}checked{% endif %}>
                 <input type="hidden" name="shelf_ids" value="{{ sh.id }}">
               </td>
+              <input type="hidden" name="sort_{{ sh.id }}" value="{{ sh.sort_order }}">
             </tr>
           </tbody>
         {% endfor %}
       </table>
+      <script>initDragSort('#edit-shelf-table');</script>
     {% else %}
       <p class="muted">{{ t("common.no_data","データなし") }}</p>
     {% endif %}
