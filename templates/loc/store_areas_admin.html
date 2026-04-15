@@ -18,13 +18,12 @@
 <form method="post" action="{{ url_for('store_areas_admin_save') }}" style="margin-top:12px;">
   <input type="hidden" name="store_id" value="{{ selected_store_id }}">
 
-  <table class="table table-bordered">
+  <table class="table table-bordered" data-no-sort="1" id="area-table">
     <thead>
       <tr>
         <th style="width:90px;">{{ t("common.use", "__common.use__") }}</th>
         <th>{{ t("masters.area", "__masters.area__") }}</th>
         <th style="width:260px;">{{ t("common.name", "__common.name__") }}</th>
-        <th style="width:120px;">{{ t("common.sort_order", "__common.sort_order__") }}</th>
       </tr>
     </thead>
     <tbody>
@@ -41,13 +40,14 @@
           <td>
             <input type="text" name="display_name_{{ a.id }}" value="{{ m.display_name if m else '' }}" style="width:100%;">
           </td>
-          <td>
-            <input type="number" name="sort_order_{{ a.id }}" value="{{ m.sort_order if m else 100 }}" style="width:100%;">
-          </td>
+          <input type="hidden" name="sort_order_{{ a.id }}" value="{{ m.sort_order if m else 100 }}">
         </tr>
       {% endfor %}
     </tbody>
   </table>
+
+  <script src="{{ url_for('static', filename='inventory/drag_sort.js') }}"></script>
+  <script>initDragSort('#area-table');</script>
 
   <button class="btn btn-primary" type="submit">{{ t("common.update", "__common.update__") }}</button>
 </form>
