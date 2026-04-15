@@ -1,4 +1,4 @@
-from flask import request, jsonify
+from flask import request, jsonify, g
 
 
 def init_item_location_api(app, get_db):
@@ -51,9 +51,10 @@ def init_item_location_api(app, get_db):
               ON am.id = sam.area_id
 
             WHERE i.id = %s
+              AND i.company_id = %s
             LIMIT 1
             """,
-            (store_id, item_id, store_id, item_id, item_id),
+            (store_id, item_id, store_id, item_id, item_id, getattr(g, "current_company_id", None)),
         ).fetchone()
 
         if not row:

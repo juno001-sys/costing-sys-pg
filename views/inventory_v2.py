@@ -2,7 +2,7 @@
 
 import time
 from datetime import datetime
-from flask import render_template, request, redirect, url_for, flash
+from flask import render_template, request, redirect, url_for, flash, g
 from views.reports.audit_log import log_event
 
 from utils.access_scope import (
@@ -25,7 +25,7 @@ def get_latest_stock_count_dates(db, store_id, limit=3):
     return [r["count_date"] for r in rows]
 
 
-def _fetch_count_data(db, store_id, count_date):
+def _fetch_count_data(db, store_id, count_date, company_id=None):
     """
     Shared data-fetching logic for both the desktop (v2) and
     smartphone (sp) inventory count screens.
@@ -54,13 +54,15 @@ def _fetch_count_data(db, store_id, count_date):
         LEFT JOIN store_shelves sh ON sh.id = m.shelf_id
         LEFT JOIN store_area_map sam ON sam.id = sh.store_area_map_id
         LEFT JOIN area_master am ON am.id = sam.area_id
-        WHERE
-          pref.item_id IS NOT NULL OR m.item_id IS NOT NULL
-          OR i.is_internal = 1
-          OR EXISTS (
-            SELECT 1 FROM purchases p
-            WHERE p.store_id = %s AND p.item_id = i.id
-              AND p.is_deleted = 0 AND p.delivery_date <= %s
+        WHERE i.company_id = %s
+          AND (
+            pref.item_id IS NOT NULL OR m.item_id IS NOT NULL
+            OR i.is_internal = 1
+            OR EXISTS (
+              SELECT 1 FROM purchases p
+              WHERE p.store_id = %s AND p.item_id = i.id
+                AND p.is_deleted = 0 AND p.delivery_date <= %s
+            )
           )
         ORDER BY
           CASE
@@ -73,7 +75,7 @@ def _fetch_count_data(db, store_id, count_date):
           COALESCE(sh.sort_order,9999),  COALESCE(sh.code,''),
           COALESCE(m.sort_order,9999),   i.code
         """,
-        (store_id, store_id, store_id, count_date),
+        (store_id, store_id, company_id, store_id, count_date),
     ).fetchall()
 
     item_ids = [r["item_id"] for r in base_rows] or []
@@ -635,7 +637,8 @@ def init_inventory_views_v2(app, get_db):
 
         if selected_store_id:
             latest_dates = get_latest_stock_count_dates(db, selected_store_id, limit=3)
-            items = _fetch_count_data(db, store_id, count_date)
+            company_id = getattr(g, "current_company_id", None)
+            items = _fetch_count_data(db, store_id, count_date, company_id)
 
         # Group items by temp zone for the template
         from collections import OrderedDict

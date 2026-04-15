@@ -290,25 +290,28 @@ def init_purchase_views(app, get_db, log_purchase_change):
     @app.route("/api/mst_items/by_supplier/<int:supplier_id>")
     def api_items_by_supplier(supplier_id):
         db = get_db()
+        company_id = getattr(g, "current_company_id", None)
         rows = db.execute(
             """
-            SELECT 
+            SELECT
                 i.id,
                 i.code,
                 i.name,
                 i.unit,
                 COALESCE(SUM(p.amount), 0) AS total_amount
             FROM mst_items i
-            LEFT JOIN purchases p 
+            LEFT JOIN purchases p
                 ON p.item_id = i.id
                 AND p.supplier_id = i.supplier_id
                 AND p.delivery_date >= CURRENT_DATE - INTERVAL '3 months'
                 AND p.is_deleted = 0
             WHERE i.supplier_id = %s
+              AND i.is_active = 1
+              AND i.company_id = %s
             GROUP BY i.id, i.code, i.name, i.unit
             ORDER BY total_amount DESC, i.name ASC;
             """,
-            (supplier_id,),
+            (supplier_id, company_id),
         ).fetchall()
 
         return jsonify(

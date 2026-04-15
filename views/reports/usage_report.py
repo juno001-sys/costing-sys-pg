@@ -176,13 +176,16 @@ def usage_report():
     item_ids = set(pur_map.keys()) | set(end_inv_map.keys())
 
     if item_ids:
+        company_id = getattr(g, "current_company_id", None)
         placeholders = ",".join(["%s"] * len(item_ids))
         sql_items = f"""
             SELECT id, code, name, supplier_id
             FROM mst_items
             WHERE id IN ({placeholders})
+              AND company_id = %s
         """
         params_items: list[object] = list(item_ids)
+        params_items.append(company_id)
 
         if supplier_id:
             sql_items += " AND supplier_id = %s"
