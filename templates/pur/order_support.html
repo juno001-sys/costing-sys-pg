@@ -42,7 +42,7 @@
   <!-- Supplier Header -->
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
     <div>
-      <span style="font-size:1.1rem; font-weight:700;">🏢 {{ card.name }}</span>
+      <span style="font-size:1.1rem; font-weight:700;">{{ card.name }}</span>
       {% if card.order_method %}
         <span style="background:#e9ecef; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; margin-left:8px;">
           {{ card.order_method }}
@@ -68,18 +68,21 @@
   </div>
   {% else %}
 
-  <!-- Delivery info — deadline first, bigger -->
-  <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
-    {% for dl in card.deliveries %}
-    <div style="border:1px solid #dee2e6; border-radius:6px; padding:8px 14px; min-width:180px;">
-      <div style="font-size:14px; font-weight:700; color:#333;">
-        {{ t("order_support.deadline") }}: {{ dl.deadline_date.strftime('%m/%d') }}({{ dl.deadline_day_label }}){% if dl.deadline_time %} {{ dl.deadline_time }}{% endif %}
+  <!-- Delivery info -->
+  <div style="margin-bottom:12px;">
+    <div style="font-size:13px; font-weight:700; color:#333; margin-bottom:6px;">{{ t("order_support.deadline") }}：</div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      {% for dl in card.deliveries %}
+      <div style="border:1px solid #dee2e6; border-radius:6px; padding:6px 14px;">
+        <div style="font-size:14px; font-weight:700;">
+          {{ dl.deadline_date.strftime('%m/%d') }}({{ dl.deadline_day_label }}){% if dl.deadline_time %} {{ dl.deadline_time }}{% endif %}
+        </div>
+        <div style="font-size:11px; color:#888;">
+          → 納品 {{ dl.delivery_date.strftime('%m/%d') }}({{ dl.delivery_day_label }})
+        </div>
       </div>
-      <div style="font-size:12px; color:#888; margin-top:2px;">
-        → {{ t("order_support.next_delivery") }}: {{ dl.delivery_date.strftime('%m/%d') }}({{ dl.delivery_day_label }})
-      </div>
+      {% endfor %}
     </div>
-    {% endfor %}
   </div>
 
   {% if card.gap_warning %}
