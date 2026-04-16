@@ -147,6 +147,109 @@ def init_store_holidays_views(app, get_db):
         return redirect(url_for("store_holidays", store_id=store_id, year=year))
 
 
+    # ── Supplier Holidays API ─────────────────────────────────────────────
+
+    @app.route("/api/supplier-holidays", methods=["GET"])
+    def api_supplier_holidays():
+        """Return supplier holidays for a given supplier_id and year as JSON."""
+        db = get_db()
+        company_id = getattr(g, "current_company_id", None)
+        supplier_id = request.args.get("supplier_id", type=int)
+        year = request.args.get("year", date.today().year, type=int)
+
+        if not supplier_id:
+            return jsonify([])
+
+        rows = db.execute(
+            """
+            SELECT id, holiday_date, name
+            FROM supplier_holidays
+            WHERE supplier_id = %s AND company_id = %s
+              AND EXTRACT(YEAR FROM holiday_date) = %s
+            ORDER BY holiday_date
+            """,
+            (supplier_id, company_id, year),
+        ).fetchall()
+
+        return jsonify([
+            {"id": r["id"], "date": str(r["holiday_date"]), "name": r["name"] or ""}
+            for r in rows
+        ])
+
+    @app.route("/suppliers/holidays/toggle", methods=["POST"])
+    def supplier_holidays_toggle():
+        db = get_db()
+        company_id = getattr(g, "current_company_id", None)
+
+        supplier_id = request.form.get("supplier_id", type=int)
+        date_str = request.form.get("date")
+        name = (request.form.get("name") or "").strip() or None
+        redirect_url = request.form.get("redirect_url") or request.referrer or url_for("store_holidays")
+
+        if not supplier_id or not date_str:
+            flash("仕入先と日付は必須です。")
+            return redirect(redirect_url)
+
+        existing = db.execute(
+            "SELECT id FROM supplier_holidays WHERE supplier_id = %s AND holiday_date = %s",
+            (supplier_id, date_str),
+        ).fetchone()
+
+        if existing:
+            db.execute("DELETE FROM supplier_holidays WHERE id = %s", (existing["id"],))
+        else:
+            db.execute(
+                "INSERT INTO supplier_holidays (supplier_id, holiday_date, name, company_id) VALUES (%s, %s, %s, %s)",
+                (supplier_id, date_str, name, company_id),
+            )
+        db.commit()
+        return redirect(redirect_url)
+
+    @app.route("/suppliers/holidays/bulk", methods=["POST"])
+    def supplier_holidays_bulk():
+        db = get_db()
+        company_id = getattr(g, "current_company_id", None)
+
+        supplier_id = request.form.get("supplier_id", type=int)
+        year = request.form.get("year", type=int)
+        preset = request.form.get("preset")
+        redirect_url = request.form.get("redirect_url") or request.referrer or url_for("store_holidays")
+
+        if not supplier_id or not year:
+            flash("仕入先と年は必須です。")
+            return redirect(redirect_url)
+
+        dates_to_add = []
+        if preset == "public_holidays":
+            dates_to_add = _japanese_holidays(year)
+        elif preset == "yearend":
+            for d in range(29, 32):
+                dates_to_add.append((f"{year}-12-{d:02d}", "年末年始"))
+            for d in range(1, 4):
+                dates_to_add.append((f"{year + 1}-01-{d:02d}", "年末年始"))
+        elif preset == "obon":
+            for d in range(13, 17):
+                dates_to_add.append((f"{year}-08-{d:02d}", "お盆"))
+
+        added = 0
+        for ds, nm in dates_to_add:
+            try:
+                db.execute(
+                    """
+                    INSERT INTO supplier_holidays (supplier_id, holiday_date, name, company_id)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (supplier_id, holiday_date) DO NOTHING
+                    """,
+                    (supplier_id, ds, nm, company_id),
+                )
+                added += 1
+            except Exception:
+                pass
+        db.commit()
+        flash(f"{added}件の休日を追加しました。")
+        return redirect(redirect_url)
+
+
 def _japanese_holidays(year):
     """Return list of (date_str, name) for Japanese public holidays."""
     holidays = [

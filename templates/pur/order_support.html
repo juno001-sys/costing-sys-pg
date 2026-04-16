@@ -1,0 +1,160 @@
+{% extends "layout/base.html" %}
+{% block title %}{{ t("order_support.title") }}{% endblock %}
+{% block content %}
+
+<h3>{{ t("order_support.title") }}</h3>
+
+<!-- Filters -->
+<form method="get" style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:20px; align-items:end;">
+  <label>
+    <strong>{{ t("form.store") }}：</strong>
+    <select name="store_id" onchange="this.form.submit()">
+      <option value="">{{ t("common.select") }}</option>
+      {% for s in mst_stores %}
+      <option value="{{ s.id }}" {% if s.id|string == selected_store_id|string %}selected{% endif %}>
+        {{ s.name }}
+      </option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <label>
+    <strong>{{ t("order_support.base_date") }}：</strong>
+    <input type="date" name="base_date" value="{{ base_date }}">
+  </label>
+
+  <button type="submit" style="padding:5px 16px;">{{ t("form.show") }}</button>
+</form>
+
+{% if selected_store_id and supplier_cards %}
+
+{% for card in supplier_cards %}
+<div class="card-form" style="max-width:100%; margin-bottom:24px;">
+
+  <!-- Supplier Header -->
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+    <div>
+      <span style="font-size:1.1rem; font-weight:700;">🏢 {{ card.name }}</span>
+      {% if card.order_method %}
+        <span style="background:#e9ecef; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; margin-left:8px;">
+          {{ card.order_method }}
+        </span>
+      {% endif %}
+      {% if card.order_url %}
+        <a href="{{ card.order_url }}" target="_blank" style="font-size:11px; margin-left:8px;">🔗 発注サイト</a>
+      {% endif %}
+    </div>
+    <div style="font-size:12px; color:#666;">
+      {% if card.shortage_count > 0 %}
+        <span style="color:#dc3545; font-weight:600;">⚠ {{ card.shortage_count }}品目 不足</span>
+      {% endif %}
+      {% if card.low_count > 0 %}
+        <span style="color:#e67700; font-weight:600; margin-left:8px;">📉 {{ card.low_count }}品目 残少</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if not card.has_schedule %}
+  <div style="padding:12px; background:#fff3cd; border-radius:6px; font-size:13px; color:#856404;">
+    {{ t("order_support.no_schedule") }}
+  </div>
+  {% else %}
+
+  <!-- Delivery info -->
+  <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:12px; font-size:13px;">
+    {% for dl in card.deliveries %}
+    <div style="background:#f0f8ff; padding:6px 12px; border-radius:6px; border:1px solid #cce5ff;">
+      <strong>{{ t("order_support.next_delivery") }}:</strong>
+      {{ dl.delivery_date.strftime('%m/%d') }}({{ DAY_LABELS[dl.delivery_date.strftime('%a').lower()[:3]] }})
+      &nbsp;|&nbsp;
+      <strong>{{ t("order_support.deadline") }}:</strong>
+      {{ dl.deadline_date.strftime('%m/%d') }}({{ DAY_LABELS[dl.deadline_date.strftime('%a').lower()[:3]] }})
+      {% if dl.deadline_time %} {{ dl.deadline_time }}{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if card.gap_warning %}
+  <div style="padding:8px 12px; background:#fff3cd; border:1px solid #ffc107; border-radius:6px; margin-bottom:12px; font-size:13px; color:#856404;">
+    ⚠ {{ t("order_support.holiday_warning") }}
+    — {{ card.gap_warning.next_date.strftime('%m/%d') }}まで{{ card.gap_warning.days }}日空きます
+  </div>
+  {% endif %}
+
+  <!-- Items table -->
+  <table border="1" cellpadding="4" cellspacing="0"
+         style="width:100%; font-size:12px; border-collapse:collapse;">
+    <thead style="background:#f0f0f0;">
+      <tr>
+        <th>{{ t("common.code") }}</th>
+        <th>{{ t("items.name") }}</th>
+        <th>{{ t("items.category") }}</th>
+        <th style="text-align:right;">{{ t("order_support.current_stock") }}</th>
+        <th style="text-align:right;">{{ t("order_support.est_qty") }}</th>
+        <th>{{ t("order_support.status") }}</th>
+        {% for dc in card.day_columns %}
+        <th style="text-align:center; min-width:36px;
+          {% if dc.is_holiday %}background:#ffe0e0; color:#c00;{% endif %}
+          {% if dc.date.weekday() == 6 %}color:#c00;{% elif dc.date.weekday() == 5 %}color:#06c;{% endif %}">
+          {{ dc.date.strftime('%d') }}<br>
+          <span style="font-size:10px;">{{ dc.day_label }}</span>
+        </th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in card.items %}
+      <tr style="
+        {% if item.status == 'shortage' %}background:#fff0f0;
+        {% elif item.status == 'low' %}background:#fff8e1;
+        {% endif %}">
+        <td>{{ item.code }}</td>
+        <td>{{ item.name }}</td>
+        <td style="font-size:11px; color:#666;">{{ item.category or '' }}</td>
+        <td style="text-align:right; font-weight:600;
+          {% if item.status == 'shortage' %}color:#dc3545;{% elif item.status == 'low' %}color:#e67700;{% endif %}">
+          {{ item.current_stock }}
+        </td>
+        <td style="text-align:right;">{{ item.est_order_qty or '-' }}</td>
+        <td style="text-align:center;">
+          {% if item.status == 'shortage' %}
+            <span style="color:#dc3545; font-weight:600;">⚠ {{ t("order_support.status_shortage") }}</span>
+          {% elif item.status == 'low' %}
+            <span style="color:#e67700;">📉 {{ t("order_support.status_low") }}</span>
+          {% elif item.status == 'ok' %}
+            <span style="color:#28a745;">✅</span>
+          {% else %}
+            <span style="color:#999;">-</span>
+          {% endif %}
+        </td>
+        {% for dc in card.day_columns %}
+        <td style="text-align:center;
+          {% if dc.is_holiday %}background:#ffe0e0;{% endif %}">
+          {% if dc.is_holiday %}✕
+          {% elif dc.is_delivery %}🟢
+          {% elif dc.is_deadline %}🔴
+          {% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if card.order_notes %}
+  <div style="margin-top:8px; padding:6px 10px; background:#f8f9fa; border-radius:4px; font-size:12px; color:#666;">
+    📝 {{ card.order_notes }}
+  </div>
+  {% endif %}
+
+  {% endif %}
+</div>
+{% endfor %}
+
+{% elif selected_store_id %}
+<p style="color:#888;">{{ t("common.no_data") }}</p>
+{% else %}
+<p style="color:#888;">{{ t("inventory.hint_select_store") }}</p>
+{% endif %}
+
+{% endblock %}

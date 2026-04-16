@@ -322,5 +322,19 @@
   "inventory.sp.check_masters": "仕入れ記録または品目マスタを確認してください。",
   "inventory.sp.select_store_prompt": "上の選択肢から店舗を選んでください。",
 
-  "stores.edit.tab_info": "店舗情報"
+  "stores.edit.tab_info": "店舗情報",
+
+  "nav.order_support": "発注サポート",
+  "order_support.title": "発注サポート（7日間）",
+  "order_support.base_date": "基準日",
+  "order_support.next_delivery": "次回納品",
+  "order_support.deadline": "発注〆切",
+  "order_support.current_stock": "在庫",
+  "order_support.est_qty": "目安",
+  "order_support.status": "状態",
+  "order_support.status_shortage": "不足",
+  "order_support.status_low": "残少",
+  "order_support.status_ok": "充足",
+  "order_support.no_schedule": "納品スケジュールが未設定です。仕入先マスタで設定してください。",
+  "order_support.holiday_warning": "休業日あり — 次回納品に注意"
 }

@@ -401,6 +401,11 @@
               class="{% if request.endpoint == 'reports.purchase_dashboard' %}active{% endif %}">
               📊 {{ t("nav.dashboard") }}</a>
           </li>
+          <li>
+            <a href="{{ url_for('order_support') }}"
+              class="{% if request.endpoint == 'order_support' %}active{% endif %}">
+              🛒 {{ t("nav.order_support") }}</a>
+          </li>
           <li class="nav-sep"></li>
           <li>
             <a href="{{ url_for('new_purchase') }}"
