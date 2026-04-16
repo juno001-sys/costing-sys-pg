@@ -65,10 +65,10 @@
     {% for dl in card.deliveries %}
     <div style="background:#f0f8ff; padding:6px 12px; border-radius:6px; border:1px solid #cce5ff;">
       <strong>{{ t("order_support.next_delivery") }}:</strong>
-      {{ dl.delivery_date.strftime('%m/%d') }}({{ DAY_LABELS[dl.delivery_date.strftime('%a').lower()[:3]] }})
+      {{ dl.delivery_date.strftime('%m/%d') }}({{ dl.delivery_day_label }})
       &nbsp;|&nbsp;
       <strong>{{ t("order_support.deadline") }}:</strong>
-      {{ dl.deadline_date.strftime('%m/%d') }}({{ DAY_LABELS[dl.deadline_date.strftime('%a').lower()[:3]] }})
+      {{ dl.deadline_date.strftime('%m/%d') }}({{ dl.deadline_day_label }})
       {% if dl.deadline_time %} {{ dl.deadline_time }}{% endif %}
     </div>
     {% endfor %}
@@ -77,7 +77,7 @@
   {% if card.gap_warning %}
   <div style="padding:8px 12px; background:#fff3cd; border:1px solid #ffc107; border-radius:6px; margin-bottom:12px; font-size:13px; color:#856404;">
     ⚠ {{ t("order_support.holiday_warning") }}
-    — {{ card.gap_warning.next_date.strftime('%m/%d') }}まで{{ card.gap_warning.days }}日空きます
+    — 次回 {{ card.gap_warning.next_date.strftime('%m/%d') }} まで{{ card.gap_warning.days }}日空きます
   </div>
   {% endif %}
 

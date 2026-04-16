@@ -54,7 +54,9 @@ def _get_delivery_dates(schedule, start_date, num_days, holidays_set):
 
             results.append({
                 'delivery_date': d,
+                'delivery_day_label': DAY_LABELS.get(_date_to_day_key(d), ''),
                 'deadline_date': deadline_date,
+                'deadline_day_label': DAY_LABELS.get(_date_to_day_key(deadline_date), ''),
                 'deadline_time': deadline_time,
             })
 
