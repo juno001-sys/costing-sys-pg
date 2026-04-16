@@ -206,16 +206,17 @@ def init_order_support_views(app, get_db):
                     holidays_set |= store_holiday_set
 
                 # Delivery dates in the 7-day window
-                deliveries = _get_delivery_dates(schedule, base_date, window_days, holidays_set)
+                all_deliveries = _get_delivery_dates(schedule, base_date, window_days, holidays_set)
+                deliveries = all_deliveries[:3]  # Show only next 2-3 deliveries
 
                 # Find next delivery after window (for gap warning)
-                last_delivery_in_window = deliveries[-1]['delivery_date'] if deliveries else base_date
+                last_delivery_in_window = all_deliveries[-1]['delivery_date'] if all_deliveries else base_date
                 next_after = _find_next_delivery_after(schedule, base_date + timedelta(days=window_days - 1), holidays_set)
 
                 # Calculate gap warning
                 gap_warning = None
-                if deliveries and next_after:
-                    gap_days = (next_after - deliveries[-1]['delivery_date']).days
+                if all_deliveries and next_after:
+                    gap_days = (next_after - all_deliveries[-1]['delivery_date']).days
                     # Normal gap = 7 / number_of_delivery_days_per_week
                     num_delivery_days = len(schedule)
                     normal_gap = (7 / num_delivery_days) if num_delivery_days > 0 else 7
@@ -223,9 +224,9 @@ def init_order_support_views(app, get_db):
                         gap_warning = {
                             'days': gap_days,
                             'next_date': next_after,
-                            'last_in_window': deliveries[-1]['delivery_date'],
+                            'last_in_window': all_deliveries[-1]['delivery_date'],
                         }
-                elif not deliveries and schedule:
+                elif not all_deliveries and schedule:
                     # No deliveries in window at all
                     next_after_now = _find_next_delivery_after(schedule, base_date - timedelta(days=1), holidays_set)
                     if next_after_now:
@@ -271,8 +272,8 @@ def init_order_support_views(app, get_db):
                 for d in date_range:
                     day_key = _date_to_day_key(d)
                     is_holiday = str(d) in holidays_set
-                    is_delivery = any(dl['delivery_date'] == d for dl in deliveries)
-                    is_deadline = any(dl['deadline_date'] == d for dl in deliveries)
+                    is_delivery = any(dl['delivery_date'] == d for dl in all_deliveries)
+                    is_deadline = any(dl['deadline_date'] == d for dl in all_deliveries)
 
                     day_columns.append({
                         'date': d,

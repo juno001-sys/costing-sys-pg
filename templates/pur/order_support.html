@@ -28,6 +28,16 @@
 
 {% if selected_store_id and supplier_cards %}
 
+<!-- Legend -->
+<div style="font-size:12px; color:#666; margin-bottom:16px; display:flex; gap:16px;">
+  <span>🟢 納品日</span>
+  <span>🔴 発注〆切日</span>
+  <span>✕ 休業日</span>
+  <span style="color:#dc3545;">⚠ 不足 = 在庫 &lt; 目安</span>
+  <span style="color:#e67700;">📉 残少 = 在庫少なめ</span>
+  <span style="color:#28a745;">✅ 充足</span>
+</div>
+
 {% for card in supplier_cards %}
 <div class="card-form" style="max-width:100%; margin-bottom:24px;">
 
