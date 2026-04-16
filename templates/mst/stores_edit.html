@@ -592,7 +592,7 @@ function loadSupplierHolidays() {
       // Update calendar cell colors
       document.querySelectorAll('#supCalGrid td[data-date]').forEach(td => {
         var ds = td.dataset.date;
-        var isStore = {{ store_holiday_dates|tojson }}.indexOf(ds) >= 0;
+        var isStore = {{ store_holiday_dates|list|tojson }}.indexOf(ds) >= 0;
         var isSup = supHolidayDates.has(ds);
 
         if (isStore && isSup) {
