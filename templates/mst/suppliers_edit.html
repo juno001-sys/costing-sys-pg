@@ -34,33 +34,33 @@
     </div>
 
     <hr style="margin:16px 0;">
-    <h3>担当者・連絡先</h3>
+    <h3>{{ t("suppliers.contact_section") }}</h3>
 
     <div style="margin-top: 4px;">
-      <label>担当者：</label>
+      <label>{{ t("suppliers.contact_person") }}：</label>
       <input type="text" name="contact_person" value="{{ supplier.contact_person or '' }}">
     </div>
 
     <div style="margin-top: 4px;">
-      <label>担当者TEL：</label>
+      <label>{{ t("suppliers.contact_phone") }}：</label>
       <input type="text" name="contact_phone" value="{{ supplier.contact_phone or '' }}">
     </div>
 
     <div style="margin-top: 4px;">
-      <label>会社TEL：</label>
+      <label>{{ t("suppliers.company_phone") }}：</label>
       <input type="text" name="company_phone" value="{{ supplier.company_phone or '' }}">
     </div>
 
     <div style="margin-top: 4px;">
-      <label>FAX：</label>
+      <label>{{ t("suppliers.fax") }}：</label>
       <input type="text" name="fax" value="{{ supplier.fax or '' }}">
     </div>
 
     <hr style="margin:16px 0;">
-    <h3>発注情報</h3>
+    <h3>{{ t("suppliers.order_section") }}</h3>
 
     <div style="margin-top: 4px;">
-      <label>発注方法：</label>
+      <label>{{ t("suppliers.order_method") }}：</label>
       <select name="order_method">
         <option value="">--</option>
         {% for m in ['Web','FAX','SMS','電話'] %}
@@ -70,12 +70,12 @@
     </div>
 
     <div style="margin-top: 4px;">
-      <label>発注サイトURL：</label>
+      <label>{{ t("suppliers.order_url") }}：</label>
       <input type="text" name="order_url" value="{{ supplier.order_url or '' }}" size="60">
     </div>
 
     <hr style="margin:16px 0;">
-    <h3>納品・発注スケジュール</h3>
+    <h3>{{ t("suppliers.schedule_section") }}</h3>
     <table border="1" cellpadding="4" cellspacing="0" style="font-size:13px;">
       <thead>
         <tr>
@@ -85,7 +85,7 @@
       </thead>
       <tbody>
         <tr>
-          <td>納品可</td>
+          <td>{{ t("suppliers.delivery_available") }}</td>
           {% for day in ['mon','tue','wed','thu','fri','sat','sun'] %}
           <td style="text-align:center;">
             <input type="checkbox" name="delivery_{{ day }}" value="1"
@@ -94,7 +94,7 @@
           {% endfor %}
         </tr>
         <tr>
-          <td>〆切日数</td>
+          <td>{{ t("suppliers.deadline_days") }}</td>
           {% for day in ['mon','tue','wed','thu','fri','sat','sun'] %}
           <td>
             <input type="number" name="deadline_days_{{ day }}" min="0" max="14" style="width:40px;"
@@ -103,11 +103,19 @@
           {% endfor %}
         </tr>
         <tr>
-          <td>〆切時刻</td>
+          <td>{{ t("suppliers.deadline_time") }}</td>
           {% for day in ['mon','tue','wed','thu','fri','sat','sun'] %}
           <td>
-            <input type="time" name="deadline_time_{{ day }}" style="width:80px;"
-              value="{{ supplier.delivery_schedule[day].deadline_time if supplier.delivery_schedule and day in supplier.delivery_schedule and supplier.delivery_schedule[day].deadline_time else '' }}">
+            {% set cur_time = supplier.delivery_schedule[day].deadline_time if supplier.delivery_schedule and day in supplier.delivery_schedule and supplier.delivery_schedule[day].deadline_time else '' %}
+            <select name="deadline_time_{{ day }}" style="width:80px; font-size:12px;">
+              <option value="">--</option>
+              {% for h in range(6, 24) %}
+                {% for m in ['00','15','30','45'] %}
+                  {% set tv = "%02d:%s"|format(h, m) %}
+                  <option value="{{ tv }}" {% if cur_time == tv %}selected{% endif %}>{{ tv }}</option>
+                {% endfor %}
+              {% endfor %}
+            </select>
           </td>
           {% endfor %}
         </tr>
@@ -115,7 +123,7 @@
     </table>
 
     <div style="margin-top: 8px;">
-      <label>発注に関しての注意：</label><br>
+      <label>{{ t("suppliers.order_notes") }}：</label><br>
       <textarea name="order_notes" rows="3" cols="60">{{ supplier.order_notes or '' }}</textarea>
     </div>
 

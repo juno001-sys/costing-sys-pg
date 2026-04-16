@@ -195,5 +195,20 @@
   "nav.admin_users": "ユーザー管理",
   "nav.user_manual": "ユーザーマニュアル",
   "stores.inventory_layout_section": "棚卸し場所設定",
-  "stores.inventory_layout_hint": "エリア・温度帯・棚を設定します"
+  "stores.inventory_layout_hint": "エリア・温度帯・棚を設定します",
+
+  "suppliers.contact_section": "担当者・連絡先",
+  "suppliers.contact_person": "担当者",
+  "suppliers.contact_phone": "担当者TEL",
+  "suppliers.company_phone": "会社TEL",
+  "suppliers.fax": "FAX",
+  "suppliers.order_section": "発注情報",
+  "suppliers.order_method": "発注方法",
+  "suppliers.order_url": "発注サイトURL",
+  "suppliers.schedule_section": "納品・発注スケジュール",
+  "suppliers.delivery_available": "納品可",
+  "suppliers.deadline_days": "何日前",
+  "suppliers.deadline_time": "〆切時刻",
+  "suppliers.order_notes": "発注に関しての注意",
+  "suppliers.delivery_days_label": "納品曜日"
 }
