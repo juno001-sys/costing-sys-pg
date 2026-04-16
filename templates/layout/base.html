@@ -449,11 +449,6 @@
               class="{% if request.endpoint in ['stores_master','edit_store'] %}active{% endif %}">
               🏪 {{ t("nav.stores_master") }}</a>
           </li>
-          <li>
-            <a href="{{ url_for('store_holidays') }}"
-              class="{% if request.endpoint == 'store_holidays' %}active{% endif %}">
-              📅 {{ t("nav.store_holidays") }}</a>
-          </li>
           <li class="nav-sep"></li>
           <li>
             <a href="{{ url_for('reports.work_logs') }}"

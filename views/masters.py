@@ -1113,10 +1113,32 @@ def init_master_views(app, get_db):
             return redirect(url_for("edit_store", store_id=store_id) + "#tab-info")
 
         # GET のとき：編集画面表示
+        import calendar as cal_mod
+        from datetime import date as date_cls
+        cal_year = int(request.args.get("cal_year", date_cls.today().year))
+        store_holidays = db.execute(
+            """
+            SELECT id, holiday_date, name FROM store_holidays
+            WHERE store_id = %s AND company_id = %s
+              AND EXTRACT(YEAR FROM holiday_date) = %s
+            ORDER BY holiday_date
+            """,
+            (store_id, company_id, cal_year),
+        ).fetchall()
+        store_holiday_dates = {str(h["holiday_date"]) for h in store_holidays}
+        store_holiday_names = {str(h["holiday_date"]): h["name"] for h in store_holidays}
+        cal = cal_mod.Calendar(firstweekday=0)
+        yearly_calendar = [{"month": m, "weeks": cal.monthdayscalendar(cal_year, m)} for m in range(1, 13)]
+
         return render_template(
             "mst/stores_edit.html",
             store=store,
             suppliers=suppliers,
             linked_supplier_ids=linked_supplier_ids,
+            store_holidays=store_holidays,
+            store_holiday_dates=store_holiday_dates,
+            store_holiday_names=store_holiday_names,
+            yearly_calendar=yearly_calendar,
+            cal_year=cal_year,
             **_tab_data(),
         )

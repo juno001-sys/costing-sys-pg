@@ -35,6 +35,7 @@
   <a href="#tab-zones"    class="tab-link">{{ t("stores.config.temp_zones","温度帯名称") }}</a>
   <a href="#tab-areas"    class="tab-link">{{ t("stores.config.areas",     "エリア設定") }}</a>
   <a href="#tab-shelves"  class="tab-link">{{ t("stores.config.shelves",   "棚設定") }}</a>
+  <a href="#tab-calendar"  class="tab-link">{{ t("nav.store_holidays", "店舗カレンダー") }}</a>
   <a href="#tab-profit"   class="tab-link">{{ t("profit.settings.title",   "利益推計設定") }}</a>
   <a href="{{ url_for('inventory_locations', store_id=store.id) }}" style="color:#0d6efd;">
     {{ t("stores.config.item_locations", "品目配置") }} ↗
@@ -245,6 +246,110 @@
 </div>
 
 <!-- ══════════════════════════════════════════════
+     TAB — 店舗カレンダー（休日設定）
+════════════════════════════════════════════════ -->
+<div id="tab-calendar" class="tab-panel">
+
+  <!-- Year navigation -->
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+    <a href="{{ url_for('edit_store', store_id=store.id, cal_year=cal_year-1) }}#tab-calendar"
+       style="font-size:18px; text-decoration:none;">◀</a>
+    <strong style="font-size:16px;">{{ cal_year }}年</strong>
+    <a href="{{ url_for('edit_store', store_id=store.id, cal_year=cal_year+1) }}#tab-calendar"
+       style="font-size:18px; text-decoration:none;">▶</a>
+  </div>
+
+  <!-- Bulk add -->
+  <div style="margin-bottom:16px;">
+    <strong>{{ t("admin.holidays.bulk_add") }}：</strong>
+    <form method="post" action="{{ url_for('store_holidays_bulk') }}" style="display:inline-flex; gap:8px;">
+      <input type="hidden" name="store_id" value="{{ store.id }}">
+      <input type="hidden" name="year" value="{{ cal_year }}">
+      <button type="submit" name="preset" value="public_holidays" style="padding:4px 12px; cursor:pointer;">
+        {{ t("admin.holidays.public_holidays") }}（{{ cal_year }}年）</button>
+      <button type="submit" name="preset" value="yearend" style="padding:4px 12px; cursor:pointer;">
+        {{ t("admin.holidays.yearend") }}</button>
+      <button type="submit" name="preset" value="obon" style="padding:4px 12px; cursor:pointer;">
+        {{ t("admin.holidays.obon") }}</button>
+    </form>
+  </div>
+
+  {% set month_names = ['', '1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'] %}
+
+  <!-- Yearly calendar grid -->
+  <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin-bottom:20px;">
+    {% for mc in yearly_calendar %}
+    <div>
+      <h4 style="margin:0 0 4px 0; text-align:center; font-size:13px;">{{ month_names[mc.month] }}</h4>
+      <table border="1" cellpadding="2" cellspacing="0" style="border-collapse:collapse; font-size:11px; width:100%;">
+        <thead style="background:#f5f5f5;">
+          <tr>
+            <th>{{ t("common.day.mon") }}</th><th>{{ t("common.day.tue") }}</th><th>{{ t("common.day.wed") }}</th>
+            <th>{{ t("common.day.thu") }}</th><th>{{ t("common.day.fri") }}</th>
+            <th style="color:#06c;">{{ t("common.day.sat") }}</th><th style="color:#c00;">{{ t("common.day.sun") }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for week in mc.weeks %}
+          <tr>
+            {% for day in week %}
+            {% if day == 0 %}
+              <td style="background:#fafafa;">&nbsp;</td>
+            {% else %}
+              {% set ds = "%04d-%02d-%02d"|format(cal_year, mc.month, day) %}
+              {% set is_h = ds in store_holiday_dates %}
+              <td style="text-align:center; cursor:pointer; height:22px;
+                {% if is_h %}background:#ffe0e0; color:#c00; font-weight:bold;{% endif %}"
+                  onclick="toggleStoreHoliday('{{ ds }}')"
+                  title="{{ store_holiday_names.get(ds, '') }}">
+                {{ day }}
+              </td>
+            {% endif %}
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Holiday list -->
+  <h4>{{ cal_year }}年 {{ t("admin.holidays.list_heading") }}（{{ store_holidays|length }}件）</h4>
+  <table border="1" cellpadding="4" cellspacing="0" style="font-size:13px; border-collapse:collapse;">
+    <thead style="background:#f0f0f0;">
+      <tr><th>{{ t("common.date") }}</th><th>{{ t("common.name") }}</th><th>{{ t("common.action") }}</th></tr>
+    </thead>
+    <tbody>
+      {% for h in store_holidays %}
+      <tr>
+        <td>{{ h.holiday_date }}</td>
+        <td>{{ h.name or '' }}</td>
+        <td>
+          <form method="post" action="{{ url_for('store_holidays_toggle') }}" style="display:inline;">
+            <input type="hidden" name="store_id" value="{{ store.id }}">
+            <input type="hidden" name="date" value="{{ h.holiday_date }}">
+            <input type="hidden" name="redirect_url" value="{{ url_for('edit_store', store_id=store.id, cal_year=cal_year) }}#tab-calendar">
+            <button type="submit" style="font-size:11px; cursor:pointer;">{{ t("common.delete") }}</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="3">{{ t("admin.holidays.empty") }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Hidden form for calendar click toggle -->
+  <form id="storeHolidayForm" method="post" action="{{ url_for('store_holidays_toggle') }}" style="display:none;">
+    <input type="hidden" name="store_id" value="{{ store.id }}">
+    <input type="hidden" name="date" id="storeHolidayDate">
+    <input type="hidden" name="name" id="storeHolidayName">
+    <input type="hidden" name="redirect_url" value="{{ url_for('edit_store', store_id=store.id, cal_year=cal_year) }}#tab-calendar">
+  </form>
+</div>
+
+<!-- ══════════════════════════════════════════════
      TAB 6 — 利益推計設定
 ════════════════════════════════════════════════ -->
 <div id="tab-profit" class="tab-panel">
@@ -369,5 +474,13 @@
   // Run once on load if shelves tab is active
   if ((window.location.hash || DEFAULT) === '#tab-shelves') checkShelvesZones();
 })();
+
+function toggleStoreHoliday(dateStr) {
+  var name = prompt('休日名を入力してください（空欄で削除）：', '');
+  if (name === null) return;
+  document.getElementById('storeHolidayDate').value = dateStr;
+  document.getElementById('storeHolidayName').value = name;
+  document.getElementById('storeHolidayForm').submit();
+}
 </script>
 {% endblock %}

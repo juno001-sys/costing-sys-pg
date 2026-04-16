@@ -69,10 +69,11 @@ def init_store_holidays_views(app, get_db):
         store_id = request.form.get("store_id", type=int)
         date_str = request.form.get("date")
         name = (request.form.get("name") or "").strip() or None
+        redirect_url = request.form.get("redirect_url")
 
         if not store_id or not date_str:
             flash("店舗と日付は必須です。")
-            return redirect(url_for("store_holidays"))
+            return redirect(redirect_url or url_for("store_holidays"))
 
         # Check if exists
         existing = db.execute(
@@ -81,21 +82,20 @@ def init_store_holidays_views(app, get_db):
         ).fetchone()
 
         if existing:
-            # Remove
             db.execute("DELETE FROM store_holidays WHERE id = %s", (existing["id"],))
             db.commit()
         else:
-            # Add
             db.execute(
                 "INSERT INTO store_holidays (store_id, holiday_date, name, company_id) VALUES (%s, %s, %s, %s)",
                 (store_id, date_str, name, company_id),
             )
             db.commit()
 
-        year, month = date_str.split("-")[0], date_str.split("-")[1]
-        return redirect(
-            url_for("store_holidays", store_id=store_id, year=year, month=month)
-        )
+        if redirect_url:
+            return redirect(redirect_url)
+
+        year = date_str.split("-")[0]
+        return redirect(url_for("store_holidays", store_id=store_id, year=year))
 
     @app.route("/admin/store-holidays/bulk", methods=["POST"])
     def store_holidays_bulk():
