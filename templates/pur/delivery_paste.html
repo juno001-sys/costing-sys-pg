@@ -1,40 +1,40 @@
 {% extends "layout/base.html" %}
-{% block title %}納品書テキスト読み込み{% endblock %}
+{% block title %}{{ t("purchase.delivery_paste.title") }}{% endblock %}
 {% block content %}
 
-<h3>納品書テキスト読み込み
+<h3>{{ t("purchase.delivery_paste.title") }}
   <a href="{{ url_for('new_purchase') }}"
-     style="font-size:13px; font-weight:normal; margin-left:12px;">← 仕入れ入力へ戻る</a>
+     style="font-size:13px; font-weight:normal; margin-left:12px;">{{ t("purchase.delivery_paste.back") }}</a>
 </h3>
 
 <p style="color:#555; margin-bottom:16px;">
-  タノムなどの納品書メールをコピー＆ペーストしてください。<br>
-  品名・数量・単価を自動で読み取り、仕入れデータとして登録します。
+  {{ t("purchase.delivery_paste.description") }}<br>
+  {{ t("purchase.delivery_paste.description2") }}
 </p>
 
 <!-- ── Step 1: Paste ──────────────────────────────────────────────────────── -->
 <div id="step1">
 
   <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:12px;">
-    <label><strong>店舗：</strong>
+    <label><strong>{{ t("form.store") }}：</strong>
       <select id="sel_store" style="min-width:140px;">
-        <option value="">（全社共通）</option>
+        <option value="">{{ t("common.company_wide") }}</option>
         {% for s in stores %}
         <option value="{{ s.id }}">{{ s.name }}</option>
         {% endfor %}
       </select>
     </label>
 
-    <label><strong>仕入先：</strong>
+    <label><strong>{{ t("form.supplier") }}：</strong>
       <select id="sel_supplier" style="min-width:200px;">
-        <option value="">（選択してください）</option>
+        <option value="">{{ t("common.select") }}</option>
         {% for s in suppliers %}
         <option value="{{ s.id }}">{{ s.code }} {{ s.name }}</option>
         {% endfor %}
       </select>
     </label>
 
-    <label><strong>納品日：</strong>
+    <label><strong>{{ t("purchase.delivery_date") }}：</strong>
       <input type="date" id="inp_date" style="min-width:140px;">
     </label>
   </div>
@@ -48,10 +48,10 @@
     <button onclick="parseText()"
       style="padding:7px 22px; font-size:14px; background:#444; color:white;
              border:none; border-radius:4px; cursor:pointer;">
-      📋 読み取る
+      {{ t("purchase.delivery_paste.parse") }}
     </button>
     <span style="font-size:12px; color:#888; margin-left:10px;">
-      ※ タノム形式（商品コード：XXXXX）のテキストに対応しています
+      {{ t("purchase.delivery_paste.format_note") }}
     </span>
   </div>
 </div>
@@ -59,7 +59,7 @@
 <!-- ── Step 2: Preview & confirm ─────────────────────────────────────────── -->
 <div id="step2" style="display:none; margin-top:24px;">
 
-  <h4>読み取り結果
+  <h4>{{ t("purchase.delivery_paste.result") }}
     <span id="parse_summary" style="font-size:13px; font-weight:normal; color:#555;"></span>
   </h4>
 
@@ -67,18 +67,18 @@
          style="width:100%; font-size:13px; border-collapse:collapse;">
     <thead style="background:#f0f0f0;">
       <tr>
-        <th style="min-width:120px;">品名（納品書）</th>
-        <th>数量</th>
-        <th>単位</th>
-        <th>単価（円）</th>
-        <th>小計（円）</th>
-        <th style="min-width:220px;">品目マスタ（選択）</th>
+        <th style="min-width:120px;">{{ t("purchase.delivery_paste.item_name") }}</th>
+        <th>{{ t("form.quantity") }}</th>
+        <th>{{ t("common.unit") }}</th>
+        <th>{{ t("purchase.delivery_paste.unit_price") }}</th>
+        <th>{{ t("common.subtotal") }}</th>
+        <th style="min-width:220px;">{{ t("purchase.delivery_paste.item_master") }}</th>
       </tr>
     </thead>
     <tbody id="preview_body"></tbody>
     <tfoot style="background:#f0f0f0; font-weight:bold;">
       <tr>
-        <td style="text-align:right;">合計</td>
+        <td style="text-align:right;">{{ t("common.total") }}</td>
         <td></td><td></td><td></td>
         <td id="grand_total" style="text-align:right; padding-right:8px; font-size:15px;">0</td>
         <td></td>
@@ -90,14 +90,14 @@
     <button onclick="saveAll()"
       style="padding:8px 24px; font-size:15px; background:#2a7ae2; color:white;
              border:none; border-radius:4px; cursor:pointer;">
-      ✅ 仕入れデータとして保存
+      {{ t("purchase.delivery_paste.save") }}
     </button>
     <button onclick="resetAll()"
       style="padding:8px 16px; background:#888; color:white;
              border:none; border-radius:4px; cursor:pointer;">
-      やり直す
+      {{ t("common.retry") }}
     </button>
-    <a href="{{ url_for('new_purchase') }}" style="color:#555;">キャンセル</a>
+    <a href="{{ url_for('new_purchase') }}" style="color:#555;">{{ t("common.cancel") }}</a>
   </div>
 </div>
 

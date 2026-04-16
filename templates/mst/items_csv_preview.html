@@ -1,13 +1,13 @@
 {% extends "layout/base.html" %}
-{% block title %}CSVインポート：確認{% endblock %}
+{% block title %}{{ t("items.csv.preview_title") }}{% endblock %}
 {% block content %}
 
-<h3>CSVインポート：確認</h3>
+<h3>{{ t("items.csv.preview_title") }}</h3>
 
 <div style="display:flex; gap:24px; margin-bottom:16px; font-size:15px;">
-  <span style="color:green;"><strong>✅ インポート可：{{ ok_count }}件</strong></span>
+  <span style="color:green;"><strong>✅ {{ t("items.csv.ok_count") }}：{{ ok_count }}件</strong></span>
   {% if ng_count > 0 %}
-  <span style="color:red;"><strong>⚠️ スキップ：{{ ng_count }}件</strong></span>
+  <span style="color:red;"><strong>⚠️ {{ t("items.csv.ng_count") }}：{{ ng_count }}件</strong></span>
   {% endif %}
   {% if total_count > 200 %}
   <span style="color:#888;">（先頭200件を表示中 / 全{{ total_count }}件）</span>
@@ -16,7 +16,7 @@
 
 {% if ng_count > 0 %}
 <p style="color:#c00; font-size:13px;">
-  ⚠️ エラー行はスキップしてインポートされます。修正してから再アップロードも可能です。
+  {{ t("items.csv.error_skip_note") }}
 </p>
 {% endif %}
 
@@ -24,15 +24,15 @@
   <table border="1" cellpadding="4" cellspacing="0" style="font-size:13px; width:100%;">
     <thead style="background:#f0f0f0;">
       <tr>
-        <th>行</th>
-        <th>状態</th>
-        <th>品名</th>
-        <th>仕入先</th>
-        <th>温度帯</th>
-        <th>入数</th>
-        <th>仕入単位</th>
-        <th>棚卸単位</th>
-        <th>内製</th>
+        <th>{{ t("items.csv.row") }}</th>
+        <th>{{ t("items.csv.status") }}</th>
+        <th>{{ t("items.name") }}</th>
+        <th>{{ t("form.supplier") }}</th>
+        <th>{{ t("items.temp_zone") }}</th>
+        <th>{{ t("items.case_size") }}</th>
+        <th>{{ t("items.purchase_unit") }}</th>
+        <th>{{ t("items.inventory_unit") }}</th>
+        <th>{{ t("items.is_internal") }}</th>
       </tr>
     </thead>
     <tbody>
@@ -69,13 +69,13 @@
   <div style="margin-top:20px; display:flex; gap:12px; align-items:center;">
     {% if ok_count > 0 %}
     <button type="submit"
-            onclick="return confirm('{{ ok_count }}件をインポートします。よろしいですか？')"
+            onclick="return confirm('{{ ok_count }}{{ t("items.csv.confirm_prompt") }}')"
             style="padding:8px 20px; font-size:15px; background:#2a7ae2; color:white; border:none; border-radius:4px; cursor:pointer;">
-      ✅ {{ ok_count }}件をインポート実行
+      ✅ {{ ok_count }}件 {{ t("items.csv.import_button") }}
     </button>
     {% endif %}
-    <a href="{{ url_for('items_csv_upload') }}">← やり直す</a>
-    <a href="{{ url_for('items_master') }}">キャンセル</a>
+    <a href="{{ url_for('items_csv_upload') }}">← {{ t("common.retry") }}</a>
+    <a href="{{ url_for('items_master') }}">{{ t("common.cancel") }}</a>
   </div>
 </form>
 

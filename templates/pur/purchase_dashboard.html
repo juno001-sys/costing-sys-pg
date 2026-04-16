@@ -1,15 +1,15 @@
 {% extends "layout/base.html" %}
-{% block title %}仕入ダッシュボード{% endblock %}
+{% block title %}{{ t("dashboard.title") }}{% endblock %}
 {% block content %}
 
-<h3>仕入ダッシュボード</h3>
+<h3>{{ t("dashboard.title") }}</h3>
 
 <!-- Filters -->
 <form method="get" style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:20px; align-items:end;">
   <label>
-    <strong>店舗：</strong>
+    <strong>{{ t("form.store") }}</strong>
     <select name="store_id" onchange="this.form.submit()">
-      <option value="">全店舗</option>
+      <option value="">{{ t("common.all_stores") }}</option>
       {% for s in mst_stores %}
       <option value="{{ s.id }}" {% if s.id|string == selected_store_id|string %}selected{% endif %}>
         {{ s.name }}
@@ -19,51 +19,51 @@
   </label>
 
   <label>
-    <strong>開始日：</strong>
+    <strong>{{ t("dashboard.from_date") }}</strong>
     <input type="date" name="from_date" value="{{ from_date }}">
   </label>
 
   <label>
-    <strong>終了日：</strong>
+    <strong>{{ t("dashboard.to_date") }}</strong>
     <input type="date" name="to_date" value="{{ to_date }}">
   </label>
 
-  <button type="submit" style="padding:5px 16px;">表示</button>
+  <button type="submit" style="padding:5px 16px;">{{ t("form.show") }}</button>
 </form>
 
 <!-- Grand total -->
 <div style="font-size:18px; font-weight:bold; margin-bottom:20px; color:#333;">
-  期間合計：¥{{ "{:,}".format(grand_total) }}
+  {{ t("dashboard.grand_total") }}¥{{ "{:,}".format(grand_total) }}
 </div>
 
 <!-- Charts -->
 <div style="display:flex; gap:40px; flex-wrap:wrap;">
   <div style="flex:1; min-width:300px; max-width:500px;">
-    <h4 style="text-align:center;">仕入先別 構成比</h4>
+    <h4 style="text-align:center;">{{ t("dashboard.supplier_chart") }}</h4>
     <canvas id="supplierChart"></canvas>
   </div>
 
   <div style="flex:1; min-width:300px; max-width:500px;">
-    <h4 style="text-align:center;">カテゴリ別 構成比</h4>
+    <h4 style="text-align:center;">{{ t("dashboard.category_chart") }}</h4>
     <canvas id="categoryChart"></canvas>
   </div>
 </div>
 
 <!-- Top Items Table -->
 <div style="margin-top:32px;">
-  <h4>仕入金額 上位品目（Top 20）</h4>
+  <h4>{{ t("dashboard.top_items") }}</h4>
   <table border="1" cellpadding="5" cellspacing="0"
          style="width:100%; font-size:13px; border-collapse:collapse;">
     <thead style="background:#f0f0f0;">
       <tr>
-        <th style="width:30px;">#</th>
-        <th>コード</th>
-        <th>品名</th>
-        <th>仕入先</th>
-        <th>カテゴリ</th>
-        <th style="text-align:right;">数量</th>
-        <th style="text-align:right;">金額</th>
-        <th style="text-align:right;">構成比</th>
+        <th style="width:30px;">{{ t("dashboard.rank") }}</th>
+        <th>{{ t("common.code") }}</th>
+        <th>{{ t("items.name") }}</th>
+        <th>{{ t("form.supplier") }}</th>
+        <th>{{ t("items.category") }}</th>
+        <th style="text-align:right;">{{ t("form.quantity") }}</th>
+        <th style="text-align:right;">{{ t("form.amount") }}</th>
+        <th style="text-align:right;">{{ t("dashboard.share") }}</th>
       </tr>
     </thead>
     <tbody>
@@ -85,7 +85,7 @@
         </td>
       </tr>
       {% else %}
-      <tr><td colspan="8">データがありません。</td></tr>
+      <tr><td colspan="8">{{ t("common.no_data") }}</td></tr>
       {% endfor %}
     </tbody>
   </table>

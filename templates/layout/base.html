@@ -383,7 +383,7 @@
           <li>
             <a href="{{ url_for('reports.purchase_dashboard') }}"
               class="{% if request.endpoint == 'reports.purchase_dashboard' %}active{% endif %}"
-              style="font-weight:bold;">📊 ダッシュボード</a>
+              style="font-weight:bold;">📊 {{ t("nav.dashboard") }}</a>
           </li>
           <li style="border-left:2px solid #ddd; margin-left:4px; padding-left:4px;">
             <a
@@ -434,7 +434,7 @@
           <li>
             <a href="{{ url_for('store_holidays') }}"
               class="{% if request.endpoint == 'store_holidays' %}active{% endif %}"
-              >店舗カレンダー</a>
+              >{{ t("nav.store_holidays") }}</a>
           </li>
           <li>
             <a

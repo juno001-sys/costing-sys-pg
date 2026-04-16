@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <title>棚卸し</title>
+  <title>{{ t("inventory.sp.title") }}</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { -webkit-text-size-adjust: 100%; }
@@ -182,13 +182,13 @@
 {# ── Top bar ──────────────────────────────────────────────────────────────── #}
 <div class="topbar">
   <div class="topbar-left">
-    棚卸し
+    {{ t("inventory.sp.title") }}
     <small>
       {% if selected_store_id %}
         {% for s in stores %}{% if s.id == selected_store_id %}{{ s.name }}{% endif %}{% endfor %}
         &nbsp;{{ count_date }}
       {% else %}
-        店舗・日付を選択
+        {{ t("inventory.sp.select_store_date") }}
       {% endif %}
     </small>
   </div>
@@ -203,9 +203,9 @@
 {# ── Store / date selector ────────────────────────────────────────────────── #}
 <form method="get" id="filter-form">
   <div class="selector-panel">
-    <label>店舗</label>
+    <label>{{ t("form.store") }}</label>
     <select name="store_id" onchange="this.form.submit()">
-      <option value="">（選択してください）</option>
+      <option value="">{{ t("common.select") }}</option>
       {% for s in stores %}
         <option value="{{ s.id }}" {{ 'selected' if selected_store_id == s.id }}>
           {{ s.name }}
@@ -213,13 +213,13 @@
       {% endfor %}
     </select>
 
-    <label>棚卸し日</label>
+    <label>{{ t("inventory.count_date") }}</label>
     <input type="date" name="count_date" value="{{ count_date }}"
            onchange="this.form.submit()">
 
     {% if latest_dates %}
     <div class="prev-dates">
-      過去：
+      {{ t("inventory.sp.past") }}：
       {% for d in latest_dates %}
         <a href="?store_id={{ selected_store_id }}&count_date={{ d }}">{{ d }}</a>
       {% endfor %}
@@ -273,7 +273,7 @@
           <div class="item-info">
             <div class="item-name" title="{{ item.item_name }}">{{ item.item_name }}</div>
             <div class="item-meta">{{ item.area_name }} / {{ item.shelf_label }}</div>
-            <div class="system-qty">帳簿：{{ item.system_qty }}</div>
+            <div class="system-qty">{{ t("inventory.sp.system_qty") }}：{{ item.system_qty }}</div>
           </div>
           {% set is_counted = item.counted_qty is not none %}
           {% set display_val = item.counted_qty if is_counted else item.system_qty %}
@@ -303,27 +303,27 @@
 
   <div class="save-bar">
     <button type="submit" class="btn-save" onclick="return confirmSave()">
-      ✅ 棚卸しを保存する
+      {{ t("inventory.sp.save") }}
     </button>
     <a href="{{ url_for('inventory_count_v2', store_id=selected_store_id, count_date=count_date) }}"
-       class="btn-desktop">PC版</a>
+       class="btn-desktop">{{ t("common.desktop_version") }}</a>
   </div>
 </form>
 
 {% elif selected_store_id %}
 <div class="empty-state">
   <div class="icon">📋</div>
-  <p>この条件で表示できる品目がありません。<br>仕入れ記録または品目マスタを確認してください。</p>
+  <p>{{ t("inventory.sp.no_items") }}<br>{{ t("inventory.sp.check_masters") }}</p>
 </div>
 <div class="save-bar">
   <a href="{{ url_for('inventory_count_v2', store_id=selected_store_id) }}"
-     class="btn-desktop" style="flex:1; text-align:center;">PC版に切り替え</a>
+     class="btn-desktop" style="flex:1; text-align:center;">{{ t("common.switch_to_desktop") }}</a>
 </div>
 
 {% else %}
 <div class="empty-state">
   <div class="icon">🏪</div>
-  <p>上の選択肢から店舗を選んでください。</p>
+  <p>{{ t("inventory.sp.select_store_prompt") }}</p>
 </div>
 {% endif %}
 

@@ -41,36 +41,36 @@ endblock %} {% block content %}
   </div>
 
   <div style="margin-top: 4px;">
-    <label>カテゴリ：</label>
+    <label>{{ t("items.category") }}：</label>
     <select name="category">
-      <option value="">（選択してください）</option>
-      <option value="青果（野菜）">青果（野菜）</option>
-      <option value="きのこ類">きのこ類</option>
-      <option value="精肉・卵">精肉・卵</option>
-      <option value="水産・魚">水産・魚</option>
-      <option value="米・穀物・乾物">米・穀物・乾物</option>
-      <option value="調味料・油脂">調味料・油脂</option>
-      <option value="乳製品・飲料">乳製品・飲料</option>
-      <option value="冷凍食品（加工品）">冷凍食品（加工品）</option>
-      <option value="パン・製菓">パン・製菓</option>
-      <option value="缶詰・レトルト">缶詰・レトルト</option>
-      <option value="消耗品・資材">消耗品・資材</option>
-      <option value="仕込み品">仕込み品</option>
+      <option value="">{{ t("common.select") }}</option>
+      <option value="青果（野菜）">{{ t("items.category.vegetables") }}</option>
+      <option value="きのこ類">{{ t("items.category.mushrooms") }}</option>
+      <option value="精肉・卵">{{ t("items.category.meat_eggs") }}</option>
+      <option value="水産・魚">{{ t("items.category.seafood") }}</option>
+      <option value="米・穀物・乾物">{{ t("items.category.grains") }}</option>
+      <option value="調味料・油脂">{{ t("items.category.seasonings") }}</option>
+      <option value="乳製品・飲料">{{ t("items.category.dairy_drinks") }}</option>
+      <option value="冷凍食品（加工品）">{{ t("items.category.frozen") }}</option>
+      <option value="パン・製菓">{{ t("items.category.bakery") }}</option>
+      <option value="缶詰・レトルト">{{ t("items.category.canned") }}</option>
+      <option value="消耗品・資材">{{ t("items.category.supplies") }}</option>
+      <option value="仕込み品">{{ t("items.category.prep") }}</option>
     </select>
   </div>
 
   <div style="margin-top: 4px;">
-    <label>加工レベル：</label>
+    <label>{{ t("items.process_level") }}：</label>
     <select name="process_level">
-      <option value="">（選択してください）</option>
-      <option value="原材料">原材料</option>
-      <option value="半加工品">半加工品</option>
-      <option value="完成品">完成品</option>
+      <option value="">{{ t("common.select") }}</option>
+      <option value="原材料">{{ t("items.process_level.raw") }}</option>
+      <option value="半加工品">{{ t("items.process_level.semi") }}</option>
+      <option value="完成品">{{ t("items.process_level.finished") }}</option>
     </select>
   </div>
 
   <div style="margin-top: 4px;">
-    <label>発注目安数量：</label>
+    <label>{{ t("items.est_order_qty") }}：</label>
     <input type="number" name="est_order_qty" min="0" style="width:80px;">
   </div>
 
@@ -97,9 +97,9 @@ endblock %} {% block content %}
       <th>{{ t("items.case_size") }}</th>
       <th>{{ t("items.temp_zone") }}</th>
       <th>{{ t("items.is_internal") }}</th>
-      <th>カテゴリ</th>
-      <th>加工レベル</th>
-      <th>発注目安</th>
+      <th>{{ t("items.category") }}</th>
+      <th>{{ t("items.process_level") }}</th>
+      <th>{{ t("items.est_order_qty") }}</th>
       <th>{{ t("common.edit") }}</th>
     </tr>
   </thead>

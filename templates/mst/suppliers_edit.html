@@ -109,8 +109,8 @@
             {% set cur_time = supplier.delivery_schedule[day].deadline_time if supplier.delivery_schedule and day in supplier.delivery_schedule and supplier.delivery_schedule[day].deadline_time else '' %}
             <select name="deadline_time_{{ day }}" style="width:80px; font-size:12px;">
               <option value="">--</option>
-              {% for h in range(6, 24) %}
-                {% for m in ['00','15','30','45'] %}
+              {% for h in range(0, 24) %}
+                {% for m in ['00','30'] %}
                   {% set tv = "%02d:%s"|format(h, m) %}
                   <option value="{{ tv }}" {% if cur_time == tv %}selected{% endif %}>{{ tv }}</option>
                 {% endfor %}

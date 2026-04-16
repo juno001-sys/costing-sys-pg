@@ -1,21 +1,21 @@
 {% extends "layout/base.html" %}
-{% block title %}品目マスタ CSVインポート{% endblock %}
+{% block title %}{{ t("items.csv.title") }}{% endblock %}
 {% block content %}
 
-<h3>品目マスタ CSVインポート</h3>
+<h3>{{ t("items.csv.title") }}</h3>
 
 <p style="color:#555; margin-bottom:16px;">
-  CSV または TSV ファイルをアップロードしてください。<br>
-  ヘッダー行は自動で認識します。文字コードは UTF-8 または Shift-JIS に対応しています。
+  {{ t("items.csv.description") }}<br>
+  {{ t("items.csv.encoding_info") }}
 </p>
 
 <form method="post" enctype="multipart/form-data">
 
   <!-- Store selector -->
   <div style="margin-bottom:12px;">
-    <label><strong>店舗：</strong>
+    <label><strong>{{ t("form.store") }}：</strong>
       <select name="store_id" id="store_select" style="min-width:160px;">
-        <option value="">（全社共通）</option>
+        <option value="">{{ t("common.company_wide") }}</option>
         {% for s in stores %}
           <option value="{{ s.id }}"
             {% if selected_store_id == s.id %}selected{% endif %}>
@@ -25,7 +25,7 @@
       </select>
     </label>
     <span style="font-size:12px; color:#888; margin-left:8px;">
-      ※ 選択するとその店舗に紐づいた仕入先がサンプルに表示されます
+      {{ t("items.csv.store_note") }}
     </span>
   </div>
 
@@ -33,24 +33,24 @@
     <input type="file" name="csv_file" accept=".csv,.tsv,.txt" required>
   </div>
   <div style="margin-top:12px;">
-    <button type="submit">次へ：列のマッチング →</button>
-    <a href="{{ url_for('items_master') }}" style="margin-left:12px;">キャンセル</a>
+    <button type="submit">{{ t("items.csv.next_matching") }}</button>
+    <a href="{{ url_for('items_master') }}" style="margin-left:12px;">{{ t("common.cancel") }}</a>
   </div>
 </form>
 
 <hr style="margin-top:24px;">
-<h4>CSVフォーマット（サンプル）
+<h4>{{ t("items.csv.sample_header") }}
   <span style="font-size:13px; font-weight:normal; color:#555;" id="store_label">
-    {% if selected_store_id %}— 店舗の仕入先を表示中{% endif %}
+    {% if selected_store_id %}{{ t("items.csv.supplier_display") }}{% endif %}
   </span>
 </h4>
 
 <table border="1" cellpadding="4" cellspacing="0" style="font-size:13px;" id="sample_table">
   <thead style="background:#f0f0f0;">
     <tr>
-      <th>品名</th><th>仕入先</th><th>保管温度帯</th>
-      <th>ケース入数</th><th>仕入れ単位</th><th>棚卸し単位</th>
-      <th>最低仕入単位</th><th>内製フラグ</th>
+      <th>{{ t("items.name") }}</th><th>{{ t("form.supplier") }}</th><th>{{ t("items.temp_zone") }}</th>
+      <th>{{ t("items.case_size") }}</th><th>{{ t("items.purchase_unit") }}</th><th>{{ t("items.inventory_unit") }}</th>
+      <th>{{ t("items.min_purchase_unit") }}</th><th>{{ t("items.is_internal") }}</th>
     </tr>
   </thead>
   <tbody id="sample_body">
@@ -58,21 +58,21 @@
     {% if sample_suppliers %}
       {% for sup in sample_suppliers %}
       <tr>
-        <td>（品名を入力）</td>
+        <td>{{ t("items.csv.item_name_placeholder") }}</td>
         <td>{{ sup }}</td>
         <td>{{ zones[loop.index0 % 4] }}</td>
         <td></td><td></td><td></td><td></td><td>0</td>
       </tr>
       {% endfor %}
     {% else %}
-      <tr><td colspan="8" style="color:#aaa;">仕入先が登録されていません</td></tr>
+      <tr><td colspan="8" style="color:#aaa;">{{ t("items.csv.no_suppliers") }}</td></tr>
     {% endif %}
   </tbody>
 </table>
 <p style="font-size:12px; color:#888; margin-top:6px;">
-  ★ 必須項目：品名・仕入先。仕入先名はシステムに登録済みのものを正確に使用してください。<br>
-  列名が異なっていても次の画面でマッチングできます。<br>
-  ※ ケース入数・仕入れ単位・棚卸し単位・最低仕入単位は数値（整数）で入力してください。
+  {{ t("items.csv.required_note") }}<br>
+  {{ t("items.csv.matching_note") }}<br>
+  {{ t("items.csv.numeric_note") }}
 </p>
 
 {% endblock %}
@@ -87,12 +87,12 @@
 
   function buildRows(suppliers) {
     if (!suppliers.length) {
-      sampleBody.innerHTML = '<tr><td colspan="8" style="color:#aaa;">仕入先が登録されていません</td></tr>';
+      sampleBody.innerHTML = '<tr><td colspan="8" style="color:#aaa;">{{ t("items.csv.no_suppliers") }}</td></tr>';
       return;
     }
     sampleBody.innerHTML = suppliers.map((name, i) => `
       <tr>
-        <td>（品名を入力）</td>
+        <td>{{ t("items.csv.item_name_placeholder") }}</td>
         <td>${name}</td>
         <td>${zones[i % zones.length]}</td>
         <td></td><td></td><td></td><td></td><td>0</td>
@@ -108,7 +108,7 @@
       const data = await res.json();
       buildRows(data);
       const opt = this.options[this.selectedIndex];
-      storeLabel.textContent = storeId ? `— ${opt.text} の仕入先を表示中` : "";
+      storeLabel.textContent = storeId ? `{{ t("items.csv.supplier_display") }}` : "";
     } catch (e) {
       console.error(e);
     }
