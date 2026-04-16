@@ -70,19 +70,24 @@
 
   <!-- Delivery info -->
   <div style="margin-bottom:12px;">
-    <div style="font-size:13px; font-weight:700; color:#333; margin-bottom:6px;">{{ t("order_support.deadline") }}：</div>
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-      {% for dl in card.deliveries %}
-      <div style="border:1px solid #dee2e6; border-radius:6px; padding:6px 14px;">
-        <div style="font-size:14px; font-weight:700;">
-          {{ dl.deadline_date.strftime('%m/%d') }}({{ dl.deadline_day_label }}){% if dl.deadline_time %} {{ dl.deadline_time }}{% endif %}
-        </div>
-        <div style="font-size:11px; color:#888;">
-          → 納品 {{ dl.delivery_date.strftime('%m/%d') }}({{ dl.delivery_day_label }})
-        </div>
-      </div>
-      {% endfor %}
-    </div>
+    <table style="font-size:13px; border-collapse:collapse;">
+      <tr>
+        <td style="font-weight:700; padding-right:10px; vertical-align:top;">{{ t("order_support.deadline") }}</td>
+        {% for dl in card.deliveries %}
+        <td style="padding:0 10px; text-align:center;">
+          <strong>{{ dl.deadline_date.strftime('%m/%d') }}({{ dl.deadline_day_label }}){% if dl.deadline_time %} {{ dl.deadline_time }}{% endif %}</strong>
+        </td>
+        {% endfor %}
+      </tr>
+      <tr>
+        <td style="color:#888; padding-right:10px; vertical-align:top;">→ 納品</td>
+        {% for dl in card.deliveries %}
+        <td style="padding:0 10px; text-align:center; color:#888; font-size:12px;">
+          {{ dl.delivery_date.strftime('%m/%d') }}({{ dl.delivery_day_label }})
+        </td>
+        {% endfor %}
+      </tr>
+    </table>
   </div>
 
   {% if card.gap_warning %}
