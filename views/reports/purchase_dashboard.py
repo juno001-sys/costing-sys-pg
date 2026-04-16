@@ -79,6 +79,35 @@ def purchase_dashboard():
     # ── Summary totals ───────────────────────────────────────────
     grand_total = sum(r["total"] for r in supplier_data) if supplier_data else 0
 
+    # ── Top items by amount ──────────────────────────────────────
+    top_items_sql = """
+        SELECT i.code, i.name, s.name AS supplier_name,
+               i.category,
+               SUM(p.quantity) AS total_qty,
+               SUM(p.amount) AS total_amount
+        FROM purchases p
+        JOIN mst_items i ON p.item_id = i.id
+        JOIN pur_suppliers s ON p.supplier_id = s.id
+        LEFT JOIN mst_stores st ON p.store_id = st.id
+        WHERE p.is_deleted = 0
+          AND p.delivery_date >= %s
+          AND p.delivery_date < %s
+          AND st.company_id = %s
+    """
+    top_items_params = [from_date, to_date, company_id]
+
+    if selected_store_id:
+        top_items_sql += " AND p.store_id = %s"
+        top_items_params.append(selected_store_id)
+
+    top_items_sql += """
+        GROUP BY i.id, i.code, i.name, s.name, i.category
+        ORDER BY total_amount DESC
+        LIMIT 20
+    """
+
+    top_items = db.execute(top_items_sql, top_items_params).fetchall()
+
     return render_template(
         "pur/purchase_dashboard.html",
         mst_stores=mst_stores,
@@ -90,4 +119,5 @@ def purchase_dashboard():
         category_labels=json.dumps([r["label"] for r in category_data], ensure_ascii=False),
         category_values=json.dumps([int(r["total"]) for r in category_data]),
         grand_total=grand_total,
+        top_items=top_items,
     )

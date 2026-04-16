@@ -68,6 +68,40 @@
       </label>
     </div>
 
+    <div style="margin-top: 4px;">
+      <label>カテゴリ：</label>
+      <select name="category">
+        <option value="">（選択してください）</option>
+        <option value="青果（野菜）" {% if item.category == '青果（野菜）' %}selected{% endif %}>青果（野菜）</option>
+        <option value="きのこ類" {% if item.category == 'きのこ類' %}selected{% endif %}>きのこ類</option>
+        <option value="精肉・卵" {% if item.category == '精肉・卵' %}selected{% endif %}>精肉・卵</option>
+        <option value="水産・魚" {% if item.category == '水産・魚' %}selected{% endif %}>水産・魚</option>
+        <option value="米・穀物・乾物" {% if item.category == '米・穀物・乾物' %}selected{% endif %}>米・穀物・乾物</option>
+        <option value="調味料・油脂" {% if item.category == '調味料・油脂' %}selected{% endif %}>調味料・油脂</option>
+        <option value="乳製品・飲料" {% if item.category == '乳製品・飲料' %}selected{% endif %}>乳製品・飲料</option>
+        <option value="冷凍食品（加工品）" {% if item.category == '冷凍食品（加工品）' %}selected{% endif %}>冷凍食品（加工品）</option>
+        <option value="パン・製菓" {% if item.category == 'パン・製菓' %}selected{% endif %}>パン・製菓</option>
+        <option value="缶詰・レトルト" {% if item.category == '缶詰・レトルト' %}selected{% endif %}>缶詰・レトルト</option>
+        <option value="消耗品・資材" {% if item.category == '消耗品・資材' %}selected{% endif %}>消耗品・資材</option>
+        <option value="仕込み品" {% if item.category == '仕込み品' %}selected{% endif %}>仕込み品</option>
+      </select>
+    </div>
+
+    <div style="margin-top: 4px;">
+      <label>加工レベル：</label>
+      <select name="process_level">
+        <option value="">（選択してください）</option>
+        <option value="原材料" {% if item.process_level == '原材料' %}selected{% endif %}>原材料</option>
+        <option value="半加工品" {% if item.process_level == '半加工品' %}selected{% endif %}>半加工品</option>
+        <option value="完成品" {% if item.process_level == '完成品' %}selected{% endif %}>完成品</option>
+      </select>
+    </div>
+
+    <div style="margin-top: 4px;">
+      <label>発注目安数量：</label>
+      <input type="number" name="est_order_qty" value="{{ item.est_order_qty or '' }}" min="0" style="width:80px;">
+    </div>
+
     <div style="margin-top: 12px;">
       <button type="submit">{{ t("common.update") }}</button>
       <button

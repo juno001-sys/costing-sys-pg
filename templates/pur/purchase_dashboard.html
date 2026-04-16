@@ -49,6 +49,48 @@
   </div>
 </div>
 
+<!-- Top Items Table -->
+<div style="margin-top:32px;">
+  <h4>仕入金額 上位品目（Top 20）</h4>
+  <table border="1" cellpadding="5" cellspacing="0"
+         style="width:100%; font-size:13px; border-collapse:collapse;">
+    <thead style="background:#f0f0f0;">
+      <tr>
+        <th style="width:30px;">#</th>
+        <th>コード</th>
+        <th>品名</th>
+        <th>仕入先</th>
+        <th>カテゴリ</th>
+        <th style="text-align:right;">数量</th>
+        <th style="text-align:right;">金額</th>
+        <th style="text-align:right;">構成比</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in top_items %}
+      <tr>
+        <td style="text-align:center;">{{ loop.index }}</td>
+        <td>{{ item.code }}</td>
+        <td>{{ item.name }}</td>
+        <td>{{ item.supplier_name }}</td>
+        <td>{{ item.category or '' }}</td>
+        <td style="text-align:right;">{{ "{:,}".format(item.total_qty) }}</td>
+        <td style="text-align:right;">¥{{ "{:,}".format(item.total_amount) }}</td>
+        <td style="text-align:right;">
+          {% if grand_total > 0 %}
+            {{ "%.1f"|format(item.total_amount / grand_total * 100) }}%
+          {% else %}
+            -
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8">データがありません。</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
 {% endblock %}
 
 {% block body_extra %}

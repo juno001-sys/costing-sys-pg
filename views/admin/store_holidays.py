@@ -20,10 +20,9 @@ def init_store_holidays_views(app, get_db):
         if not selected_store_id and stores:
             selected_store_id = stores[0]["id"]
 
-        # Year/month for calendar view
+        # Year for calendar view
         today = date.today()
         year = request.args.get("year", today.year, type=int)
-        month = request.args.get("month", today.month, type=int)
 
         # Fetch holidays for this store for the displayed year
         holidays = []
@@ -39,37 +38,27 @@ def init_store_holidays_views(app, get_db):
                 (selected_store_id, company_id, year),
             ).fetchall()
 
-        # Build calendar data for the displayed month
-        cal = calendar.Calendar(firstweekday=0)  # Monday first
-        month_days = cal.monthdayscalendar(year, month)
-
         holiday_dates = {str(h["holiday_date"]) for h in holidays}
         holiday_names = {str(h["holiday_date"]): h["name"] for h in holidays}
 
-        # Prev/next month
-        if month == 1:
-            prev_year, prev_month = year - 1, 12
-        else:
-            prev_year, prev_month = year, month - 1
-        if month == 12:
-            next_year, next_month = year + 1, 1
-        else:
-            next_year, next_month = year, month + 1
+        # Build yearly calendar: 12 months, each with weeks
+        cal = calendar.Calendar(firstweekday=0)  # Monday first
+        yearly_calendar = []
+        for m in range(1, 13):
+            yearly_calendar.append({
+                "month": m,
+                "weeks": cal.monthdayscalendar(year, m),
+            })
 
         return render_template(
             "admin/store_holidays.html",
             stores=stores,
             selected_store_id=selected_store_id,
             year=year,
-            month=month,
-            month_days=month_days,
+            yearly_calendar=yearly_calendar,
             holiday_dates=holiday_dates,
             holiday_names=holiday_names,
             holidays=holidays,
-            prev_year=prev_year,
-            prev_month=prev_month,
-            next_year=next_year,
-            next_month=next_month,
         )
 
     @app.route("/admin/store-holidays/toggle", methods=["POST"])

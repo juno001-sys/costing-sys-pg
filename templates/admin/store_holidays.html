@@ -17,61 +17,20 @@
     </select>
   </label>
 
-  <input type="hidden" name="year" value="{{ year }}">
-  <input type="hidden" name="month" value="{{ month }}">
+  <div style="display:flex; align-items:center; gap:8px;">
+    <a href="{{ url_for('store_holidays', store_id=selected_store_id, year=year-1) }}"
+       style="font-size:18px; text-decoration:none;">◀</a>
+    <input type="hidden" name="year" value="{{ year }}">
+    <strong style="font-size:18px;">{{ year }}年</strong>
+    <a href="{{ url_for('store_holidays', store_id=selected_store_id, year=year+1) }}"
+       style="font-size:18px; text-decoration:none;">▶</a>
+  </div>
 </form>
 
 {% if selected_store_id %}
 
-<!-- Month navigation -->
-<div style="display:flex; align-items:center; gap:16px; margin-bottom:16px;">
-  <a href="{{ url_for('store_holidays', store_id=selected_store_id, year=prev_year, month=prev_month) }}"
-     style="font-size:18px; text-decoration:none;">◀</a>
-  <h4 style="margin:0;">{{ year }}年 {{ month }}月</h4>
-  <a href="{{ url_for('store_holidays', store_id=selected_store_id, year=next_year, month=next_month) }}"
-     style="font-size:18px; text-decoration:none;">▶</a>
-</div>
-
-<!-- Calendar grid -->
-<table border="1" cellpadding="6" cellspacing="0"
-       style="border-collapse:collapse; font-size:13px; margin-bottom:20px;">
-  <thead style="background:#f0f0f0;">
-    <tr>
-      <th style="width:60px;">月</th>
-      <th style="width:60px;">火</th>
-      <th style="width:60px;">水</th>
-      <th style="width:60px;">木</th>
-      <th style="width:60px;">金</th>
-      <th style="width:60px; color:#06c;">土</th>
-      <th style="width:60px; color:#c00;">日</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for week in month_days %}
-    <tr>
-      {% for day in week %}
-      {% if day == 0 %}
-        <td style="background:#fafafa;"></td>
-      {% else %}
-        {% set ds = "%04d-%02d-%02d"|format(year, month, day) %}
-        {% set is_holiday = ds in holiday_dates %}
-        <td style="text-align:center; vertical-align:top; height:50px; cursor:pointer;
-                   {% if is_holiday %}background:#ffe0e0;{% endif %}"
-            onclick="toggleHoliday('{{ ds }}')">
-          <div style="font-weight:bold;">{{ day }}</div>
-          {% if is_holiday %}
-            <div style="font-size:10px; color:#c00;">{{ holiday_names.get(ds, '休') }}</div>
-          {% endif %}
-        </td>
-      {% endif %}
-      {% endfor %}
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-
 <!-- Bulk add presets -->
-<div style="margin-bottom:20px;">
+<div style="margin-bottom:16px;">
   <strong>一括追加：</strong>
   <form method="post" action="{{ url_for('store_holidays_bulk') }}" style="display:inline-flex; gap:8px; flex-wrap:wrap;">
     <input type="hidden" name="store_id" value="{{ selected_store_id }}">
@@ -85,8 +44,48 @@
   </form>
 </div>
 
+{% set month_names = ['', '1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'] %}
+
+<!-- Yearly Calendar Grid: 3 columns x 4 rows -->
+<div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; margin-bottom:24px;">
+  {% for mc in yearly_calendar %}
+  <div>
+    <h4 style="margin:0 0 4px 0; text-align:center; font-size:14px;">{{ month_names[mc.month] }}</h4>
+    <table border="1" cellpadding="2" cellspacing="0"
+           style="border-collapse:collapse; font-size:11px; width:100%;">
+      <thead style="background:#f5f5f5;">
+        <tr>
+          <th>月</th><th>火</th><th>水</th><th>木</th><th>金</th>
+          <th style="color:#06c;">土</th><th style="color:#c00;">日</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for week in mc.weeks %}
+        <tr>
+          {% for day in week %}
+          {% if day == 0 %}
+            <td style="background:#fafafa;">&nbsp;</td>
+          {% else %}
+            {% set ds = "%04d-%02d-%02d"|format(year, mc.month, day) %}
+            {% set is_holiday = ds in holiday_dates %}
+            <td style="text-align:center; cursor:pointer; height:24px;
+                       {% if is_holiday %}background:#ffe0e0; color:#c00; font-weight:bold;{% endif %}"
+                onclick="toggleHoliday('{{ ds }}')"
+                title="{{ holiday_names.get(ds, '') }}">
+              {{ day }}
+            </td>
+          {% endif %}
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endfor %}
+</div>
+
 <!-- Holiday list for the year -->
-<h4>{{ year }}年 登録済み休日一覧</h4>
+<h4>{{ year }}年 登録済み休日一覧（{{ holidays|length }}件）</h4>
 <table border="1" cellpadding="4" cellspacing="0" style="font-size:13px; border-collapse:collapse;">
   <thead style="background:#f0f0f0;">
     <tr><th>日付</th><th>名称</th><th>操作</th></tr>
@@ -125,7 +124,7 @@
 <script>
 function toggleHoliday(dateStr) {
   const name = prompt('休日名を入力してください（空欄で削除）：', '');
-  if (name === null) return; // cancelled
+  if (name === null) return;
   document.getElementById('toggleDate').value = dateStr;
   document.getElementById('toggleName').value = name;
   document.getElementById('toggleForm').submit();
