@@ -76,6 +76,27 @@ def purchase_dashboard():
 
     category_data = db.execute(category_sql, category_params).fetchall()
 
+    # ── Pie Chart 3: by process level ───────────────────────────
+    process_sql = """
+        SELECT COALESCE(i.process_level, '未設定') AS label, SUM(p.amount) AS total
+        FROM purchases p
+        JOIN mst_items i ON p.item_id = i.id
+        LEFT JOIN mst_stores st ON p.store_id = st.id
+        WHERE p.is_deleted = 0
+          AND p.delivery_date >= %s
+          AND p.delivery_date < %s
+          AND st.company_id = %s
+    """
+    process_params = [from_date, to_date, company_id]
+
+    if selected_store_id:
+        process_sql += " AND p.store_id = %s"
+        process_params.append(selected_store_id)
+
+    process_sql += " GROUP BY label ORDER BY total DESC"
+
+    process_data = db.execute(process_sql, process_params).fetchall()
+
     # ── Summary totals ───────────────────────────────────────────
     grand_total = sum(r["total"] for r in supplier_data) if supplier_data else 0
 
@@ -120,4 +141,6 @@ def purchase_dashboard():
         category_values=json.dumps([int(r["total"]) for r in category_data]),
         grand_total=grand_total,
         top_items=top_items,
+        process_labels=json.dumps([r["label"] for r in process_data], ensure_ascii=False),
+        process_values=json.dumps([int(r["total"]) for r in process_data]),
     )

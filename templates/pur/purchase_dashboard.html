@@ -47,6 +47,11 @@
     <h4 style="text-align:center;">{{ t("dashboard.category_chart") }}</h4>
     <canvas id="categoryChart"></canvas>
   </div>
+
+  <div style="flex:1; min-width:300px; max-width:500px;">
+    <h4 style="text-align:center;">{{ t("items.process_level") }}別 構成比</h4>
+    <canvas id="processChart"></canvas>
+  </div>
 </div>
 
 <!-- Top Items Table -->
@@ -162,5 +167,9 @@ const categoryValues = {{ category_values|safe }};
 
 buildPieChart('supplierChart', supplierLabels, supplierValues);
 buildPieChart('categoryChart', categoryLabels, categoryValues);
+
+const processLabels = {{ process_labels|safe }};
+const processValues = {{ process_values|safe }};
+buildPieChart('processChart', processLabels, processValues);
 </script>
 {% endblock %}
