@@ -6,113 +6,120 @@
   <h2>{{ t("items.edit.heading") }} ({{ t("items.code") }}: {{ item.code }})</h2>
 
   <form method="post">
-    <div>
-      <label>{{ t("items.name") }}：</label>
-      <input type="text" name="name" value="{{ item.name }}" required>
-    </div>
+    <div class="card-form">
 
-    <div style="margin-top: 4px;">
-      <label>{{ t("form.supplier") }}：</label>
-      <select name="supplier_id">
-        <option value="">{{ t("common.unset") }}</option>
-        {% for s in suppliers %}
-          <option value="{{ s.id }}" {% if item.supplier_id == s.id %}selected{% endif %}>
-            {{ s.code }} {{ s.name }}
-          </option>
-        {% endfor %}
-      </select>
-    </div>
+      <!-- 基本情報 -->
+      <div class="card">
+        <div class="card-header">{{ t("items.edit.heading") }}</div>
+        <div class="card-field">
+          <label>{{ t("items.name") }}</label>
+          <input type="text" name="name" value="{{ item.name }}" required>
+        </div>
+        <div class="card-row">
+          <div class="card-field">
+            <label>{{ t("form.supplier") }}</label>
+            <select name="supplier_id">
+              <option value="">{{ t("common.unset") }}</option>
+              {% for s in suppliers %}
+                <option value="{{ s.id }}" {% if item.supplier_id == s.id %}selected{% endif %}>
+                  {{ s.code }} {{ s.name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="card-field">
+            <label>{{ t("items.temp_zone") }}</label>
+            <select name="temp_zone">
+              <option value="">{{ t("common.unset") }}</option>
+              {% for z in temp_zones %}
+                <option value="{{ z.default_name }}" {% if item.temp_zone == z.default_name %}selected{% endif %}>
+                  {{ z.default_name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="card-row">
+          <div class="card-field">
+            <label>{{ t("items.category") }}</label>
+            <select name="category">
+              <option value="">{{ t("common.select") }}</option>
+              <option value="青果（野菜）" {% if item.category == '青果（野菜）' %}selected{% endif %}>{{ t("items.category.vegetables") }}</option>
+              <option value="きのこ類" {% if item.category == 'きのこ類' %}selected{% endif %}>{{ t("items.category.mushrooms") }}</option>
+              <option value="精肉・卵" {% if item.category == '精肉・卵' %}selected{% endif %}>{{ t("items.category.meat_eggs") }}</option>
+              <option value="水産・魚" {% if item.category == '水産・魚' %}selected{% endif %}>{{ t("items.category.seafood") }}</option>
+              <option value="米・穀物・乾物" {% if item.category == '米・穀物・乾物' %}selected{% endif %}>{{ t("items.category.grains_dried") }}</option>
+              <option value="調味料・油脂" {% if item.category == '調味料・油脂' %}selected{% endif %}>{{ t("items.category.seasonings_oils") }}</option>
+              <option value="乳製品・飲料" {% if item.category == '乳製品・飲料' %}selected{% endif %}>{{ t("items.category.dairy_beverages") }}</option>
+              <option value="冷凍食品（加工品）" {% if item.category == '冷凍食品（加工品）' %}selected{% endif %}>{{ t("items.category.frozen_processed") }}</option>
+              <option value="パン・製菓" {% if item.category == 'パン・製菓' %}selected{% endif %}>{{ t("items.category.bread_pastry") }}</option>
+              <option value="缶詰・レトルト" {% if item.category == '缶詰・レトルト' %}selected{% endif %}>{{ t("items.category.canned_retort") }}</option>
+              <option value="消耗品・資材" {% if item.category == '消耗品・資材' %}selected{% endif %}>{{ t("items.category.supplies_materials") }}</option>
+              <option value="仕込み品" {% if item.category == '仕込み品' %}selected{% endif %}>{{ t("items.category.prepared_items") }}</option>
+            </select>
+          </div>
+          <div class="card-field">
+            <label>{{ t("items.process_level") }}</label>
+            <select name="process_level">
+              <option value="">{{ t("common.select") }}</option>
+              <option value="原材料" {% if item.process_level == '原材料' %}selected{% endif %}>{{ t("items.process_level.raw") }}</option>
+              <option value="半加工品" {% if item.process_level == '半加工品' %}selected{% endif %}>{{ t("items.process_level.semi") }}</option>
+              <option value="完成品" {% if item.process_level == '完成品' %}selected{% endif %}>{{ t("items.process_level.finished") }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
 
-    <div style="margin-top: 4px;">
-      <label>{{ t("items.case_size") }}：</label>
-      <input type="text" name="unit" value="{{ item.unit or '' }}" size="6">
-    </div>
+      <!-- 数量・単位 -->
+      <div class="card">
+        <div class="card-header">{{ t("form.quantity") }}・{{ t("common.unit") }}</div>
+        <div class="card-row">
+          <div class="card-field">
+            <label>{{ t("items.case_size") }}</label>
+            <input type="text" name="unit" value="{{ item.unit or '' }}">
+          </div>
+          <div class="card-field">
+            <label>{{ t("items.purchase_unit") }}</label>
+            <input type="text" name="purchase_unit" value="{{ item.purchase_unit or '' }}">
+          </div>
+          <div class="card-field">
+            <label>{{ t("items.inventory_unit") }}</label>
+            <input type="text" name="inventory_unit" value="{{ item.inventory_unit or '' }}">
+          </div>
+        </div>
+        <div class="card-row">
+          <div class="card-field">
+            <label>{{ t("items.min_purchase_unit") }}</label>
+            <input type="text" name="min_purchase_unit" value="{{ item.min_purchase_unit or '' }}">
+          </div>
+          <div class="card-field">
+            <label>{{ t("items.est_order_qty") }}</label>
+            <input type="number" name="est_order_qty" value="{{ item.est_order_qty or '' }}" min="0">
+          </div>
+          <div class="card-field">
+            <label>{{ t("items.storage_cost") }}</label>
+            <input type="text" name="storage_cost" value="{{ item.storage_cost or '' }}">
+          </div>
+        </div>
+        <div class="card-field">
+          <label>
+            <input type="checkbox" name="is_internal" value="1"
+                   {% if item.is_internal %}checked{% endif %}>
+            {{ t("items.is_internal") }}
+          </label>
+        </div>
+      </div>
 
-    <div style="margin-top: 4px;">
-      <label>{{ t("items.temp_zone") }}：</label>
-      <select name="temp_zone">
-        <option value="">{{ t("common.unset") }}</option>
-        {% for z in temp_zones %}
-          <option value="{{ z.default_name }}" {% if item.temp_zone == z.default_name %}selected{% endif %}>
-            {{ z.default_name }}
-          </option>
-        {% endfor %}
-      </select>
-    </div>
+      <!-- Actions -->
+      <div class="card-actions">
+        <button type="submit" class="btn btn-primary">{{ t("common.update") }}</button>
+        <button type="submit" name="delete" value="1" class="btn btn-danger"
+          onclick="return confirm('{{ t("common.confirm_delete") }}');">
+          {{ t("common.delete") }}
+        </button>
+        <a href="{{ url_for('items_master') }}" class="btn-link">{{ t("common.back") }}</a>
+      </div>
 
-    <div style="margin-top: 4px;">
-      <label>{{ t("items.purchase_unit") }}：</label>
-      <input type="text" name="purchase_unit" value="{{ item.purchase_unit or '' }}" size="6">
-    </div>
-
-    <div style="margin-top: 4px;">
-      <label>{{ t("items.inventory_unit") }}：</label>
-      <input type="text" name="inventory_unit" value="{{ item.inventory_unit or '' }}" size="6">
-    </div>
-
-    <div style="margin-top: 4px;">
-      <label>{{ t("items.min_purchase_unit") }}：</label>
-      <input type="text" name="min_purchase_unit" value="{{ item.min_purchase_unit or '' }}" size="6">
-    </div>
-
-    <div style="margin-top: 4px;">
-      <label>{{ t("items.storage_cost") }}：</label>
-      <input type="text" name="storage_cost" value="{{ item.storage_cost or '' }}" size="10">
-    </div>
-
-    <div style="margin-top: 4px;">
-      <label>
-        <input type="checkbox" name="is_internal" value="1"
-               {% if item.is_internal %}checked{% endif %}>
-        {{ t("items.is_internal") }}
-      </label>
-    </div>
-
-    <div style="margin-top: 4px;">
-      <label>{{ t("items.category") }}：</label>
-      <select name="category">
-        <option value="">{{ t("common.select") }}</option>
-        <option value="青果（野菜）" {% if item.category == '青果（野菜）' %}selected{% endif %}>{{ t("items.category.vegetables") }}</option>
-        <option value="きのこ類" {% if item.category == 'きのこ類' %}selected{% endif %}>{{ t("items.category.mushrooms") }}</option>
-        <option value="精肉・卵" {% if item.category == '精肉・卵' %}selected{% endif %}>{{ t("items.category.meat_eggs") }}</option>
-        <option value="水産・魚" {% if item.category == '水産・魚' %}selected{% endif %}>{{ t("items.category.seafood") }}</option>
-        <option value="米・穀物・乾物" {% if item.category == '米・穀物・乾物' %}selected{% endif %}>{{ t("items.category.grains") }}</option>
-        <option value="調味料・油脂" {% if item.category == '調味料・油脂' %}selected{% endif %}>{{ t("items.category.seasonings") }}</option>
-        <option value="乳製品・飲料" {% if item.category == '乳製品・飲料' %}selected{% endif %}>{{ t("items.category.dairy_drinks") }}</option>
-        <option value="冷凍食品（加工品）" {% if item.category == '冷凍食品（加工品）' %}selected{% endif %}>{{ t("items.category.frozen") }}</option>
-        <option value="パン・製菓" {% if item.category == 'パン・製菓' %}selected{% endif %}>{{ t("items.category.bakery") }}</option>
-        <option value="缶詰・レトルト" {% if item.category == '缶詰・レトルト' %}selected{% endif %}>{{ t("items.category.canned") }}</option>
-        <option value="消耗品・資材" {% if item.category == '消耗品・資材' %}selected{% endif %}>{{ t("items.category.supplies") }}</option>
-        <option value="仕込み品" {% if item.category == '仕込み品' %}selected{% endif %}>{{ t("items.category.prep") }}</option>
-      </select>
-    </div>
-
-    <div style="margin-top: 4px;">
-      <label>{{ t("items.process_level") }}：</label>
-      <select name="process_level">
-        <option value="">{{ t("common.select") }}</option>
-        <option value="原材料" {% if item.process_level == '原材料' %}selected{% endif %}>{{ t("items.process_level.raw") }}</option>
-        <option value="半加工品" {% if item.process_level == '半加工品' %}selected{% endif %}>{{ t("items.process_level.semi") }}</option>
-        <option value="完成品" {% if item.process_level == '完成品' %}selected{% endif %}>{{ t("items.process_level.finished") }}</option>
-      </select>
-    </div>
-
-    <div style="margin-top: 4px;">
-      <label>{{ t("items.est_order_qty") }}：</label>
-      <input type="number" name="est_order_qty" value="{{ item.est_order_qty or '' }}" min="0" style="width:80px;">
-    </div>
-
-    <div style="margin-top: 12px;">
-      <button type="submit">{{ t("common.update") }}</button>
-      <button
-        type="submit"
-        name="delete"
-        value="1"
-        onclick="return confirm('{{ t("common.confirm_delete") }}');"
-      >
-        {{ t("common.delete") }}
-      </button>
-      <a href="{{ url_for('items_master') }}">{{ t("common.back") }}</a>
     </div>
   </form>
 {% endblock %}

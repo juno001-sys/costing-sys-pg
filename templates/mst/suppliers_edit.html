@@ -3,140 +3,152 @@
 {% block title %}{{ t("suppliers.edit.title") }}{% endblock %}
 
 {% block content %}
-  <h2>
-    {{ t("suppliers.edit.heading") }} (ID: {{ supplier.id }})
-  </h2>
+  <h2>{{ t("suppliers.edit.heading") }} (ID: {{ supplier.id }})</h2>
 
   <form method="post">
-    <div>
-      <label>{{ t("suppliers.code") }}：</label>
-      <input type="text" name="code" value="{{ supplier.code or '' }}">
-    </div>
+    <div class="card-form">
 
-    <div style="margin-top: 4px;">
-      <label>{{ t("suppliers.name") }}：</label>
-      <input type="text" name="name" value="{{ supplier.name or '' }}" required>
-    </div>
+      <!-- 基本情報 -->
+      <div class="card">
+        <div class="card-header">{{ t("suppliers.edit.heading") }}</div>
+        <div class="card-row">
+          <div class="card-field">
+            <label>{{ t("suppliers.code") }}</label>
+            <input type="text" name="code" value="{{ supplier.code or '' }}">
+          </div>
+          <div class="card-field">
+            <label>{{ t("suppliers.name") }}</label>
+            <input type="text" name="name" value="{{ supplier.name or '' }}" required>
+          </div>
+        </div>
+        <div class="card-row">
+          <div class="card-field">
+            <label>{{ t("suppliers.email") }}</label>
+            <input type="email" name="email" value="{{ supplier.email or '' }}">
+          </div>
+          <div class="card-field">
+            <label>{{ t("suppliers.address") }}</label>
+            <input type="text" name="address" value="{{ supplier.address or '' }}">
+          </div>
+        </div>
+      </div>
 
-    <div style="margin-top: 4px;">
-      <label>{{ t("suppliers.email") }}：</label>
-      <input type="email" name="email" value="{{ supplier.email or '' }}">
-    </div>
+      <!-- 担当者・連絡先 -->
+      <div class="card">
+        <div class="card-header">{{ t("suppliers.contact_section") }}</div>
+        <div class="card-row">
+          <div class="card-field">
+            <label>{{ t("suppliers.contact_person") }}</label>
+            <input type="text" name="contact_person" value="{{ supplier.contact_person or '' }}">
+          </div>
+          <div class="card-field">
+            <label>{{ t("suppliers.contact_phone") }}</label>
+            <input type="text" name="contact_phone" value="{{ supplier.contact_phone or '' }}">
+          </div>
+        </div>
+        <div class="card-row">
+          <div class="card-field">
+            <label>{{ t("suppliers.company_phone") }}</label>
+            <input type="text" name="company_phone" value="{{ supplier.company_phone or '' }}">
+          </div>
+          <div class="card-field">
+            <label>{{ t("suppliers.fax") }}</label>
+            <input type="text" name="fax" value="{{ supplier.fax or '' }}">
+          </div>
+        </div>
+      </div>
 
-    <div style="margin-top: 4px;">
-      <label>{{ t("suppliers.address") }}：</label>
-      <input type="text" name="address" value="{{ supplier.address or '' }}">
-    </div>
-
-    <hr style="margin:16px 0;">
-    <h3>{{ t("suppliers.contact_section") }}</h3>
-
-    <div style="margin-top: 4px;">
-      <label>{{ t("suppliers.contact_person") }}：</label>
-      <input type="text" name="contact_person" value="{{ supplier.contact_person or '' }}">
-    </div>
-
-    <div style="margin-top: 4px;">
-      <label>{{ t("suppliers.contact_phone") }}：</label>
-      <input type="text" name="contact_phone" value="{{ supplier.contact_phone or '' }}">
-    </div>
-
-    <div style="margin-top: 4px;">
-      <label>{{ t("suppliers.company_phone") }}：</label>
-      <input type="text" name="company_phone" value="{{ supplier.company_phone or '' }}">
-    </div>
-
-    <div style="margin-top: 4px;">
-      <label>{{ t("suppliers.fax") }}：</label>
-      <input type="text" name="fax" value="{{ supplier.fax or '' }}">
-    </div>
-
-    <hr style="margin:16px 0;">
-    <h3>{{ t("suppliers.order_section") }}</h3>
-
-    <div style="margin-top: 4px;">
-      <label>{{ t("suppliers.order_method") }}：</label>
-      <select name="order_method">
-        <option value="">--</option>
-        {% for m in ['Web','FAX','SMS','電話'] %}
-          <option value="{{ m }}" {% if supplier.order_method == m %}selected{% endif %}>{{ m }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div style="margin-top: 4px;">
-      <label>{{ t("suppliers.order_url") }}：</label>
-      <input type="text" name="order_url" value="{{ supplier.order_url or '' }}" size="60">
-    </div>
-
-    <hr style="margin:16px 0;">
-    <h3>{{ t("suppliers.schedule_section") }}</h3>
-    <table border="1" cellpadding="4" cellspacing="0" style="font-size:13px;">
-      <thead>
-        <tr>
-          <th></th>
-          <th>月</th><th>火</th><th>水</th><th>木</th><th>金</th><th>土</th><th>日</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>{{ t("suppliers.delivery_available") }}</td>
-          {% for day in ['mon','tue','wed','thu','fri','sat','sun'] %}
-          <td style="text-align:center;">
-            <input type="checkbox" name="delivery_{{ day }}" value="1"
-              {% if supplier.delivery_schedule and day in supplier.delivery_schedule %}checked{% endif %}>
-          </td>
-          {% endfor %}
-        </tr>
-        <tr>
-          <td>{{ t("suppliers.deadline_days") }}</td>
-          {% for day in ['mon','tue','wed','thu','fri','sat','sun'] %}
-          <td>
-            <input type="number" name="deadline_days_{{ day }}" min="0" max="14" style="width:40px;"
-              value="{{ supplier.delivery_schedule[day].deadline_days if supplier.delivery_schedule and day in supplier.delivery_schedule else '' }}">
-          </td>
-          {% endfor %}
-        </tr>
-        <tr>
-          <td>{{ t("suppliers.deadline_time") }}</td>
-          {% for day in ['mon','tue','wed','thu','fri','sat','sun'] %}
-          <td>
-            {% set cur_time = supplier.delivery_schedule[day].deadline_time if supplier.delivery_schedule and day in supplier.delivery_schedule and supplier.delivery_schedule[day].deadline_time else '' %}
-            <select name="deadline_time_{{ day }}" style="width:80px; font-size:12px;">
+      <!-- 発注情報 -->
+      <div class="card">
+        <div class="card-header">{{ t("suppliers.order_section") }}</div>
+        <div class="card-row">
+          <div class="card-field">
+            <label>{{ t("suppliers.order_method") }}</label>
+            <select name="order_method">
               <option value="">--</option>
-              {% for h in range(0, 24) %}
-                {% for m in ['00','30'] %}
-                  {% set tv = "%02d:%s"|format(h, m) %}
-                  <option value="{{ tv }}" {% if cur_time == tv %}selected{% endif %}>{{ tv }}</option>
-                {% endfor %}
+              {% for m in ['Web','FAX','SMS','電話'] %}
+                <option value="{{ m }}" {% if supplier.order_method == m %}selected{% endif %}>{{ m }}</option>
               {% endfor %}
             </select>
-          </td>
-          {% endfor %}
-        </tr>
-      </tbody>
-    </table>
+          </div>
+          <div class="card-field">
+            <label>{{ t("suppliers.order_url") }}</label>
+            <input type="text" name="order_url" value="{{ supplier.order_url or '' }}">
+          </div>
+        </div>
+      </div>
 
-    <div style="margin-top: 8px;">
-      <label>{{ t("suppliers.order_notes") }}：</label><br>
-      <textarea name="order_notes" rows="3" cols="60">{{ supplier.order_notes or '' }}</textarea>
-    </div>
+      <!-- 納品・発注スケジュール -->
+      <div class="card">
+        <div class="card-header">{{ t("suppliers.schedule_section") }}</div>
+        <table class="schedule-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>{{ t("common.day.mon") }}</th>
+              <th>{{ t("common.day.tue") }}</th>
+              <th>{{ t("common.day.wed") }}</th>
+              <th>{{ t("common.day.thu") }}</th>
+              <th>{{ t("common.day.fri") }}</th>
+              <th>{{ t("common.day.sat") }}</th>
+              <th>{{ t("common.day.sun") }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-weight:600; text-align:left;">{{ t("suppliers.delivery_available") }}</td>
+              {% for day in ['mon','tue','wed','thu','fri','sat','sun'] %}
+              <td>
+                <input type="checkbox" name="delivery_{{ day }}" value="1"
+                  {% if supplier.delivery_schedule and day in supplier.delivery_schedule %}checked{% endif %}>
+              </td>
+              {% endfor %}
+            </tr>
+            <tr>
+              <td style="font-weight:600; text-align:left;">{{ t("suppliers.deadline_days") }}</td>
+              {% for day in ['mon','tue','wed','thu','fri','sat','sun'] %}
+              <td>
+                <input type="number" name="deadline_days_{{ day }}" min="0" max="14"
+                  value="{{ supplier.delivery_schedule[day].deadline_days if supplier.delivery_schedule and day in supplier.delivery_schedule else '' }}">
+              </td>
+              {% endfor %}
+            </tr>
+            <tr>
+              <td style="font-weight:600; text-align:left;">{{ t("suppliers.deadline_time") }}</td>
+              {% for day in ['mon','tue','wed','thu','fri','sat','sun'] %}
+              <td>
+                {% set cur_time = supplier.delivery_schedule[day].deadline_time if supplier.delivery_schedule and day in supplier.delivery_schedule and supplier.delivery_schedule[day].deadline_time else '' %}
+                <select name="deadline_time_{{ day }}">
+                  <option value="">--</option>
+                  {% for h in range(0, 24) %}
+                    {% for m in ['00','30'] %}
+                      {% set tv = "%02d:%s"|format(h, m) %}
+                      <option value="{{ tv }}" {% if cur_time == tv %}selected{% endif %}>{{ tv }}</option>
+                    {% endfor %}
+                  {% endfor %}
+                </select>
+              </td>
+              {% endfor %}
+            </tr>
+          </tbody>
+        </table>
 
-    <div style="margin-top: 12px;">
-      <button type="submit">{{ t("common.update") }}</button>
+        <div class="card-field" style="margin-top: 16px;">
+          <label>{{ t("suppliers.order_notes") }}</label>
+          <textarea name="order_notes" rows="3">{{ supplier.order_notes or '' }}</textarea>
+        </div>
+      </div>
 
-      <button
-        type="submit"
-        name="delete"
-        value="1"
-        onclick="return confirm('{{ t("common.confirm_delete") }}');"
-      >
-        {{ t("common.delete") }}
-      </button>
+      <!-- Actions -->
+      <div class="card-actions">
+        <button type="submit" class="btn btn-primary">{{ t("common.update") }}</button>
+        <button type="submit" name="delete" value="1" class="btn btn-danger"
+          onclick="return confirm('{{ t("common.confirm_delete") }}');">
+          {{ t("common.delete") }}
+        </button>
+        <a href="{{ url_for('suppliers_master') }}" class="btn-link">{{ t("common.back") }}</a>
+      </div>
 
-      <a href="{{ url_for('suppliers_master') }}">
-        {{ t("common.back") }}
-      </a>
     </div>
   </form>
 {% endblock %}
