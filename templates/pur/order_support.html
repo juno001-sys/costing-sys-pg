@@ -103,7 +103,7 @@
       </tr>
     </thead>
     <tbody>
-      {% for item in card.items %}
+      {% for item in card.item_rows %}
       <tr style="
         {% if item.status == 'shortage' %}background:#fff0f0;
         {% elif item.status == 'low' %}background:#fff8e1;

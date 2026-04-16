@@ -292,10 +292,10 @@ def init_order_support_views(app, get_db):
                     'has_schedule': bool(schedule),
                     'deliveries': deliveries,
                     'gap_warning': gap_warning,
-                    'items': item_rows,
+                    'item_rows': item_rows,
                     'day_columns': day_columns,
-                    'shortage_count': sum(1 for i in item_rows if i["status"] == "shortage"),
-                    'low_count': sum(1 for i in item_rows if i["status"] == "low"),
+                    'shortage_count': sum(1 for r in item_rows if r["status"] == "shortage"),
+                    'low_count': sum(1 for r in item_rows if r["status"] == "low"),
                 })
 
         return render_template(
