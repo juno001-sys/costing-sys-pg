@@ -61,29 +61,47 @@
         font-size: 14px;
       }
 
-      .nav-tabs {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 18px;
-        list-style: none;
+      /* ===== Header & Nav (Style C: Minimal + Icons) ===== */
+      .app-header {
+        border-bottom: 2px solid #2a7ae2;
+        margin: -40px -40px 30px -40px;
         padding: 0;
-        margin: 0 0 30px 0;
-        border-bottom: 2px solid #ddd;
+        background: #fff;
       }
-      .nav-tabs a {
-        padding: 8px 14px;
-        text-decoration: none;
-        color: #333;
-        font-weight: 600;
-        border-radius: 6px 6px 0 0;
+      .header-top {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 14px 24px;
       }
-      .nav-tabs a:hover {
-        background: #f0f0f0;
+      .header-logo {
+        display: flex; align-items: center; gap: 10px;
+        font-size: 18px; font-weight: 700; color: #1a1a2e;
       }
-      .nav-tabs a.active {
-        background: #f0f4ff;
-        border-bottom: 2px solid #f0f4ff;
+      .header-logo img { height: 32px; width: auto; }
+      .header-user {
+        font-size: 12px; color: #666;
+        display: flex; align-items: center; gap: 10px;
       }
+      .header-user .user-name { font-weight: 600; color: #333; }
+      .header-user .badge { background: #e9ecef; color: #333; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+      .header-user a { color: #2a7ae2; text-decoration: none; font-weight: 600; font-size: 12px; }
+      .header-user .logout-btn {
+        background: #2a7ae2; border: none; color: #fff;
+        padding: 5px 14px; border-radius: 6px; cursor: pointer; font-size: 12px;
+      }
+      .header-user .logout-btn:hover { background: #1a5fc0; }
+      .header-nav {
+        display: flex; flex-wrap: wrap; padding: 0 20px; background: #f8f9fa;
+        border-top: 1px solid #eee; list-style: none; margin: 0; gap: 0;
+      }
+      .header-nav li { display: flex; align-items: center; }
+      .header-nav a {
+        color: #555; text-decoration: none; padding: 10px 14px; font-size: 13px; font-weight: 500;
+        display: flex; align-items: center; gap: 5px;
+        border-bottom: 3px solid transparent; transition: all 0.15s;
+      }
+      .header-nav a:hover { color: #2a7ae2; }
+      .header-nav a.active { color: #2a7ae2; border-bottom-color: #2a7ae2; background: #fff; font-weight: 600; }
+      .header-nav .nav-sep { border-left: 1px solid #ddd; margin: 8px 4px; }
 
       .flash {
         background: #ffeebb;
@@ -339,156 +357,109 @@
 
   <body class="env-{{ env }}">
     <header class="app-header">
-      <!-- Title / logo -->
-      <!-- Environment banner (status / alert) -->
       {% if env == "rft" %}
       <div class="env-banner rft">
-        ⚠ REFACTOR ENVIRONMENT (RFT) — Schema &amp; data may be destructively
-        changed
+        ⚠ REFACTOR ENVIRONMENT (RFT) — Schema &amp; data may be destructively changed
       </div>
       {% endif %}
 
-      <!-- Branding -->
-      <div
-        style="
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin: 12px 0 8px 0;
-        "
-      >
-        <img
-          src="{{ url_for('static', filename='img/kurajika_logo.png') }}"
-          alt="Kurajika"
-          style="height: 36px; width: auto"
-        />
-
-        {% if env == "prod" %}
-        <h1>倉島事業開発 CMS – Postgres</h1>
-        {% elif env == "rft" %}
-        <h1>⚠ RFT – Refactor Environment</h1>
-        {% elif env == "local" %}
-        <h1>LOCAL – Your Machine</h1>
-        {% else %}
-        <h1>DEV – Test Environment</h1>
+      <!-- Top row: logo + user info -->
+      <div class="header-top">
+        <div class="header-logo">
+          <img src="{{ url_for('static', filename='img/kurajika_logo.png') }}" alt="Kurajika">
+          {% if env == "prod" %}
+            倉島事業開発 CMS
+          {% elif env == "rft" %}
+            ⚠ RFT – Refactor
+          {% elif env == "local" %}
+            LOCAL – Your Machine
+          {% else %}
+            DEV – Test Environment
+          {% endif %}
+        </div>
+        {% if current_user %}
+        <div class="header-user">
+          <span class="user-name">{{ current_user.name }}</span>
+          <span class="badge">{{ current_role }}</span>
+          <span>{{ current_company_name }}</span>
+          <a href="{{ url_for('static', filename='docs/user_manual.pdf') }}" target="_blank" rel="noopener">
+            {{ t("nav.user_manual") }}
+          </a>
+          <form method="post" action="{{ url_for('logout') }}" style="margin:0; display:inline;">
+            <button type="submit" class="logout-btn">Logout</button>
+          </form>
+        </div>
         {% endif %}
       </div>
-
-      <!-- Logged-in user info -->
-      {% if current_user %}
-      <div
-        style="
-          display: flex;
-          justify-content: flex-end;
-          align-items: center;
-          gap: 12px;
-          padding: 8px 12px;
-          border: 1px solid #ddd;
-          border-radius: 8px;
-          margin: 10px 0 18px 0;
-          background: #fafafa;
-          font-size: 0.9em;
-          color: #444;
-        "
-      >
-        <div>
-          <b>{{ current_user.name }}</b>
-          <span style="color: #666">{{ current_user.email }}</span>
-          &nbsp;|&nbsp; Role: <b>{{ current_role }}</b> &nbsp;|&nbsp; Company:
-          <b>{{ current_company_name }}</b>
-        </div>
-
-        <a
-          href="{{ url_for('static', filename='docs/user_manual.pdf') }}"
-          target="_blank"
-          rel="noopener"
-          style="text-decoration: none; font-weight: 600"
-        >
-          {{ t("nav.user_manual") }}
-        </a>
-
-        <form method="post" action="{{ url_for('logout') }}" style="margin: 0">
-          <button type="submit">Logout</button>
-        </form>
-      </div>
-      {% endif %}
 
       <!-- Navigation -->
       {% block nav %}
       <nav>
-        <ul class="nav-tabs">
+        <ul class="header-nav">
           <li>
             <a href="{{ url_for('reports.purchase_dashboard') }}"
-              class="{% if request.endpoint == 'reports.purchase_dashboard' %}active{% endif %}"
-              style="font-weight:bold;">📊 {{ t("nav.dashboard") }}</a>
+              class="{% if request.endpoint == 'reports.purchase_dashboard' %}active{% endif %}">
+              📊 {{ t("nav.dashboard") }}</a>
           </li>
-          <li style="border-left:2px solid #ddd; margin-left:4px; padding-left:4px;">
-            <a
-              href="{{ url_for('new_purchase') }}"
-              class="{% if request.endpoint in ['new_purchase','edit_purchase'] %}active{% endif %}"
-              >{{ t("nav.purchase_form") }}</a
-            >
-          </li>
-
+          <li class="nav-sep"></li>
           <li>
-            <a
-              href="{{ url_for('inventory_count_v2') }}"
-              class="{% if request.endpoint == 'inventory_count_v2' %}active{% endif %}"
-              >{{ t("nav.inventory_count") }}
-            </a>
+            <a href="{{ url_for('new_purchase') }}"
+              class="{% if request.endpoint in ['new_purchase','edit_purchase'] %}active{% endif %}">
+              📝 {{ t("nav.purchase_form") }}</a>
           </li>
-
+          <li>
+            <a href="{{ url_for('inventory_count_v2') }}"
+              class="{% if request.endpoint == 'inventory_count_v2' %}active{% endif %}">
+              📋 {{ t("nav.inventory_count") }}</a>
+          </li>
+          <li class="nav-sep"></li>
           <li>
             <a href="{{ url_for('reports.purchase_report') }}"
-              >{{ t("nav.purchase_report") }}</a
-            >
+              class="{% if request.endpoint == 'reports.purchase_report' %}active{% endif %}">
+              📈 {{ t("nav.purchase_report") }}</a>
           </li>
           <li>
             <a href="{{ url_for('reports.usage_report') }}"
-              >{{ t("nav.usage_report") }}</a
-            >
+              class="{% if request.endpoint == 'reports.usage_report' %}active{% endif %}">
+              📊 {{ t("nav.usage_report") }}</a>
           </li>
           <li>
             <a href="{{ url_for('reports.cost_report') }}"
-              >{{ t("nav.cost_report") }}</a
-            >
+              class="{% if request.endpoint == 'reports.cost_report' %}active{% endif %}">
+              💰 {{ t("nav.cost_report") }}</a>
           </li>
+          <li class="nav-sep"></li>
           <li>
             <a href="{{ url_for('suppliers_master') }}"
-              >{{ t("nav.suppliers_master") }}</a
-            >
+              class="{% if request.endpoint in ['suppliers_master','edit_supplier'] %}active{% endif %}">
+              🏢 {{ t("nav.suppliers_master") }}</a>
           </li>
           <li>
             <a href="{{ url_for('items_master') }}"
-              >{{ t("nav.items_master") }}</a
-            >
+              class="{% if request.endpoint in ['items_master','edit_item'] %}active{% endif %}">
+              📦 {{ t("nav.items_master") }}</a>
           </li>
           <li>
             <a href="{{ url_for('stores_master') }}"
-              >{{ t("nav.stores_master") }}</a
-            >
+              class="{% if request.endpoint in ['stores_master','edit_store'] %}active{% endif %}">
+              🏪 {{ t("nav.stores_master") }}</a>
           </li>
           <li>
             <a href="{{ url_for('store_holidays') }}"
-              class="{% if request.endpoint == 'store_holidays' %}active{% endif %}"
-              >{{ t("nav.store_holidays") }}</a>
+              class="{% if request.endpoint == 'store_holidays' %}active{% endif %}">
+              📅 {{ t("nav.store_holidays") }}</a>
           </li>
+          <li class="nav-sep"></li>
           <li>
-            <a
-              href="{{ url_for('reports.work_logs') }}"
-              class="{% if request.endpoint == 'reports.work_logs' %}active{% endif %}"
-            >
-              {{ t("nav.work_logs") }}
-            </a>
+            <a href="{{ url_for('reports.work_logs') }}"
+              class="{% if request.endpoint == 'reports.work_logs' %}active{% endif %}">
+              📝 {{ t("nav.work_logs") }}</a>
           </li>
           {% if current_role == "admin" %}
           <li>
-            <a
-              href="{{ url_for('admin_users') }}"
-              class="{% if request.endpoint == 'admin_users' %}active{% endif %}"
-            >
-              {{ t("nav.admin_users") }}
-            </a>
+            <a href="{{ url_for('admin_users') }}"
+              class="{% if request.endpoint == 'admin_users' %}active{% endif %}">
+              👤 {{ t("nav.admin_users") }}</a>
           </li>
           {% endif %}
         </ul>
