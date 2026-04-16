@@ -105,7 +105,7 @@ def init_order_support_views(app, get_db):
             suppliers = db.execute(
                 """
                 SELECT DISTINCT s.id, s.code, s.name, s.order_method, s.order_url,
-                       s.delivery_schedule, s.order_notes
+                       s.delivery_schedule, s.order_notes, s.holidays_off
                 FROM pur_suppliers s
                 JOIN mst_items i ON i.supplier_id = s.id
                 WHERE s.is_active = 1 AND s.company_id = %s
@@ -115,7 +115,18 @@ def init_order_support_views(app, get_db):
                 (company_id, company_id),
             ).fetchall()
 
-            # ── Get supplier holidays for the extended window ────────
+            # ── Get store holidays (for suppliers with holidays_off) ──
+            store_holidays_rows = db.execute(
+                """
+                SELECT holiday_date FROM store_holidays
+                WHERE store_id = %s AND company_id = %s
+                  AND holiday_date >= %s AND holiday_date <= %s
+                """,
+                (selected_store_id, company_id, base_date, extended_end),
+            ).fetchall()
+            store_holiday_set = {str(h["holiday_date"]) for h in store_holidays_rows}
+
+            # ── Get supplier-specific holidays ────────────────────────
             all_supplier_holidays = db.execute(
                 """
                 SELECT supplier_id, holiday_date
@@ -187,7 +198,10 @@ def init_order_support_views(app, get_db):
             for supplier in suppliers:
                 sid = supplier["id"]
                 schedule = supplier["delivery_schedule"] or {}
-                holidays_set = holidays_by_supplier.get(sid, set())
+                # Merge store holidays (if holidays_off) + supplier-specific holidays
+                holidays_set = set(holidays_by_supplier.get(sid, set()))
+                if supplier["holidays_off"]:
+                    holidays_set |= store_holiday_set
 
                 # Delivery dates in the 7-day window
                 deliveries = _get_delivery_dates(schedule, base_date, window_days, holidays_set)

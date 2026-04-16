@@ -347,6 +347,90 @@
     <input type="hidden" name="name" id="storeHolidayName">
     <input type="hidden" name="redirect_url" value="{{ url_for('edit_store', store_id=store.id, cal_year=cal_year) }}#tab-calendar">
   </form>
+
+  <hr style="margin:24px 0;">
+
+  <!-- ── Supplier-specific holidays ── -->
+  <h4>仕入先カレンダー（仕入先独自の休業日）</h4>
+  <p style="font-size:12px; color:#888; margin-bottom:12px;">
+    仕入先を選択すると、その仕入先独自の休業日を設定できます。<br>
+    <span style="background:#ffe0e0; padding:1px 6px; border-radius:3px;">赤</span> = 店舗休日 &nbsp;
+    <span style="background:#e0e0ff; padding:1px 6px; border-radius:3px;">青</span> = 仕入先休業日 &nbsp;
+    <span style="background:#f0c0f0; padding:1px 6px; border-radius:3px;">紫</span> = 両方
+  </p>
+
+  <div style="display:flex; gap:16px; align-items:end; margin-bottom:16px; flex-wrap:wrap;">
+    <label>
+      <strong>仕入先：</strong>
+      <select id="supCalSupplier" onchange="loadSupplierHolidays()" style="min-width:200px;">
+        <option value="">（選択してください）</option>
+        {% for s in suppliers %}
+          <option value="{{ s.id }}">{{ s.code }} {{ s.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <!-- Bulk add for supplier -->
+    <div id="supCalBulk" style="display:none;">
+      <form method="post" action="{{ url_for('supplier_holidays_bulk') }}" style="display:inline-flex; gap:6px;" id="supBulkForm">
+        <input type="hidden" name="supplier_id" id="supBulkSupplierId">
+        <input type="hidden" name="year" value="{{ cal_year }}">
+        <input type="hidden" name="redirect_url" value="{{ url_for('edit_store', store_id=store.id, cal_year=cal_year) }}#tab-calendar">
+        <button type="submit" name="preset" value="public_holidays" style="padding:3px 10px; font-size:12px; cursor:pointer;">祝日追加</button>
+        <button type="submit" name="preset" value="yearend" style="padding:3px 10px; font-size:12px; cursor:pointer;">年末年始</button>
+        <button type="submit" name="preset" value="obon" style="padding:3px 10px; font-size:12px; cursor:pointer;">お盆</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Supplier calendar (same 3x4 grid, overlaid with store holidays) -->
+  <div id="supCalGrid" style="display:none;">
+    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin-bottom:20px;">
+      {% for mc in yearly_calendar %}
+      <div>
+        <h4 style="margin:0 0 4px 0; text-align:center; font-size:13px;">{{ month_names[mc.month] }}</h4>
+        <table border="1" cellpadding="2" cellspacing="0" style="border-collapse:collapse; font-size:11px; width:100%;">
+          <thead style="background:#f5f5f5;">
+            <tr>
+              <th>{{ t("common.day.mon") }}</th><th>{{ t("common.day.tue") }}</th><th>{{ t("common.day.wed") }}</th>
+              <th>{{ t("common.day.thu") }}</th><th>{{ t("common.day.fri") }}</th>
+              <th style="color:#06c;">{{ t("common.day.sat") }}</th><th style="color:#c00;">{{ t("common.day.sun") }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for week in mc.weeks %}
+            <tr>
+              {% for day in week %}
+              {% if day == 0 %}
+                <td style="background:#fafafa;">&nbsp;</td>
+              {% else %}
+                {% set ds = "%04d-%02d-%02d"|format(cal_year, mc.month, day) %}
+                {% set is_store_h = ds in store_holiday_dates %}
+                <td data-date="{{ ds }}"
+                    style="text-align:center; cursor:pointer; height:22px;
+                      {% if is_store_h %}background:#ffe0e0;{% endif %}"
+                    onclick="toggleSupplierHoliday('{{ ds }}')"
+                    title="{{ store_holiday_names.get(ds, '') }}">
+                  {{ day }}
+                </td>
+              {% endif %}
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Hidden form for supplier holiday toggle -->
+  <form id="supHolidayForm" method="post" action="{{ url_for('supplier_holidays_toggle') }}" style="display:none;">
+    <input type="hidden" name="supplier_id" id="supHolidaySupplierId">
+    <input type="hidden" name="date" id="supHolidayDate">
+    <input type="hidden" name="name" id="supHolidayName">
+    <input type="hidden" name="redirect_url" value="{{ url_for('edit_store', store_id=store.id, cal_year=cal_year) }}#tab-calendar">
+  </form>
 </div>
 
 <!-- ══════════════════════════════════════════════
@@ -481,6 +565,68 @@ function toggleStoreHoliday(dateStr) {
   document.getElementById('storeHolidayDate').value = dateStr;
   document.getElementById('storeHolidayName').value = name;
   document.getElementById('storeHolidayForm').submit();
+}
+
+// ── Supplier holidays ──
+var supHolidayDates = new Set();
+
+function loadSupplierHolidays() {
+  var supplierId = document.getElementById('supCalSupplier').value;
+  var grid = document.getElementById('supCalGrid');
+  var bulk = document.getElementById('supCalBulk');
+
+  if (!supplierId) {
+    grid.style.display = 'none';
+    bulk.style.display = 'none';
+    return;
+  }
+
+  grid.style.display = '';
+  bulk.style.display = '';
+  document.getElementById('supBulkSupplierId').value = supplierId;
+
+  fetch('/api/supplier-holidays?supplier_id=' + supplierId + '&year={{ cal_year }}')
+    .then(r => r.json())
+    .then(data => {
+      supHolidayDates = new Set(data.map(h => h.date));
+      // Update calendar cell colors
+      document.querySelectorAll('#supCalGrid td[data-date]').forEach(td => {
+        var ds = td.dataset.date;
+        var isStore = {{ store_holiday_dates|tojson }}.indexOf(ds) >= 0;
+        var isSup = supHolidayDates.has(ds);
+
+        if (isStore && isSup) {
+          td.style.background = '#f0c0f0';  // purple = both
+          td.style.fontWeight = 'bold';
+          td.style.color = '#800080';
+        } else if (isSup) {
+          td.style.background = '#e0e0ff';  // blue = supplier only
+          td.style.fontWeight = 'bold';
+          td.style.color = '#0000cc';
+        } else if (isStore) {
+          td.style.background = '#ffe0e0';  // red = store only
+          td.style.fontWeight = '';
+          td.style.color = '';
+        } else {
+          td.style.background = '';
+          td.style.fontWeight = '';
+          td.style.color = '';
+        }
+      });
+    });
+}
+
+function toggleSupplierHoliday(dateStr) {
+  var supplierId = document.getElementById('supCalSupplier').value;
+  if (!supplierId) return;
+
+  var name = prompt('仕入先休業日名を入力してください（空欄で削除）：', '');
+  if (name === null) return;
+
+  document.getElementById('supHolidaySupplierId').value = supplierId;
+  document.getElementById('supHolidayDate').value = dateStr;
+  document.getElementById('supHolidayName').value = name;
+  document.getElementById('supHolidayForm').submit();
 }
 </script>
 {% endblock %}

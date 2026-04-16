@@ -45,6 +45,7 @@ def init_master_views(app, get_db):
             order_method = (request.form.get("order_method") or "").strip()
             order_url = (request.form.get("order_url") or "").strip()
             order_notes = (request.form.get("order_notes") or "").strip()
+            holidays_off = 1 if request.form.get("holidays_off") else 0
 
             # Build delivery_schedule JSON
             DAYS = ['mon','tue','wed','thu','fri','sat','sun']
@@ -70,12 +71,12 @@ def init_master_views(app, get_db):
                         INSERT INTO pur_suppliers
                             (company_id, code, name, phone, email, address,
                              contact_person, contact_phone, company_phone, fax,
-                             order_method, order_url, delivery_schedule, order_notes)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                             order_method, order_url, delivery_schedule, order_notes, holidays_off)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         """,
                         (company_id, code if code else None, name, phone, email, address,
                          contact_person or None, contact_phone or None, company_phone or None, fax or None,
-                         order_method or None, order_url or None, delivery_schedule, order_notes or None),
+                         order_method or None, order_url or None, delivery_schedule, order_notes or None, holidays_off),
                     )
                      # NEW: audit log (CREATE supplier)
                     try:
@@ -112,7 +113,7 @@ def init_master_views(app, get_db):
             """
             SELECT id, code, name, phone, email, address, is_active,
                    contact_person, contact_phone, company_phone, fax,
-                   order_method, order_url, delivery_schedule, order_notes
+                   order_method, order_url, delivery_schedule, order_notes, holidays_off
             FROM pur_suppliers
             WHERE is_active = 1
               AND company_id = %s
@@ -141,7 +142,7 @@ def init_master_views(app, get_db):
             """
             SELECT id, code, name, phone, email, address, is_active,
                    contact_person, contact_phone, company_phone, fax,
-                   order_method, order_url, delivery_schedule, order_notes
+                   order_method, order_url, delivery_schedule, order_notes, holidays_off
             FROM pur_suppliers
             WHERE id = %s
               AND company_id = %s
@@ -246,6 +247,7 @@ def init_master_views(app, get_db):
             order_method = (request.form.get("order_method") or "").strip()
             order_url = (request.form.get("order_url") or "").strip()
             order_notes = (request.form.get("order_notes") or "").strip()
+            holidays_off = 1 if request.form.get("holidays_off") else 0
 
             # Build delivery_schedule JSON
             DAYS = ['mon','tue','wed','thu','fri','sat','sun']
@@ -284,14 +286,15 @@ def init_master_views(app, get_db):
                       order_method      = %s,
                       order_url         = %s,
                       delivery_schedule = %s,
-                      order_notes       = %s
+                      order_notes       = %s,
+                      holidays_off      = %s
                     WHERE id = %s
                      AND company_id = %s
                     """,
                      (code if code else None, name, phone, email, address,
                       contact_person or None, contact_phone or None, company_phone or None, fax or None,
                       order_method or None, order_url or None, delivery_schedule, order_notes or None,
-                      supplier_id, company_id,)
+                      holidays_off, supplier_id, company_id,)
                 )
                 # NEW: audit log (UPDATE supplier)
                 try:
@@ -322,9 +325,39 @@ def init_master_views(app, get_db):
             return redirect(url_for("suppliers_master"))
 
         # GET のとき：編集画面表示
+        import calendar as cal_mod
+        from datetime import date as date_cls
+        cal_year = int(request.args.get("cal_year", date_cls.today().year))
+
+        # Supplier holidays
+        sup_holidays = db.execute(
+            "SELECT id, holiday_date, name FROM supplier_holidays WHERE supplier_id = %s AND company_id = %s AND EXTRACT(YEAR FROM holiday_date) = %s ORDER BY holiday_date",
+            (supplier_id, company_id, cal_year),
+        ).fetchall()
+        sup_holiday_dates = {str(h["holiday_date"]) for h in sup_holidays}
+        sup_holiday_names = {str(h["holiday_date"]): h["name"] for h in sup_holidays}
+
+        # Store holidays (all stores, for overlay reference)
+        store_holiday_rows = db.execute(
+            "SELECT DISTINCT holiday_date, name FROM store_holidays WHERE company_id = %s AND EXTRACT(YEAR FROM holiday_date) = %s ORDER BY holiday_date",
+            (company_id, cal_year),
+        ).fetchall()
+        store_holiday_dates = {str(h["holiday_date"]) for h in store_holiday_rows}
+        store_holiday_names = {str(h["holiday_date"]): h["name"] for h in store_holiday_rows}
+
+        cal = cal_mod.Calendar(firstweekday=0)
+        yearly_calendar = [{"month": m, "weeks": cal.monthdayscalendar(cal_year, m)} for m in range(1, 13)]
+
         return render_template(
             "mst/suppliers_edit.html",
             supplier=supplier,
+            sup_holidays=sup_holidays,
+            sup_holiday_dates=sup_holiday_dates,
+            sup_holiday_names=sup_holiday_names,
+            store_holiday_dates=store_holiday_dates,
+            store_holiday_names=store_holiday_names,
+            yearly_calendar=yearly_calendar,
+            cal_year=cal_year,
         )
 
     # ----------------------------------------
