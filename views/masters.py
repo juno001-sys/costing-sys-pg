@@ -1,6 +1,7 @@
 # views/masters.py
 
 import sqlite3
+import json
 from flask import (
     render_template,
     request,
@@ -37,6 +38,26 @@ def init_master_views(app, get_db):
             phone = (request.form.get("phone") or "").strip()
             email = (request.form.get("email") or "").strip()
             address = (request.form.get("address") or "").strip()
+            contact_person = (request.form.get("contact_person") or "").strip()
+            contact_phone = (request.form.get("contact_phone") or "").strip()
+            company_phone = (request.form.get("company_phone") or "").strip()
+            fax = (request.form.get("fax") or "").strip()
+            order_method = (request.form.get("order_method") or "").strip()
+            order_url = (request.form.get("order_url") or "").strip()
+            order_notes = (request.form.get("order_notes") or "").strip()
+
+            # Build delivery_schedule JSON
+            DAYS = ['mon','tue','wed','thu','fri','sat','sun']
+            schedule = {}
+            for day in DAYS:
+                if request.form.get(f"delivery_{day}"):
+                    deadline_days = request.form.get(f"deadline_days_{day}")
+                    deadline_time = request.form.get(f"deadline_time_{day}") or None
+                    schedule[day] = {
+                        "deadline_days": int(deadline_days) if deadline_days else 1,
+                        "deadline_time": deadline_time,
+                    }
+            delivery_schedule = json.dumps(schedule) if schedule else None
 
             if not name:
                 flash("仕入先名は必須です。")
@@ -46,10 +67,15 @@ def init_master_views(app, get_db):
 
                     db.execute(
                         """
-                        INSERT INTO pur_suppliers (company_id, code, name, phone, email, address)
-                        VALUES (%s, %s, %s, %s, %s, %s)
+                        INSERT INTO pur_suppliers
+                            (company_id, code, name, phone, email, address,
+                             contact_person, contact_phone, company_phone, fax,
+                             order_method, order_url, delivery_schedule, order_notes)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         """,
-                        (company_id, code if code else None, name, phone, email, address),
+                        (company_id, code if code else None, name, phone, email, address,
+                         contact_person or None, contact_phone or None, company_phone or None, fax or None,
+                         order_method or None, order_url or None, delivery_schedule, order_notes or None),
                     )
                      # NEW: audit log (CREATE supplier)
                     try:
@@ -84,7 +110,9 @@ def init_master_views(app, get_db):
 
         suppliers = db.execute(
             """
-            SELECT id, code, name, phone, email, address, is_active
+            SELECT id, code, name, phone, email, address, is_active,
+                   contact_person, contact_phone, company_phone, fax,
+                   order_method, order_url, delivery_schedule, order_notes
             FROM pur_suppliers
             WHERE is_active = 1
               AND company_id = %s
@@ -111,7 +139,9 @@ def init_master_views(app, get_db):
 
         supplier = db.execute(
             """
-            SELECT id, code, name, phone, email, address, is_active
+            SELECT id, code, name, phone, email, address, is_active,
+                   contact_person, contact_phone, company_phone, fax,
+                   order_method, order_url, delivery_schedule, order_notes
             FROM pur_suppliers
             WHERE id = %s
               AND company_id = %s
@@ -209,6 +239,26 @@ def init_master_views(app, get_db):
             phone = (request.form.get("phone") or "").strip()
             email = (request.form.get("email") or "").strip()
             address = (request.form.get("address") or "").strip()
+            contact_person = (request.form.get("contact_person") or "").strip()
+            contact_phone = (request.form.get("contact_phone") or "").strip()
+            company_phone = (request.form.get("company_phone") or "").strip()
+            fax = (request.form.get("fax") or "").strip()
+            order_method = (request.form.get("order_method") or "").strip()
+            order_url = (request.form.get("order_url") or "").strip()
+            order_notes = (request.form.get("order_notes") or "").strip()
+
+            # Build delivery_schedule JSON
+            DAYS = ['mon','tue','wed','thu','fri','sat','sun']
+            schedule = {}
+            for day in DAYS:
+                if request.form.get(f"delivery_{day}"):
+                    deadline_days = request.form.get(f"deadline_days_{day}")
+                    deadline_time = request.form.get(f"deadline_time_{day}") or None
+                    schedule[day] = {
+                        "deadline_days": int(deadline_days) if deadline_days else 1,
+                        "deadline_time": deadline_time,
+                    }
+            delivery_schedule = json.dumps(schedule) if schedule else None
 
             if not name:
                 flash("仕入先名は必須です。")
@@ -222,15 +272,26 @@ def init_master_views(app, get_db):
                     """
                     UPDATE pur_suppliers
                     SET
-                      code    = %s,
-                      name    = %s,
-                      phone   = %s,
-                      email   = %s,
-                      address = %s
+                      code              = %s,
+                      name              = %s,
+                      phone             = %s,
+                      email             = %s,
+                      address           = %s,
+                      contact_person    = %s,
+                      contact_phone     = %s,
+                      company_phone     = %s,
+                      fax               = %s,
+                      order_method      = %s,
+                      order_url         = %s,
+                      delivery_schedule = %s,
+                      order_notes       = %s
                     WHERE id = %s
                      AND company_id = %s
                     """,
-                     (code if code else None, name, phone, email, address, supplier_id, company_id,)
+                     (code if code else None, name, phone, email, address,
+                      contact_person or None, contact_phone or None, company_phone or None, fax or None,
+                      order_method or None, order_url or None, delivery_schedule, order_notes or None,
+                      supplier_id, company_id,)
                 )
                 # NEW: audit log (UPDATE supplier)
                 try:
@@ -304,6 +365,9 @@ def init_master_views(app, get_db):
               i.unit,
               i.temp_zone,
               i.is_internal,
+              i.category,
+              i.process_level,
+              i.est_order_qty,
               s.name AS supplier_name
             FROM mst_items i
             LEFT JOIN pur_suppliers s ON i.supplier_id = s.id
@@ -323,6 +387,15 @@ def init_master_views(app, get_db):
             # ★ 追加：温度帯と内製フラグ
             temp_zone = (request.form.get("temp_zone") or "").strip() or None
             is_internal = 1 if request.form.get("is_internal") == "1" else 0
+
+            # ★ 追加：カテゴリ・加工レベル・発注目安数量
+            category = (request.form.get("category") or "").strip() or None
+            process_level = (request.form.get("process_level") or "").strip() or None
+            est_order_qty_raw = request.form.get("est_order_qty")
+            try:
+                est_order_qty = int(est_order_qty_raw) if est_order_qty_raw else None
+            except ValueError:
+                est_order_qty = None
 
             # 必須チェック
             if not supplier_id or not name:
@@ -389,10 +462,10 @@ def init_master_views(app, get_db):
                 db.execute(
                     """
                     INSERT INTO mst_items
-                        (company_id, code, name, unit, supplier_id, temp_zone, is_internal)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        (company_id, code, name, unit, supplier_id, temp_zone, is_internal, category, process_level, est_order_qty)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """,
-                    (company_id, new_code, name, unit_val, supplier_id, temp_zone, is_internal),
+                    (company_id, new_code, name, unit_val, supplier_id, temp_zone, is_internal, category, process_level, est_order_qty),
                 )
                 # NEW: audit log (CREATE item)
                 try:
@@ -411,6 +484,9 @@ def init_master_views(app, get_db):
                             "unit": unit_val,
                             "temp_zone": temp_zone,
                             "is_internal": is_internal,
+                            "category": category,
+                            "process_level": process_level,
+                            "est_order_qty": est_order_qty,
                         },
                     )
                 except Exception:
@@ -470,7 +546,10 @@ def init_master_views(app, get_db):
               i.min_purchase_unit,
               i.is_internal,
               i.storage_cost,
-              i.is_active
+              i.is_active,
+              i.category,
+              i.process_level,
+              i.est_order_qty
             FROM mst_items i
             WHERE i.id = %s
             AND i.company_id = %s
@@ -573,6 +652,15 @@ def init_master_views(app, get_db):
             # チェックボックス → 内製フラグ
             is_internal = 1 if request.form.get("is_internal") == "1" else 0
 
+            # ★ 追加：カテゴリ・加工レベル・発注目安数量
+            category = (request.form.get("category") or "").strip() or None
+            process_level = (request.form.get("process_level") or "").strip() or None
+            est_order_qty_raw = request.form.get("est_order_qty")
+            try:
+                est_order_qty = int(est_order_qty_raw) if est_order_qty_raw else None
+            except ValueError:
+                est_order_qty = None
+
             # 整数系を安全に変換
             def to_int_or_none(v):
                 v = (v or "").strip()
@@ -622,7 +710,10 @@ def init_master_views(app, get_db):
                       inventory_unit    = %s,
                       min_purchase_unit = %s,
                       is_internal       = %s,
-                      storage_cost      = %s
+                      storage_cost      = %s,
+                      category          = %s,
+                      process_level     = %s,
+                      est_order_qty     = %s
                     WHERE id = %s
                       AND company_id = %s
                     """,
@@ -636,6 +727,9 @@ def init_master_views(app, get_db):
                         min_purchase_unit,
                         is_internal,
                         storage_cost_val,
+                        category,
+                        process_level,
+                        est_order_qty,
                         item_id,
                         company_id,
                     ),
@@ -660,6 +754,9 @@ def init_master_views(app, get_db):
                             "min_purchase_unit": min_purchase_unit,
                             "is_internal": is_internal,
                             "storage_cost": storage_cost_val,
+                            "category": category,
+                            "process_level": process_level,
+                            "est_order_qty": est_order_qty,
                         },
                     )
                 except Exception:

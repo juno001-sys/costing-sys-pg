@@ -22,6 +22,7 @@ def init_report_views(app, get_db):
     from . import purchase_report  # noqa: F401
     from . import purchase_report_supplier  # noqa: F401
     from . import work_logs  # noqa
+    from . import purchase_dashboard  # noqa
     app.register_blueprint(reports_bp)
 
 

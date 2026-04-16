@@ -48,6 +48,9 @@
         <th>{{ t("suppliers.phone") }}</th>
         <th>{{ t("suppliers.email") }}</th>
         <th>{{ t("suppliers.address") }}</th>
+        <th>担当者</th>
+        <th>発注方法</th>
+        <th>納品曜日</th>
         <th>{{ t("common.edit") }}</th>
       </tr>
     </thead>
@@ -60,6 +63,16 @@
           <td>{{ s.phone }}</td>
           <td>{{ s.email }}</td>
           <td>{{ s.address }}</td>
+          <td>{{ s.contact_person or '' }}</td>
+          <td>{{ s.order_method or '' }}</td>
+          <td>
+            {% if s.delivery_schedule %}
+              {% set day_labels = {'mon':'月','tue':'火','wed':'水','thu':'木','fri':'金','sat':'土','sun':'日'} %}
+              {% for day in ['mon','tue','wed','thu','fri','sat','sun'] %}
+                {% if day in s.delivery_schedule %}{{ day_labels[day] }}{% endif %}
+              {% endfor %}
+            {% endif %}
+          </td>
           <td>
             <a href="{{ url_for('edit_supplier', supplier_id=s.id) }}">
               {{ t("common.edit") }}
@@ -68,7 +81,7 @@
         </tr>
       {% else %}
         <tr>
-          <td colspan="7">{{ t("suppliers.empty") }}</td>
+          <td colspan="10">{{ t("suppliers.empty") }}</td>
         </tr>
       {% endfor %}
     </tbody>

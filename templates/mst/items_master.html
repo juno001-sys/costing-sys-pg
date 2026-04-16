@@ -40,6 +40,40 @@ endblock %} {% block content %}
     </label>
   </div>
 
+  <div style="margin-top: 4px;">
+    <label>カテゴリ：</label>
+    <select name="category">
+      <option value="">（選択してください）</option>
+      <option value="青果（野菜）">青果（野菜）</option>
+      <option value="きのこ類">きのこ類</option>
+      <option value="精肉・卵">精肉・卵</option>
+      <option value="水産・魚">水産・魚</option>
+      <option value="米・穀物・乾物">米・穀物・乾物</option>
+      <option value="調味料・油脂">調味料・油脂</option>
+      <option value="乳製品・飲料">乳製品・飲料</option>
+      <option value="冷凍食品（加工品）">冷凍食品（加工品）</option>
+      <option value="パン・製菓">パン・製菓</option>
+      <option value="缶詰・レトルト">缶詰・レトルト</option>
+      <option value="消耗品・資材">消耗品・資材</option>
+      <option value="仕込み品">仕込み品</option>
+    </select>
+  </div>
+
+  <div style="margin-top: 4px;">
+    <label>加工レベル：</label>
+    <select name="process_level">
+      <option value="">（選択してください）</option>
+      <option value="原材料">原材料</option>
+      <option value="半加工品">半加工品</option>
+      <option value="完成品">完成品</option>
+    </select>
+  </div>
+
+  <div style="margin-top: 4px;">
+    <label>発注目安数量：</label>
+    <input type="number" name="est_order_qty" min="0" style="width:80px;">
+  </div>
+
   <div style="margin-top: 8px">
     <button type="submit">{{ t("common.create") }}</button>
   </div>
@@ -63,6 +97,9 @@ endblock %} {% block content %}
       <th>{{ t("items.case_size") }}</th>
       <th>{{ t("items.temp_zone") }}</th>
       <th>{{ t("items.is_internal") }}</th>
+      <th>カテゴリ</th>
+      <th>加工レベル</th>
+      <th>発注目安</th>
       <th>{{ t("common.edit") }}</th>
     </tr>
   </thead>
@@ -76,6 +113,9 @@ endblock %} {% block content %}
       <td style="text-align: right">{{ i.unit or '' }}</td>
       <td>{{ i.temp_zone or '' }}</td>
       <td>{% if i.is_internal %}◯{% endif %}</td>
+      <td>{{ i.category or '' }}</td>
+      <td>{{ i.process_level or '' }}</td>
+      <td style="text-align: right">{{ i.est_order_qty or '' }}</td>
       <td>
         <a href="{{ url_for('edit_item', item_id=i.id) }}"
           >{{ t("common.edit") }}</a
@@ -84,7 +124,7 @@ endblock %} {% block content %}
     </tr>
     {% else %}
     <tr>
-      <td colspan="8">{{ t("items.empty") }}</td>
+      <td colspan="11">{{ t("items.empty") }}</td>
     </tr>
     {% endfor %}
   </tbody>

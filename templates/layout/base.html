@@ -381,6 +381,11 @@
       <nav>
         <ul class="nav-tabs">
           <li>
+            <a href="{{ url_for('reports.purchase_dashboard') }}"
+              class="{% if request.endpoint == 'reports.purchase_dashboard' %}active{% endif %}"
+              style="font-weight:bold;">📊 ダッシュボード</a>
+          </li>
+          <li style="border-left:2px solid #ddd; margin-left:4px; padding-left:4px;">
             <a
               href="{{ url_for('new_purchase') }}"
               class="{% if request.endpoint in ['new_purchase','edit_purchase'] %}active{% endif %}"
@@ -425,6 +430,11 @@
             <a href="{{ url_for('stores_master') }}"
               >{{ t("nav.stores_master") }}</a
             >
+          </li>
+          <li>
+            <a href="{{ url_for('store_holidays') }}"
+              class="{% if request.endpoint == 'store_holidays' %}active{% endif %}"
+              >店舗カレンダー</a>
           </li>
           <li>
             <a

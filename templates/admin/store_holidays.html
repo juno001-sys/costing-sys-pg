@@ -1,0 +1,134 @@
+{% extends "layout/base.html" %}
+{% block title %}店舗カレンダー（休日設定）{% endblock %}
+{% block content %}
+
+<h3>店舗カレンダー（休日設定）</h3>
+
+<!-- Store & Year selector -->
+<form method="get" style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:20px; align-items:end;">
+  <label>
+    <strong>店舗：</strong>
+    <select name="store_id" onchange="this.form.submit()">
+      {% for s in stores %}
+      <option value="{{ s.id }}" {% if s.id == selected_store_id %}selected{% endif %}>
+        {{ s.name }}
+      </option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <input type="hidden" name="year" value="{{ year }}">
+  <input type="hidden" name="month" value="{{ month }}">
+</form>
+
+{% if selected_store_id %}
+
+<!-- Month navigation -->
+<div style="display:flex; align-items:center; gap:16px; margin-bottom:16px;">
+  <a href="{{ url_for('store_holidays', store_id=selected_store_id, year=prev_year, month=prev_month) }}"
+     style="font-size:18px; text-decoration:none;">◀</a>
+  <h4 style="margin:0;">{{ year }}年 {{ month }}月</h4>
+  <a href="{{ url_for('store_holidays', store_id=selected_store_id, year=next_year, month=next_month) }}"
+     style="font-size:18px; text-decoration:none;">▶</a>
+</div>
+
+<!-- Calendar grid -->
+<table border="1" cellpadding="6" cellspacing="0"
+       style="border-collapse:collapse; font-size:13px; margin-bottom:20px;">
+  <thead style="background:#f0f0f0;">
+    <tr>
+      <th style="width:60px;">月</th>
+      <th style="width:60px;">火</th>
+      <th style="width:60px;">水</th>
+      <th style="width:60px;">木</th>
+      <th style="width:60px;">金</th>
+      <th style="width:60px; color:#06c;">土</th>
+      <th style="width:60px; color:#c00;">日</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for week in month_days %}
+    <tr>
+      {% for day in week %}
+      {% if day == 0 %}
+        <td style="background:#fafafa;"></td>
+      {% else %}
+        {% set ds = "%04d-%02d-%02d"|format(year, month, day) %}
+        {% set is_holiday = ds in holiday_dates %}
+        <td style="text-align:center; vertical-align:top; height:50px; cursor:pointer;
+                   {% if is_holiday %}background:#ffe0e0;{% endif %}"
+            onclick="toggleHoliday('{{ ds }}')">
+          <div style="font-weight:bold;">{{ day }}</div>
+          {% if is_holiday %}
+            <div style="font-size:10px; color:#c00;">{{ holiday_names.get(ds, '休') }}</div>
+          {% endif %}
+        </td>
+      {% endif %}
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- Bulk add presets -->
+<div style="margin-bottom:20px;">
+  <strong>一括追加：</strong>
+  <form method="post" action="{{ url_for('store_holidays_bulk') }}" style="display:inline-flex; gap:8px; flex-wrap:wrap;">
+    <input type="hidden" name="store_id" value="{{ selected_store_id }}">
+    <input type="hidden" name="year" value="{{ year }}">
+    <button type="submit" name="preset" value="public_holidays"
+      style="padding:4px 12px; cursor:pointer;">祝日（{{ year }}年）</button>
+    <button type="submit" name="preset" value="yearend"
+      style="padding:4px 12px; cursor:pointer;">年末年始（12/29〜1/3）</button>
+    <button type="submit" name="preset" value="obon"
+      style="padding:4px 12px; cursor:pointer;">お盆（8/13〜8/16）</button>
+  </form>
+</div>
+
+<!-- Holiday list for the year -->
+<h4>{{ year }}年 登録済み休日一覧</h4>
+<table border="1" cellpadding="4" cellspacing="0" style="font-size:13px; border-collapse:collapse;">
+  <thead style="background:#f0f0f0;">
+    <tr><th>日付</th><th>名称</th><th>操作</th></tr>
+  </thead>
+  <tbody>
+    {% for h in holidays %}
+    <tr>
+      <td>{{ h.holiday_date }}</td>
+      <td>{{ h.name or '' }}</td>
+      <td>
+        <form method="post" action="{{ url_for('store_holidays_toggle') }}" style="display:inline;">
+          <input type="hidden" name="store_id" value="{{ selected_store_id }}">
+          <input type="hidden" name="date" value="{{ h.holiday_date }}">
+          <button type="submit" style="font-size:11px; cursor:pointer;">削除</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="3">休日が登録されていません。</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endif %}
+
+<!-- Hidden form for calendar click toggle -->
+<form id="toggleForm" method="post" action="{{ url_for('store_holidays_toggle') }}" style="display:none;">
+  <input type="hidden" name="store_id" value="{{ selected_store_id }}">
+  <input type="hidden" name="date" id="toggleDate">
+  <input type="hidden" name="name" id="toggleName">
+</form>
+
+{% endblock %}
+
+{% block body_extra %}
+<script>
+function toggleHoliday(dateStr) {
+  const name = prompt('休日名を入力してください（空欄で削除）：', '');
+  if (name === null) return; // cancelled
+  document.getElementById('toggleDate').value = dateStr;
+  document.getElementById('toggleName').value = name;
+  document.getElementById('toggleForm').submit();
+}
+</script>
+{% endblock %}

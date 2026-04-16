@@ -1,0 +1,106 @@
+{% extends "layout/base.html" %}
+{% block title %}仕入ダッシュボード{% endblock %}
+{% block content %}
+
+<h3>仕入ダッシュボード</h3>
+
+<!-- Filters -->
+<form method="get" style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:20px; align-items:end;">
+  <label>
+    <strong>店舗：</strong>
+    <select name="store_id" onchange="this.form.submit()">
+      <option value="">全店舗</option>
+      {% for s in mst_stores %}
+      <option value="{{ s.id }}" {% if s.id|string == selected_store_id|string %}selected{% endif %}>
+        {{ s.name }}
+      </option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <label>
+    <strong>開始日：</strong>
+    <input type="date" name="from_date" value="{{ from_date }}">
+  </label>
+
+  <label>
+    <strong>終了日：</strong>
+    <input type="date" name="to_date" value="{{ to_date }}">
+  </label>
+
+  <button type="submit" style="padding:5px 16px;">表示</button>
+</form>
+
+<!-- Grand total -->
+<div style="font-size:18px; font-weight:bold; margin-bottom:20px; color:#333;">
+  期間合計：¥{{ "{:,}".format(grand_total) }}
+</div>
+
+<!-- Charts -->
+<div style="display:flex; gap:40px; flex-wrap:wrap;">
+  <div style="flex:1; min-width:300px; max-width:500px;">
+    <h4 style="text-align:center;">仕入先別 構成比</h4>
+    <canvas id="supplierChart"></canvas>
+  </div>
+
+  <div style="flex:1; min-width:300px; max-width:500px;">
+    <h4 style="text-align:center;">カテゴリ別 構成比</h4>
+    <canvas id="categoryChart"></canvas>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block body_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>
+const COLORS = [
+  '#4e79a7','#f28e2b','#e15759','#76b7b2','#59a14f',
+  '#edc948','#b07aa1','#ff9da7','#9c755f','#bab0ac',
+  '#86bcb6','#d37295','#8cd17d','#b6992d','#499894',
+];
+
+function buildPieChart(canvasId, labels, values) {
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  const total = values.reduce((a, b) => a + b, 0);
+
+  new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: values,
+        backgroundColor: COLORS.slice(0, labels.length),
+        borderWidth: 1,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { font: { size: 11 }, padding: 8 }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(ctx) {
+              const v = ctx.parsed;
+              const pct = total > 0 ? (v / total * 100).toFixed(1) : 0;
+              return `${ctx.label}: ¥${v.toLocaleString()} (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+const supplierLabels = {{ supplier_labels|safe }};
+const supplierValues = {{ supplier_values|safe }};
+const categoryLabels = {{ category_labels|safe }};
+const categoryValues = {{ category_values|safe }};
+
+buildPieChart('supplierChart', supplierLabels, supplierValues);
+buildPieChart('categoryChart', categoryLabels, categoryValues);
+</script>
+{% endblock %}
