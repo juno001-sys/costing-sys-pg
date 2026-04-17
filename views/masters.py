@@ -582,7 +582,11 @@ def init_master_views(app, get_db):
               i.is_active,
               i.category,
               i.process_level,
-              i.est_order_qty
+              i.est_order_qty,
+              i.per_guest_rate,
+              i.est_mu,
+              i.est_sigma,
+              i.est_calc_at
             FROM mst_items i
             WHERE i.id = %s
             AND i.company_id = %s
@@ -767,6 +771,35 @@ def init_master_views(app, get_db):
                         company_id,
                     ),
                 )
+                # Write est-history row if est_order_qty was manually changed
+                if est_order_qty != item["est_order_qty"]:
+                    try:
+                        db.execute(
+                            """
+                            UPDATE mst_items_est_history
+                            SET effective_to = CURRENT_DATE
+                            WHERE item_id = %s AND effective_to IS NULL
+                            """,
+                            (item_id,),
+                        )
+                        db.execute(
+                            """
+                            INSERT INTO mst_items_est_history
+                              (item_id, est_order_qty, per_guest_rate, est_mu, est_sigma,
+                               effective_from, effective_to, calc_source, calc_at, note)
+                            VALUES
+                              (%s, %s, %s, %s, %s, CURRENT_DATE, NULL, 'manual', NOW(), %s)
+                            """,
+                            (
+                                item_id, est_order_qty,
+                                item["per_guest_rate"], item["est_mu"], item["est_sigma"],
+                                f"Manual edit: {item['est_order_qty']} → {est_order_qty}",
+                            ),
+                        )
+                    except Exception:
+                        # history is audit-only; never break the save
+                        pass
+
                 # NEW: audit log (UPDATE item)
                 try:
                     log_event(
@@ -802,12 +835,25 @@ def init_master_views(app, get_db):
 
             return redirect(url_for("items_master"))
 
+        # Fetch est history (most recent first)
+        est_history = db.execute(
+            """
+            SELECT id, est_order_qty, per_guest_rate, est_mu, est_sigma,
+                   effective_from, effective_to, calc_source, calc_at, note
+            FROM mst_items_est_history
+            WHERE item_id = %s
+            ORDER BY effective_from DESC, id DESC
+            """,
+            (item_id,),
+        ).fetchall()
+
         # GET のとき：編集画面表示
         return render_template(
             "mst/items_edit.html",
             item=item,
             suppliers=suppliers,
             temp_zones=temp_zones,
+            est_history=est_history,
         )
 
 
