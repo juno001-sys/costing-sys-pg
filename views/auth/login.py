@@ -318,7 +318,8 @@ def init_auth_login_views(app, get_db):
         _create_session(db, u["id"], mem["company_id"])
 
         session["is_system_admin"] = bool(u["is_system_admin"])
-        
+        session.permanent = True   # 30-day persistent session (see app.py config)
+
         flash("ログインしました。")
         return redirect(next_url)
 

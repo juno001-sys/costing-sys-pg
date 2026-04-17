@@ -1,0 +1,120 @@
+{% extends "layout/base.html" %}
+{% block title %}{{ t("order_support.title") }} — {{ t("order_support.view.sheet") }}{% endblock %}
+{% block content %}
+
+<h3>{{ t("order_support.title") }}</h3>
+
+<!-- Filters -->
+<form method="get" style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:20px; align-items:end;">
+  <label>
+    <strong>{{ t("form.store") }}：</strong>
+    <select name="store_id" onchange="this.form.submit()">
+      <option value="">{{ t("common.select") }}</option>
+      {% for s in mst_stores %}
+      <option value="{{ s.id }}" {% if s.id|string == selected_store_id|string %}selected{% endif %}>
+        {{ s.name }}
+      </option>
+      {% endfor %}
+    </select>
+  </label>
+  <input type="hidden" name="view" value="sheet">
+  <input type="hidden" name="base_date" value="{{ base_date }}">
+</form>
+
+{% if selected_store_id %}
+<div style="margin: -10px 0 18px; font-size: 13px;">
+  <strong>{{ t("order_support.view") }}：</strong>
+  <a href="?store_id={{ selected_store_id }}" style="color:#555;">
+    📋 {{ t("order_support.view.cards") }}
+  </a>
+  &nbsp;｜&nbsp;
+  <span style="color:#0066cc; font-weight:600;">📊 {{ t("order_support.view.sheet") }}</span>
+</div>
+{% endif %}
+
+{% if selected_store_id and sheet_rows %}
+
+<style>
+  .sheet-table { width:100%; font-size:12px; border-collapse:collapse; }
+  .sheet-table th {
+    background:#f0f0f0; border:1px solid #ccc; padding:6px 8px;
+    position: sticky; top: 0; cursor: pointer; user-select: none;
+  }
+  .sheet-table th:hover { background:#e0e0e0; }
+  .sheet-table td { border:1px solid #ddd; padding:5px 8px; }
+  .sheet-table tr.shortage { background:#fff0f0; }
+  .sheet-table tr.low      { background:#fff8e1; }
+
+  .freq-badge {
+    display: inline-block; font-size: 10px; font-weight: 600;
+    padding: 1px 6px; border-radius: 10px; line-height: 1.4;
+  }
+  .freq-very_high { background: #fde2e2; color: #c0392b; }
+  .freq-high      { background: #fff3cd; color: #856404; }
+  .freq-low       { background: #e8eaed; color: #5f6368; }
+  .freq-none      { background: #f5f5f5; color: #bbb; }
+</style>
+
+<p style="color:#666; font-size:12px; margin:0 0 8px;">
+  {{ sheet_rows|length }} 件 · {{ t("order_support.sheet.hint") }}
+</p>
+
+<table class="sheet-table" data-no-sort="0">
+  <thead>
+    <tr>
+      <th>{{ t("items.frequency.label") }}</th>
+      <th>{{ t("form.supplier") }}</th>
+      <th>{{ t("order_support.deadline") }}</th>
+      <th>{{ t("order_support.delivery") }}</th>
+      <th>{{ t("common.code") }}</th>
+      <th>{{ t("items.name") }}</th>
+      <th>{{ t("items.category") }}</th>
+      <th style="text-align:right;">{{ t("order_support.current_stock") }}</th>
+      <th style="text-align:center;">{{ t("inventory.sp.last_count") }}</th>
+      <th style="text-align:right;">{{ t("order_support.est_qty") }}</th>
+      <th style="text-align:center;">{{ t("order_support.status") }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in sheet_rows %}
+    <tr class="{{ r.status }}">
+      <td><span class="freq-badge freq-{{ r.frequency }}">{{ t("items.frequency." + r.frequency + ".short") }}</span></td>
+      <td>{{ r.supplier_name }}</td>
+      <td style="text-align:center; font-size:11px;">
+        {{ r.deadline or '—' }}
+        {% if r.deadline_time %}<small style="color:#888;">{{ r.deadline_time }}</small>{% endif %}
+      </td>
+      <td style="text-align:center; font-size:11px;">{{ r.next_delivery or '—' }}</td>
+      <td>{{ r.code }}</td>
+      <td>{{ r.name }}</td>
+      <td style="font-size:11px; color:#666;">{{ r.category or '' }}</td>
+      <td style="text-align:right; font-weight:600;
+        {% if r.status == 'shortage' %}color:#dc3545;
+        {% elif r.status == 'low' %}color:#e67700;{% endif %}">
+        {{ r.current_stock }}
+      </td>
+      <td style="text-align:center; font-size:11px; color:#888;">{{ r.last_count_date or '—' }}</td>
+      <td style="text-align:right;">{{ r.est_order_qty or '-' }}</td>
+      <td style="text-align:center;">
+        {% if r.status == 'shortage' %}
+          <span style="color:#dc3545; font-weight:600;">⚠ {{ t("order_support.status_shortage") }}</span>
+        {% elif r.status == 'low' %}
+          <span style="color:#e67700;">{{ t("order_support.status_low") }}</span>
+        {% elif r.status == 'ok' %}
+          <span style="color:#2e7d32;">{{ t("order_support.status_ok") }}</span>
+        {% else %}
+          <span style="color:#999;">—</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% elif selected_store_id %}
+  <p>{{ t("order_support.no_items") }}</p>
+{% else %}
+  <p>{{ t("common.select_store_prompt") }}</p>
+{% endif %}
+
+{% endblock %}

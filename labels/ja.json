@@ -250,6 +250,16 @@
   "items.process_level.semi": "半加工品",
   "items.process_level.finished": "完成品",
   "items.est_order_qty": "発注目安数量",
+  "items.frequency.label": "仕入頻度",
+  "items.frequency.all": "全て",
+  "items.frequency.very_high": "超高頻度（週1回以上）",
+  "items.frequency.very_high.short": "超高",
+  "items.frequency.high": "高頻度（月2回〜週1回）",
+  "items.frequency.high.short": "高",
+  "items.frequency.low": "低頻度（月1回以下）",
+  "items.frequency.low.short": "低",
+  "items.frequency.none": "未仕入（過去90日）",
+  "items.frequency.none.short": "—",
 
   "nav.dashboard": "ダッシュボード",
   "nav.store_holidays": "店舗カレンダー",
@@ -326,6 +336,7 @@
   "inventory.sp.select_store_date": "店舗・日付を選択",
   "inventory.sp.past": "過去",
   "inventory.sp.system_qty": "帳簿",
+  "inventory.sp.last_count": "最終棚卸",
   "inventory.sp.save": "✅ 棚卸しを保存する",
   "inventory.sp.no_items": "この条件で表示できる品目がありません。",
   "inventory.sp.check_masters": "仕入れ記録または品目マスタを確認してください。",
@@ -345,5 +356,12 @@
   "order_support.status_low": "残少",
   "order_support.status_ok": "充足",
   "order_support.no_schedule": "納品スケジュールが未設定です。仕入先マスタで設定してください。",
-  "order_support.holiday_warning": "休業日あり — 次回納品に注意"
+  "order_support.holiday_warning": "休業日あり — 次回納品に注意",
+  "order_support.delivery": "納品日",
+  "order_support.view": "表示",
+  "order_support.view.cards": "カード表示",
+  "order_support.view.sheet": "表形式",
+  "order_support.sheet.hint": "列見出しをクリックで並び替え。既定は仕入頻度順。",
+  "order_support.no_items": "対象品目がありません。",
+  "common.select_store_prompt": "上の選択肢から店舗を選んでください。"
 }

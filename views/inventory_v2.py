@@ -147,7 +147,7 @@ def _fetch_count_data(db, store_id, count_date, company_id=None):
     items = []
     for row in base_rows:
         item_id    = row["item_id"]
-        opening, _ = last_map.get(item_id, (0, None))
+        opening, last_count_date = last_map.get(item_id, (0, None))
         system_qty = opening + after_map.get(item_id, 0)
         if system_qty <= 0 and not row["is_internal"]:
             continue
@@ -163,6 +163,7 @@ def _fetch_count_data(db, store_id, count_date, company_id=None):
             "unit_price":  price_map.get(item_id, 0.0),
             "stock_amount": system_qty * price_map.get(item_id, 0.0),
             "counted_qty": counted_map.get(item_id),
+            "last_count_date": last_count_date,
             "is_internal": row["is_internal"],
         })
     return items
@@ -631,14 +632,25 @@ def init_inventory_views_v2(app, get_db):
         )
         store_id   = str(selected_store_id) if selected_store_id else ""
         count_date = request.args.get("count_date") or today
+        freq_filter = (request.args.get("freq") or "").strip()
 
         latest_dates = []
         items        = []
+        freq_map     = {}
 
         if selected_store_id:
             latest_dates = get_latest_stock_count_dates(db, selected_store_id, limit=3)
             company_id = getattr(g, "current_company_id", None)
             items = _fetch_count_data(db, store_id, count_date, company_id)
+
+            # Attach frequency bucket + filter
+            from utils.item_frequency import fetch_item_frequency
+            freq_map = fetch_item_frequency(db, [i["item_id"] for i in items])
+            for it in items:
+                it["frequency"] = freq_map.get(it["item_id"], {"bucket": "none"})
+
+            if freq_filter:
+                items = [i for i in items if i["frequency"]["bucket"] == freq_filter]
 
         # Group items by temp zone for the template
         from collections import OrderedDict
@@ -658,6 +670,7 @@ def init_inventory_views_v2(app, get_db):
             items=items,
             zones=zones,
             latest_dates=latest_dates,
+            freq_filter=freq_filter,
         )
 
         return html

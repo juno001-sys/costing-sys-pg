@@ -242,6 +242,7 @@ def init_order_support_views(app, get_db):
                 for item in supplier_items:
                     stock_info = stock_map.get(item["id"], {})
                     current_stock = stock_info.get("qty", 0)
+                    last_count_date = stock_info.get("date")
                     est_qty = item["est_order_qty"] or 0
 
                     if est_qty > 0:
@@ -255,10 +256,12 @@ def init_order_support_views(app, get_db):
                         status = "unknown"
 
                     item_rows.append({
+                        "id": item["id"],
                         "code": item["code"],
                         "name": item["name"],
                         "category": item["category"],
                         "current_stock": current_stock,
+                        "last_count_date": last_count_date,
                         "est_order_qty": est_qty,
                         "status": status,
                     })
@@ -299,12 +302,51 @@ def init_order_support_views(app, get_db):
                     'low_count': sum(1 for r in item_rows if r["status"] == "low"),
                 })
 
+        # ── Sheet view: flat row-per-item with supplier/delivery info ────
+        view_mode = (request.args.get("view") or "cards").strip()
+        sheet_rows = []
+        if view_mode == "sheet" and supplier_cards:
+            from utils.item_frequency import fetch_item_frequency, bucket_order
+            all_ids = [r["id"] for c in supplier_cards for r in c["item_rows"] if r.get("id")]
+            freq_map = fetch_item_frequency(db, all_ids)
+            for card in supplier_cards:
+                next_delivery = card["deliveries"][0] if card["deliveries"] else None
+                for r in card["item_rows"]:
+                    f = freq_map.get(r.get("id"), {"bucket": "none", "purchase_days": 0, "per_month": 0})
+                    sheet_rows.append({
+                        "supplier_name": card["name"],
+                        "supplier_id":   card["id"],
+                        "deadline":      next_delivery["deadline_date"] if next_delivery else None,
+                        "deadline_time": next_delivery["deadline_time"] if next_delivery else None,
+                        "next_delivery": next_delivery["delivery_date"] if next_delivery else None,
+                        "code":          r["code"],
+                        "name":          r["name"],
+                        "category":      r["category"],
+                        "frequency":     f["bucket"],
+                        "per_month":     f["per_month"],
+                        "current_stock": r["current_stock"],
+                        "last_count_date": r["last_count_date"],
+                        "est_order_qty": r["est_order_qty"],
+                        "status":        r["status"],
+                    })
+            # Default sort: frequency DESC (very_high → high → low → none), then status, then supplier
+            status_order = {"shortage": 0, "low": 1, "unknown": 2, "ok": 3}
+            sheet_rows.sort(key=lambda x: (
+                bucket_order(x["frequency"]),
+                status_order.get(x["status"], 9),
+                x["supplier_name"],
+                x["code"],
+            ))
+
+        template = "pur/order_support_sheet.html" if view_mode == "sheet" else "pur/order_support.html"
         return render_template(
-            "pur/order_support.html",
+            template,
             mst_stores=mst_stores,
             selected_store_id=selected_store_id or "",
             base_date=base_date_str,
             date_range=date_range,
             supplier_cards=supplier_cards,
+            sheet_rows=sheet_rows,
+            view_mode=view_mode,
             DAY_LABELS=DAY_LABELS,
         )
