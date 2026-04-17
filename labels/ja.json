@@ -157,22 +157,18 @@
   "profit.settings.title": "利益推計設定",
   "profit.settings.history": "履歴",
   "profit.settings.new": "新しい設定を追加",
-
   "profit.settings.effective_from": "適用開始日",
   "profit.settings.fl_ratio": "FL比率",
   "profit.settings.food_ratio": "F比率",
   "profit.settings.utility_ratio": "光熱水費率",
   "profit.settings.fixed_cost": "固定費/月（円）",
-
   "profit.settings.save": "保存",
   "profit.settings.type": "種別",
   "profit.settings.global": "グローバル（共通）",
   "profit.settings.store_specific": "店舗別",
-
   "profit.assumptions": "推計基準値",
   "profit.estimate": "利益推計表",
   "profit.category": "区分",
-
   "profit.fl_ratio": "標準_設定FL比率",
   "profit.food_ratio": "標準_設定F比率",
   "profit.l_ratio": "差引 L 比率",
@@ -181,7 +177,6 @@
   "profit.fixed_cost_short": "固定費/月",
   "profit.rent_variable": "家賃_歩合準変動費",
   "profit.future": "将来実装",
-
   "profit.ideal_sales": "理想売上",
   "profit.ideal_labor": "理想直接労務費",
   "profit.utility": "光熱水費",
@@ -194,11 +189,8 @@
   "nav.help": "ヘルプ",
   "nav.user_manual": "ユーザーマニュアル",
   "nav.admin_users": "ユーザー管理",
-  "nav.admin_users": "ユーザー管理",
-  "nav.user_manual": "ユーザーマニュアル",
   "stores.inventory_layout_section": "棚卸し場所設定",
   "stores.inventory_layout_hint": "エリア・温度帯・棚を設定します",
-
   "suppliers.contact_section": "担当者・連絡先",
   "suppliers.contact_person": "担当者",
   "suppliers.contact_phone": "担当者TEL",
@@ -213,7 +205,6 @@
   "suppliers.deadline_time": "〆切時刻",
   "suppliers.order_notes": "発注に関しての注意",
   "suppliers.delivery_days_label": "納品曜日",
-
   "common.date": "日付",
   "common.action": "操作",
   "common.cancel": "キャンセル",
@@ -232,7 +223,6 @@
   "common.day.fri": "金",
   "common.day.sat": "土",
   "common.day.sun": "日",
-
   "items.category": "カテゴリ",
   "items.category.vegetables": "青果（野菜）",
   "items.category.mushrooms": "きのこ類",
@@ -281,7 +271,6 @@
   "items.stats.source.recalc": "自動再計算",
   "items.stats.source.manual": "手入力",
   "items.stats.source.revise_ratio": "補正係数",
-
   "nav.dashboard": "ダッシュボード",
   "nav.store_holidays": "店舗カレンダー",
   "dashboard.title": "仕入ダッシュボード",
@@ -301,7 +290,6 @@
   "dashboard.dead_stock.last_purchase_date": "最終入荷日",
   "dashboard.dead_stock.days_since_purchase": "経過日数",
   "dashboard.dead_stock.none": "該当する滞留在庫はありません。",
-
   "admin.holidays.title": "店舗カレンダー（休日設定）",
   "admin.holidays.bulk_add": "一括追加",
   "admin.holidays.public_holidays": "祝日",
@@ -310,7 +298,6 @@
   "admin.holidays.list_heading": "登録済み休日一覧",
   "admin.holidays.empty": "休日が登録されていません。",
   "admin.holidays.prompt": "休日名を入力してください（空欄で削除）：",
-
   "purchase.delivery_paste.title": "納品書テキスト読み込み",
   "purchase.delivery_paste.back": "← 仕入れ入力へ戻る",
   "purchase.delivery_paste.description": "タノムなどの納品書メールをコピー＆ペーストしてください。",
@@ -324,7 +311,6 @@
   "purchase.delivery_paste.item_master": "品目マスタ（選択）",
   "purchase.delivery_paste.save": "✅ 仕入れデータとして保存",
   "purchase.form.bulk_input": "📋 納品書から一括入力",
-
   "items.csv.title": "品目マスタ CSVインポート",
   "items.csv.description": "CSV または TSV ファイルをアップロードしてください。",
   "items.csv.encoding_info": "ヘッダー行は自動で認識します。文字コードは UTF-8 または Shift-JIS に対応しています。",
@@ -352,7 +338,6 @@
   "items.csv.status": "状態",
   "items.csv.confirm_prompt": "件をインポートします。よろしいですか？",
   "items.csv.import_button": "インポート実行",
-
   "inventory.sp.title": "棚卸し",
   "inventory.sp.select_store_date": "店舗・日付を選択",
   "inventory.sp.past": "過去",
@@ -362,9 +347,7 @@
   "inventory.sp.no_items": "この条件で表示できる品目がありません。",
   "inventory.sp.check_masters": "仕入れ記録または品目マスタを確認してください。",
   "inventory.sp.select_store_prompt": "上の選択肢から店舗を選んでください。",
-
   "stores.edit.tab_info": "店舗情報",
-
   "nav.order_support": "発注サポート",
   "order_support.title": "発注サポート",
   "order_support.base_date": "基準日",
@@ -385,14 +368,13 @@
   "order_support.sheet.hint": "列見出しをクリックで並び替え。既定は仕入頻度順。",
   "order_support.no_items": "対象品目がありません。",
   "common.select_store_prompt": "上の選択肢から店舗を選んでください。",
-
   "help.title": "ヘルプ／マニュアル",
   "help.section.intro": "はじめに",
   "help.section.concepts": "基本の考え方",
   "help.section.setup": "初期設定",
   "help.common.next": "次へ",
   "help.common.coming_soon": "このページは準備中です。まもなく公開予定。",
-
+  "help.lightbox.click_to_close": "クリックで閉じる",
   "help.chapters.index": "トップ（目次）",
   "help.chapters.nav_map": "画面マップ",
   "help.chapters.concept_count_vs_order": "棚卸しと発注の関係",
@@ -400,7 +382,6 @@
   "help.chapters.setup_suppliers": "仕入先マスタの使い方",
   "help.chapters.setup_items": "品目マスタの使い方",
   "help.chapters.setup_revenue": "売上推計の設定",
-
   "help.index.title": "くらじかCMS ヘルプ",
   "help.index.intro": "CMSを初めて使う方向けのガイドです。難しい会計知識や専門用語は不要です。日々の業務に必要な操作と、最初の設定だけを順を追って説明します。",
   "help.index.callout_tip": "💡 左のメニューから各章へジャンプできます。最初は「画面マップ」から読むのがおすすめです。",
@@ -416,7 +397,6 @@
   "help.index.step5_desc": "品目の登録・更新",
   "help.index.step6_desc": "売上の推計ロジックを設定する",
   "help.index.language_hint": "🌐 画面右上の言語切替で英語表示にも対応。海外スタッフにも読んでもらえます。",
-
   "help.nav_map.title": "画面マップ",
   "help.nav_map.intro": "CMSの画面は目的別に3つのグループに分かれています。グループを理解すると、どの画面を使えばよいかがすぐに分かります。",
   "help.nav_map.three_groups": "3つのグループ",
@@ -435,7 +415,6 @@
   "help.nav_map.flow_step4": "週次／月次でダッシュボードを開いて、仕入金額の推移を確認する。",
   "help.nav_map.flow_step5": "気になる品目や仕入先があればレポート画面で詳細を確認する。",
   "help.nav_map.tip_next": "次に読むと理解が深まる章：",
-
   "help.count_vs_order.title": "棚卸しと発注の関係",
   "help.count_vs_order.intro": "新しく使う方に最も多いのが「棚卸し画面」と「発注サポート画面」の違いが分かりにくいという声です。どちらも同じ品目を扱いますが、並び方と目的が違います。",
   "help.count_vs_order.two_views": "同じ品目を、違う並びで見る",
@@ -452,11 +431,9 @@
   "help.count_vs_order.order_question": "「この業者に、次は何を頼む？」",
   "help.count_vs_order.order_physical": "業者に電話・FAX・メールで発注する作業",
   "help.count_vs_order.count_sp": "スマホ棚卸し",
-
   "help.count_vs_order.same_item": "同じ品目でも、両方の画面に現れる",
   "help.count_vs_order.same_item_intro": "例：たまごケース。棚卸し画面では『冷蔵／中段』に、発注サポート画面では『鳥喜代』の行に出てきます。どちらも同じひとつの品目の情報で、見る角度を変えているだけです。",
-  "help.count_vs_order.screenshot_diagram": "📸 [スクリーンショット準備中] 棚卸し（場所順）と発注サポート（仕入先順）の並び比較",
-
+  "help.count_vs_order.screenshot_diagram": "棚卸し（場所順）と発注サポート（仕入先順）の並び比較",
   "help.count_vs_order.when_to_use": "どう使い分ける？",
   "help.count_vs_order.use_count_heading": "棚卸し画面を使う場面",
   "help.count_vs_order.use_count_1": "毎朝／閉店後の在庫確認",
@@ -466,15 +443,12 @@
   "help.count_vs_order.use_order_1": "仕入先に発注の連絡をする前の、発注数量の確認",
   "help.count_vs_order.use_order_2": "「どの業者に、どの品目が不足しているか」を一覧で見たいとき",
   "help.count_vs_order.use_order_3": "納品日と発注〆切を確認したいとき",
-
   "help.count_vs_order.summary_label": "一言でまとめると：",
   "help.count_vs_order.summary": "棚卸しは『現場で数える』画面、発注サポートは『業者に頼む』画面です。",
-
   "help.count_vs_order.tips_heading": "使い方のヒント",
   "help.count_vs_order.tip_1": "棚卸しはスマホ版『棚卸し（SP）』が便利。仕入頻度でフィルタできるので、よく動く品目だけ確認できます。",
   "help.count_vs_order.tip_2": "発注サポートは『表形式』ボタンで仕入頻度順のスプレッドシート表示にも切替可能。",
   "help.count_vs_order.tip_3": "両画面に『最終棚卸日』が表示されます。古くなった在庫情報に気づけます。",
-
   "help.setup_shelves.title": "棚・温度帯・エリアの設定",
   "help.setup_shelves.intro": "棚卸しを簡単・正確にするため、CMS上の『棚割り』と実際の収納場所を合わせます。一度設定すれば、その後の日々の棚卸しが劇的に楽になります。",
   "help.setup_shelves.why_heading": "なぜ設定するのか",
@@ -482,7 +456,6 @@
   "help.setup_shelves.why_1": "迷わず・早く数えられる（誰でも同じ順番で作業できる）",
   "help.setup_shelves.why_2": "数え漏れが減る（棚ごとに区切られる）",
   "help.setup_shelves.why_3": "新人教育が短くなる（画面通りに歩けばよい）",
-
   "help.setup_shelves.three_layers": "3層構造",
   "help.setup_shelves.three_layers_intro": "CMSでは収納場所を3層で管理します。大きい順に：温度帯 → エリア → 棚。",
   "help.setup_shelves.layer1_name": "温度帯",
@@ -492,44 +465,37 @@
   "help.setup_shelves.layer3_name": "棚",
   "help.setup_shelves.layer3_desc": "『上段』『中段』『下段』など、エリア内の具体的な棚段。",
   "help.setup_shelves.tip_hierarchy": "💡 設定画面では温度帯を選ぶとエリアが、エリアを選ぶと棚が動的に絞り込まれます。",
-
   "help.setup_shelves.step_by_step": "設定手順",
   "help.setup_shelves.step1_title": "① 温度帯を登録する",
   "help.setup_shelves.step1_body": "まず店舗で使う温度帯を登録します。",
   "help.setup_shelves.step1_a": "店舗マスタ画面を開く：",
   "help.setup_shelves.step1_b": "該当店舗の『編集』 → 『温度帯』タブを開く",
   "help.setup_shelves.step1_c": "『追加』で温度帯名（例：冷蔵）を入力、並び順はドラッグで調整",
-  "help.setup_shelves.screenshot_temp": "📸 [スクリーンショット準備中] 温度帯タブ",
-
+  "help.setup_shelves.screenshot_temp": "温度帯タブ",
   "help.setup_shelves.step2_title": "② エリアを登録する",
   "help.setup_shelves.step2_body": "次にエリア（物理的な場所）を登録します。",
   "help.setup_shelves.step2_a": "同じ店舗編集画面の『エリア』タブを開く",
   "help.setup_shelves.step2_b": "エリア名（例：厨房冷蔵）と、紐づく温度帯を選択",
   "help.setup_shelves.step2_c": "並び順は現場の動線順（入口から奥へなど）で登録すると便利",
-  "help.setup_shelves.screenshot_area": "📸 [スクリーンショット準備中] エリアタブ",
-
+  "help.setup_shelves.screenshot_area": "エリアタブ",
   "help.setup_shelves.step3_title": "③ 棚を登録する",
   "help.setup_shelves.step3_body": "最後に棚（エリア内の細かい段）を登録します。",
   "help.setup_shelves.step3_a": "『棚』タブを開く",
   "help.setup_shelves.step3_b": "棚コード（例：A-01）と名称（例：上段）、紐づくエリアを選択",
   "help.setup_shelves.step3_c": "実物の棚に同じコードのシール等を貼ると、現場でも迷いません",
-  "help.setup_shelves.screenshot_shelf": "📸 [スクリーンショット準備中] 棚タブ",
-
+  "help.setup_shelves.screenshot_shelf": "棚タブ",
   "help.setup_shelves.step4_title": "④ 品目ごとに棚を割り当てる",
   "help.setup_shelves.step4_body": "設定が終わったら、各品目を棚に割り当てます。",
   "help.setup_shelves.step4_a": "品目マスタ画面を開く：",
   "help.setup_shelves.step4_b": "品目の編集画面で温度帯→エリア→棚の順に選択",
   "help.setup_shelves.step4_c": "完了すると棚卸し画面がその順番で並ぶようになる",
-  "help.setup_shelves.screenshot_assign": "📸 [スクリーンショット準備中] 品目への棚割り当て",
-
+  "help.setup_shelves.screenshot_assign": "品目への棚割り当て",
   "help.setup_shelves.protection_heading": "💡 自動ガード：",
   "help.setup_shelves.protection_body": "棚に紐づいている品目がある場合は、無効化できないよう自動的にブロックされます。エラーメッセージで該当品目数が表示されますので、先に品目の棚割り当てを変更してから再度無効化してください（温度帯・エリアも同じ仕組み）。",
-
   "help.setup_shelves.tips_heading": "現場のコツ",
   "help.setup_shelves.tip_1": "棚コードは2〜3桁に抑えると、シールを貼りやすく現場でも読みやすい。",
   "help.setup_shelves.tip_2": "エリアの並び順は動線順（厨房→バックヤード）にすると棚卸しが順に進む。",
   "help.setup_shelves.tip_3": "新しい棚を増やしたときは、当日のうちに品目割り当ても行うこと。",
-
   "help.setup_shelves.troubleshoot_heading": "よくある質問",
   "help.setup_shelves.q1": "棚卸し画面に品目が出てこない",
   "help.setup_shelves.a1": "品目に棚が割り当てられていない、または仕入履歴も棚割当も無い状態です。品目マスタで棚を割り当ててください。",
@@ -537,9 +503,7 @@
   "help.setup_shelves.a2": "はい。名称の変更は可能ですが、関連する既存の棚・品目は手動で見直してください。",
   "help.setup_shelves.q3": "複数店舗で同じ棚構成を使いたい",
   "help.setup_shelves.a3": "現状は店舗ごとに登録が必要です。将来テンプレート機能を追加予定。",
-
   "help.common.back_to_index": "目次に戻る",
-
   "help.setup_suppliers.title": "仕入先マスタの使い方",
   "help.setup_suppliers.intro": "仕入先マスタには、発注先に関するすべての情報が集まります。ここをきちんと整えると、『発注サポート』画面が正しく動作し、発注ミスや欠品を減らせます。",
   "help.setup_suppliers.why_heading": "なぜ登録するのか",
@@ -547,7 +511,6 @@
   "help.setup_suppliers.why_1": "納品日と発注〆切が自動的に表示される",
   "help.setup_suppliers.why_2": "発注方法（電話／FAX／メール等）で操作に迷わない",
   "help.setup_suppliers.why_3": "休業日を考慮した発注スケジュールが可能",
-
   "help.setup_suppliers.what_fields": "登録する情報",
   "help.setup_suppliers.what_fields_intro": "仕入先編集画面では次の情報を登録します。",
   "help.setup_suppliers.field_basic": "基本情報",
@@ -560,53 +523,44 @@
   "help.setup_suppliers.field_schedule_desc": "曜日ごとの納品有無と、発注〆切（何日前・何時まで）を設定。",
   "help.setup_suppliers.field_holidays": "休業日",
   "help.setup_suppliers.field_holidays_desc": "仕入先固有の休業日。年末年始などはここで登録。店舗休業日の連動も可能。",
-
   "help.setup_suppliers.step_by_step": "設定手順",
   "help.setup_suppliers.step1_title": "① 仕入先を登録する",
   "help.setup_suppliers.step1_body": "まず新しい仕入先を追加します。",
   "help.setup_suppliers.step1_a": "仕入先マスタ画面を開く：",
   "help.setup_suppliers.step1_b": "『新規追加』から、会社名・担当者・連絡先を入力",
   "help.setup_suppliers.step1_c": "2桁コードは既存と重複しない番号を設定（例：12、15、16）",
-  "help.setup_suppliers.screenshot_basic": "📸 [スクリーンショット準備中] 仕入先 基本情報入力",
-
+  "help.setup_suppliers.screenshot_basic": "仕入先 基本情報入力",
   "help.setup_suppliers.step2_title": "② 納品スケジュールを設定する",
   "help.setup_suppliers.step2_body": "曜日ごとの納品有無と発注〆切を設定します。",
   "help.setup_suppliers.step2_a": "仕入先編集画面の『納品スケジュール』セクションを開く",
   "help.setup_suppliers.step2_b": "納品がある曜日のチェックボックスをオン",
   "help.setup_suppliers.step2_c": "各曜日の『何日前』（発注〆切までの日数）を入力",
   "help.setup_suppliers.step2_d": "『何時まで』（発注〆切時刻）を30分刻みで選択",
-  "help.setup_suppliers.screenshot_schedule": "📸 [スクリーンショット準備中] 納品スケジュール設定",
-
+  "help.setup_suppliers.screenshot_schedule": "納品スケジュール設定",
   "help.setup_suppliers.schedule_example_heading": "💡 設定例：",
   "help.setup_suppliers.schedule_example_body": "月・水・金に配達あり、前日12:00までに発注必要 → 月水金にチェック、『1日前』『12:00』を設定。",
-
   "help.setup_suppliers.step3_title": "③ 休業日を設定する",
   "help.setup_suppliers.step3_body": "仕入先が休業する日を年間カレンダーで設定します。",
   "help.setup_suppliers.step3_a": "『店舗カレンダー』の仕入先休業日セクションで、該当仕入先を選択",
   "help.setup_suppliers.step3_b": "カレンダー上の日付をクリックで休業日をオン／オフ",
   "help.setup_suppliers.step3_c": "『祝日』『年末年始』『お盆』などの一括追加ボタンも利用可能",
-  "help.setup_suppliers.screenshot_holidays": "📸 [スクリーンショット準備中] 仕入先休業日カレンダー",
-
+  "help.setup_suppliers.screenshot_holidays": "仕入先休業日カレンダー",
   "help.setup_suppliers.step4_title": "④ 店舗と紐付ける",
   "help.setup_suppliers.step4_body": "どの店舗でこの仕入先を使うかを設定します。",
   "help.setup_suppliers.step4_a": "店舗マスタ画面を開く：",
   "help.setup_suppliers.step4_b": "該当店舗の編集画面で『仕入先』タブを開く",
   "help.setup_suppliers.step4_c": "取引のある仕入先をチェック",
-
   "help.setup_suppliers.warn_heading": "⚠️ 注意",
   "help.setup_suppliers.warn_body": "仕入先を削除すると、紐づく品目や仕入履歴が残っていてもリンクが切れます。取引停止の場合は『無効化』を推奨します。",
-
   "help.setup_suppliers.flow_to_order": "発注サポート画面との関係",
   "help.setup_suppliers.flow_to_order_body": "ここで設定した情報は『発注サポート』画面に自動反映されます。",
   "help.setup_suppliers.flow_1": "納品スケジュール → 『次回納品日』『発注〆切』の自動計算",
   "help.setup_suppliers.flow_2": "休業日 → 休業日の発注〆切は前倒し",
   "help.setup_suppliers.flow_3": "発注方法 → 仕入先カードに表示（今後：発注書自動生成の経路決定）",
-
   "help.setup_suppliers.tips_heading": "コツ",
   "help.setup_suppliers.tip_1": "仕入先コードは連番ではなく飛ばし気味に（将来の追加余地を残す）。",
   "help.setup_suppliers.tip_2": "担当者連絡先と会社連絡先は別フィールド。発注はまず担当者宛てに。",
   "help.setup_suppliers.tip_3": "納品スケジュールは四半期に一度見直すと運用実態とのズレが防げます。",
-
   "help.setup_suppliers.troubleshoot_heading": "よくある質問",
   "help.setup_suppliers.q1": "『発注サポート』に仕入先が出てこない",
   "help.setup_suppliers.a1": "納品スケジュールが空になっていないか、店舗と紐付いているかを確認してください。両方揃って初めて表示されます。",
@@ -614,7 +568,6 @@
   "help.setup_suppliers.a2": "反映には再読込が必要な場合があります。また、休業日が未来のものか確認してください。",
   "help.setup_suppliers.q3": "仕入先コードを後から変更できる？",
   "help.setup_suppliers.a3": "可能ですが、既存の品目コードの先頭2桁と食い違うと混乱します。変更前にサポートへ相談を推奨。",
-
   "help.setup_items.title": "品目マスタの使い方",
   "help.setup_items.intro": "品目マスタはCMSの心臓部です。すべての仕入・棚卸し・発注サポート・レポートが、ここに登録された品目を参照します。",
   "help.setup_items.why_heading": "なぜ整えるのか",
@@ -622,7 +575,6 @@
   "help.setup_items.why_1": "正しい分類で原価の内訳が分析できる",
   "help.setup_items.why_2": "棚割り設定で棚卸しが効率化",
   "help.setup_items.why_3": "発注目安数量で欠品防止",
-
   "help.setup_items.what_fields": "主なフィールド",
   "help.setup_items.field_identity": "識別情報",
   "help.setup_items.field_identity_desc": "コード（5桁）、品名。コードは自動採番、品名は仕入伝票の表記に合わせる。",
@@ -634,65 +586,53 @@
   "help.setup_items.field_location_desc": "温度帯→エリア→棚の階層で指定。棚卸し画面の並び順に直結。",
   "help.setup_items.field_est_order_qty": "発注目安数量",
   "help.setup_items.field_est_order_qty_desc": "1回の発注で頼むおおよその量。発注サポートで在庫判定に使用。",
-
   "help.setup_items.code_rule": "コードの仕組み",
   "help.setup_items.code_rule_body": "品目コードは5桁で、仕入先に紐づいています。",
   "help.setup_items.code_prefix": "：仕入先コード",
   "help.setup_items.code_seq": "：品目連番",
-
   "help.setup_items.categories_heading": "カテゴリ一覧",
   "help.setup_items.categories_body": "次の12カテゴリから選択します。レポートの構成比グラフはこの分類で集計されます。",
-
   "help.setup_items.process_heading": "加工レベル",
   "help.setup_items.process_body": "加工レベルは原材料の形で分けます。ダッシュボードの円グラフで構成比を確認できます。",
   "help.setup_items.process_raw_desc": "そのまま仕入れて使う状態（野菜、肉等）",
   "help.setup_items.process_semi_desc": "一部加工された状態（冷凍惣菜等）",
   "help.setup_items.process_finished_desc": "完成品として購入（パン、飲料等）",
-
   "help.setup_items.step_by_step": "設定手順",
   "help.setup_items.step1_title": "① 個別に追加する",
   "help.setup_items.step1_body": "新しい品目を1件ずつ追加する方法です。",
   "help.setup_items.step1_a": "品目マスタ画面を開く：",
   "help.setup_items.step1_b": "画面上部の『新規追加』から仕入先を選んで登録",
   "help.setup_items.step1_c": "コードは自動採番、品名・カテゴリ・加工レベル・温度帯を入力",
-  "help.setup_items.screenshot_single": "📸 [スクリーンショット準備中] 品目 個別追加画面",
-
+  "help.setup_items.screenshot_single": "品目 個別追加画面",
   "help.setup_items.step2_title": "② CSVで一括取込する",
   "help.setup_items.step2_body": "数十〜数百の品目を一気に登録する場合はCSV取込を使います。",
   "help.setup_items.step2_a": "『CSV取込』画面を開き、テンプレートをダウンロード",
   "help.setup_items.step2_b": "Excel等でテンプレートを編集（コードは空欄で自動採番）",
   "help.setup_items.step2_c": "保存してCSVをアップロード、プレビューで確認してから取込",
   "help.setup_items.csv_format_hint": "CSVの列：コード, 仕入先, 品名, 保管温度帯, 仕入れ単位, 棚卸し単位, 標準棚卸し単位, 最低仕入単位, 内製_flg",
-  "help.setup_items.screenshot_csv": "📸 [スクリーンショット準備中] CSV取込画面",
-
+  "help.setup_items.screenshot_csv": "CSV取込画面",
   "help.setup_items.step3_title": "③ 棚を割り当てる",
   "help.setup_items.step3_body": "棚卸しで迷わないように、各品目に保管場所を設定します（詳細は『棚・温度帯・エリアの設定』参照）。",
   "help.setup_items.step3_a": "品目編集画面で温度帯を選ぶ",
   "help.setup_items.step3_b": "エリアが自動で絞り込まれるので選択",
   "help.setup_items.step3_c": "棚が絞り込まれるので最終的な場所を選択",
-
   "help.setup_items.est_qty_heading": "発注目安数量について",
   "help.setup_items.est_qty_body": "発注目安数量は、発注サポート画面で『在庫不足』判定に使われる重要な値です。",
-
   "help.setup_items.est_qty_auto": "自動計算",
   "help.setup_items.est_qty_auto_body": "毎日の喫食数データに基づいて、統計的に最適な値を算出します。",
   "help.setup_items.est_qty_formula": "発注目安 = 喫食数あたり消費量 × (μ + 1.65σ)",
   "help.setup_items.est_qty_auto_1": "過去90日の仕入実績と喫食数から1食あたり消費量を計算",
   "help.setup_items.est_qty_auto_2": "1納品サイクル分の消費量（平均 + 1.65σ）で在庫切れをほぼ95％防ぐ",
   "help.setup_items.est_qty_auto_3": "自動計算は定期的に実行（運営側で操作）",
-
   "help.setup_items.est_qty_manual": "手動調整",
   "help.setup_items.est_qty_manual_body": "品目編集画面で数値を直接入力すれば上書きできます。季節商品や新規メニューには手動が便利。",
-
   "help.setup_items.est_qty_history": "履歴で変更を追跡",
   "help.setup_items.est_qty_history_body": "品目編集画面の下部に『統計情報』と『履歴』が表示されます。いつ・誰が・どう変更したかが一覧できます。",
-  "help.setup_items.screenshot_stats": "📸 [スクリーンショット準備中] 統計情報と履歴表示",
-
+  "help.setup_items.screenshot_stats": "統計情報と履歴表示",
   "help.setup_items.tips_heading": "コツ",
   "help.setup_items.tip_1": "品名は仕入伝票表記をそのまま使うと、納品時の照合がスムーズ。",
   "help.setup_items.tip_2": "カテゴリは途中で変えず、設定段階で決めるのがおすすめ（レポートの継続性のため）。",
   "help.setup_items.tip_3": "使わなくなった品目は削除ではなく『無効化』で。過去データが残せます。",
-
   "help.setup_items.troubleshoot_heading": "よくある質問",
   "help.setup_items.q1": "CSV取込でエラーが出る",
   "help.setup_items.a1": "最頻出は仕入先名の誤字と、列順の違い。テンプレートを再ダウンロードして先頭行から入れ直すと解決することが多いです。",
@@ -700,7 +640,6 @@
   "help.setup_items.a2": "古い方を『無効化』すれば表示からは消えます。削除すると仕入履歴のリンクが切れるので非推奨。",
   "help.setup_items.q3": "発注目安が0や空欄になる",
   "help.setup_items.a3": "過去90日の仕入記録が少ないと自動計算されません。手動で設定するか、しばらく運用を続けて再計算を依頼してください。",
-
   "help.setup_revenue.title": "売上推計の設定",
   "help.setup_revenue.intro": "CMSは『仕入れ入力』と『棚卸し』の2ステップだけで、リアルタイムな原価計算と利益推計を提供します。ここではその設定方法を説明します。",
   "help.setup_revenue.why_heading": "この機能でできること",
@@ -708,7 +647,6 @@
   "help.setup_revenue.why_1": "月次・期間別の売上原価",
   "help.setup_revenue.why_2": "品目・カテゴリ別の原価構成",
   "help.setup_revenue.why_3": "FL比率（食材費 + 労務費の売上比）の推計",
-
   "help.setup_revenue.concepts_heading": "基本の考え方",
   "help.setup_revenue.concepts_body": "推計の前提となる3つの考え方です。",
   "help.setup_revenue.concept_cogs": "売上原価",
@@ -717,58 +655,47 @@
   "help.setup_revenue.concept_fifo_desc": "古い仕入れから順に消費されている前提で計算。実運用に近いモデル。",
   "help.setup_revenue.concept_margin": "利益率目標",
   "help.setup_revenue.concept_margin_desc": "目標とする利益率を設定し、実績との差を可視化できます。",
-
   "help.setup_revenue.formula_heading": "基本式：",
   "help.setup_revenue.formula_body": "原価 = 月初棚卸 + 仕入れ量 − 月末棚卸",
-
   "help.setup_revenue.step_by_step": "設定手順",
   "help.setup_revenue.step1_title": "① 利益率目標を設定する",
   "help.setup_revenue.step1_body": "会社としての目標利益率を入力します。",
   "help.setup_revenue.step1_a": "管理メニュー → 『利益率設定』を開く（管理者権限が必要）",
   "help.setup_revenue.step1_b": "目標利益率（％）を入力",
   "help.setup_revenue.step1_c": "保存。以降のレポートで実績と比較されます。",
-  "help.setup_revenue.screenshot_settings": "📸 [スクリーンショット準備中] 利益率設定画面",
-
+  "help.setup_revenue.screenshot_settings": "利益率設定画面",
   "help.setup_revenue.step2_title": "② 日々の入力を続ける",
   "help.setup_revenue.step2_body": "売上原価の精度は、日々の入力で決まります。",
   "help.setup_revenue.step2_a": "納品があったら即日『仕入れ入力』に入力",
   "help.setup_revenue.step2_b": "月末には必ず棚卸しを実施し、『棚卸し入力』に記録",
   "help.setup_revenue.step2_c": "月初にも棚卸しがあればより正確（推奨）",
-
   "help.setup_revenue.step3_title": "③ レポートで結果を確認する",
   "help.setup_revenue.step3_body": "推計結果はレポート画面で確認できます。",
   "help.setup_revenue.step3_a": "『売上原価月次推移』を開く：",
   "help.setup_revenue.step3_b": "月ごとの原価・構成比・前年比を確認",
   "help.setup_revenue.step3_c": "品目別・カテゴリ別でドリルダウン可能",
-  "help.setup_revenue.screenshot_cost_report": "📸 [スクリーンショット準備中] 売上原価月次推移",
-
+  "help.setup_revenue.screenshot_cost_report": "売上原価月次推移",
   "help.setup_revenue.interpret_heading": "結果の読み方",
   "help.setup_revenue.interpret_body": "数字の見方で行動が変わります。代表的な見所を挙げます。",
-
   "help.setup_revenue.interpret_dashboard": "仕入ダッシュボード",
   "help.setup_revenue.interpret_dashboard_body": "ダッシュボードでは構成比を円グラフで確認できます。",
   "help.setup_revenue.interpret_1": "『仕入先別』構成比：仕入の集中度合い（リスク分散の判断材料）",
   "help.setup_revenue.interpret_2": "『カテゴリ別』構成比：メニュー構成の偏りを把握",
   "help.setup_revenue.interpret_3": "『加工レベル別』構成比：内製化／外注のバランス",
-
   "help.setup_revenue.interpret_dead_stock": "滞留在庫",
   "help.setup_revenue.interpret_dead_stock_body": "ダッシュボード下部の『滞留在庫（30日以上未入荷）』で、動きのない在庫とその金額を確認できます。使い切り策やメニュー入替の判断材料に。",
-
   "help.setup_revenue.warn_heading": "⚠️ 注意",
   "help.setup_revenue.warn_body": "棚卸しの入力漏れがあると、原価が大きく狂います。月末棚卸しは『棚卸し画面』で必ず全品目を記録してください。",
-
   "help.setup_revenue.data_quality": "データの精度を高めるには",
   "help.setup_revenue.data_quality_body": "以下を守ると推計の精度が大きく改善します。",
   "help.setup_revenue.dq_1": "仕入伝票は当日中に入力（単価・数量を正確に）",
   "help.setup_revenue.dq_2": "棚卸しは月1回以上（高回転品は週1回推奨）",
   "help.setup_revenue.dq_3": "未使用品の『無効化』で不要な品目を表示から外す",
   "help.setup_revenue.dq_4": "カテゴリ・加工レベルを全品目に設定",
-
   "help.setup_revenue.tips_heading": "コツ",
   "help.setup_revenue.tip_1": "月初と月末の棚卸しで、月次原価の精度が跳ね上がります。",
   "help.setup_revenue.tip_2": "ダッシュボードのカテゴリ円グラフは月1で眺めて、異常な比率変化を早期発見。",
   "help.setup_revenue.tip_3": "滞留在庫の金額が大きいときは、メニューで使い切り策を検討。",
-
   "help.setup_revenue.troubleshoot_heading": "よくある質問",
   "help.setup_revenue.q1": "原価が急に上がった",
   "help.setup_revenue.a1": "主な原因は『月末棚卸し漏れ』か『高額仕入れ』。『仕入れ照会』で期間比較して主要仕入先の金額を確認してください。",
