@@ -294,8 +294,8 @@
           <div class="item-info">
             <div class="item-name" title="{{ item.item_name }}">
               {{ item.item_name }}
-              {% if item.frequency and item.frequency.bucket %}
-                <span class="freq-badge freq-{{ item.frequency.bucket }}">{{ t("items.frequency." + item.frequency.bucket + ".short") }}</span>
+              {% if item.frequency and item.frequency.bucket and item.frequency.bucket != 'none' %}
+                <span class="freq-badge freq-{{ item.frequency.bucket }}">{{ item.frequency.rate_label }}</span>
               {% endif %}
             </div>
             <div class="item-meta">{{ item.area_name }} / {{ item.shelf_label }}</div>

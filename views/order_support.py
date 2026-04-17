@@ -312,7 +312,7 @@ def init_order_support_views(app, get_db):
             for card in supplier_cards:
                 next_delivery = card["deliveries"][0] if card["deliveries"] else None
                 for r in card["item_rows"]:
-                    f = freq_map.get(r.get("id"), {"bucket": "none", "purchase_days": 0, "per_month": 0})
+                    f = freq_map.get(r.get("id"), {"bucket": "none", "purchase_days": 0, "per_month": 0, "rate_label": "—"})
                     sheet_rows.append({
                         "supplier_name": card["name"],
                         "supplier_id":   card["id"],
@@ -324,6 +324,7 @@ def init_order_support_views(app, get_db):
                         "category":      r["category"],
                         "frequency":     f["bucket"],
                         "per_month":     f["per_month"],
+                        "rate_label":    f.get("rate_label", "—"),
                         "current_stock": r["current_stock"],
                         "last_count_date": r["last_count_date"],
                         "est_order_qty": r["est_order_qty"],
