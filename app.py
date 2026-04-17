@@ -36,6 +36,7 @@ from views.admin.store_holidays import init_store_holidays_views
 from views.order_support import init_order_support_views
 from views.mst_items_csv import init_items_csv_views
 from views.pur_delivery_paste import init_delivery_paste_views
+from views.help import init_help_views
 
 # ----------------------------------------
 # Flask app
@@ -404,6 +405,7 @@ init_inventory_views_v2(app, get_db)
 init_location_views(app, get_db)
 init_items_csv_views(app, get_db)
 init_delivery_paste_views(app, get_db)
+init_help_views(app)
 
 
 # ----------------------------------------

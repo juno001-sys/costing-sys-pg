@@ -127,12 +127,8 @@
         Machine {% else %}DEV – Test Environment{% endif %}
       </div>
       <div style="margin-left: auto">
-        <a
-          href="{{ url_for('static', filename='docs/user_manual.pdf') }}"
-          target="_blank"
-          rel="noopener"
-        >
-          📘 {{ t("nav.user_manual") }}
+        <a href="{{ url_for('help.index') }}">
+          ❓ {{ t("nav.help") }}
         </a>
       </div>
     </div>
