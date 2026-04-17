@@ -110,6 +110,74 @@
         </div>
       </div>
 
+      <!-- 統計情報（発注目安の根拠） -->
+      <div class="card">
+        <div class="card-header">{{ t("items.stats.title") }}</div>
+        <div class="card-row">
+          <div class="card-field">
+            <label>{{ t("items.stats.per_guest_rate") }}</label>
+            <input type="text" value="{{ '%.5f'|format(item.per_guest_rate) if item.per_guest_rate else '—' }}" readonly style="background:#f7f7f7;">
+          </div>
+          <div class="card-field">
+            <label>{{ t("items.stats.est_mu") }}</label>
+            <input type="text" value="{{ '%.3f'|format(item.est_mu) if item.est_mu else '—' }}" readonly style="background:#f7f7f7;">
+          </div>
+          <div class="card-field">
+            <label>{{ t("items.stats.est_sigma") }}</label>
+            <input type="text" value="{{ '%.3f'|format(item.est_sigma) if item.est_sigma else '—' }}" readonly style="background:#f7f7f7;">
+          </div>
+          <div class="card-field">
+            <label>{{ t("items.stats.calc_at") }}</label>
+            <input type="text" value="{{ item.est_calc_at.strftime('%Y-%m-%d %H:%M') if item.est_calc_at else '—' }}" readonly style="background:#f7f7f7;">
+          </div>
+        </div>
+        <div class="card-field" style="font-size:11px; color:#666; margin-top:4px;">
+          {{ t("items.stats.formula_hint") }}
+        </div>
+      </div>
+
+      <!-- 履歴 -->
+      {% if est_history %}
+      <div class="card">
+        <div class="card-header">{{ t("items.stats.history") }}（{{ est_history|length }}件）</div>
+        <table style="width:100%; font-size:12px; border-collapse:collapse;">
+          <thead style="background:#f0f0f0;">
+            <tr>
+              <th style="text-align:left; padding:4px 6px;">{{ t("items.stats.effective_from") }}</th>
+              <th style="text-align:left; padding:4px 6px;">{{ t("items.stats.effective_to") }}</th>
+              <th style="text-align:right; padding:4px 6px;">{{ t("items.est_order_qty") }}</th>
+              <th style="text-align:right; padding:4px 6px;">{{ t("items.stats.per_guest_rate") }}</th>
+              <th style="text-align:right; padding:4px 6px;">μ</th>
+              <th style="text-align:right; padding:4px 6px;">σ</th>
+              <th style="text-align:left; padding:4px 6px;">{{ t("items.stats.source") }}</th>
+              <th style="text-align:left; padding:4px 6px;">{{ t("items.stats.note") }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for h in est_history %}
+            <tr style="{% if not h.effective_to %}background:#e8f5e9;{% endif %}">
+              <td style="padding:4px 6px;">{{ h.effective_from }}</td>
+              <td style="padding:4px 6px;">{{ h.effective_to or t("items.stats.current") }}</td>
+              <td style="text-align:right; padding:4px 6px;">{{ h.est_order_qty }}</td>
+              <td style="text-align:right; padding:4px 6px;">{{ '%.5f'|format(h.per_guest_rate) if h.per_guest_rate else '—' }}</td>
+              <td style="text-align:right; padding:4px 6px;">{{ '%.3f'|format(h.est_mu) if h.est_mu else '—' }}</td>
+              <td style="text-align:right; padding:4px 6px;">{{ '%.3f'|format(h.est_sigma) if h.est_sigma else '—' }}</td>
+              <td style="padding:4px 6px;">
+                <span style="font-size:11px; font-weight:600;
+                  color:{% if h.calc_source == 'recalc' %}#0066cc
+                        {% elif h.calc_source == 'manual' %}#b07400
+                        {% else %}#666{% endif %};">
+                  {{ t("items.stats.source." + h.calc_source) }}
+                </span>
+              </td>
+              <td style="padding:4px 6px; font-size:11px; color:#888;">{{ h.note or '' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+
       <!-- Actions -->
       <div class="card-actions">
         <button type="submit" class="btn btn-primary">{{ t("common.update") }}</button>

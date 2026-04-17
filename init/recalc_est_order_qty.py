@@ -301,9 +301,33 @@ def main():
 
             if args.apply:
                 updated = 0
+                note = (
+                    f"Recalc: z={Z_SAFETY}, freq_threshold={FREQ_THRESHOLD}, "
+                    f"smooth_window={SMOOTH_WINDOW}d, min_data_points={MIN_DATA_POINTS}"
+                )
                 for r in rows:
                     if r["new_est"] is None:
                         continue
+                    # Close out any currently-open history row for this item
+                    cur.execute(
+                        """
+                        UPDATE mst_items_est_history
+                        SET effective_to = CURRENT_DATE
+                        WHERE item_id = %s AND effective_to IS NULL
+                        """,
+                        (r["id"],),
+                    )
+                    # Insert a new current row
+                    cur.execute(
+                        """
+                        INSERT INTO mst_items_est_history
+                          (item_id, est_order_qty, per_guest_rate, est_mu, est_sigma,
+                           effective_from, effective_to, calc_source, calc_at, note)
+                        VALUES
+                          (%s, %s, %s, %s, %s, CURRENT_DATE, NULL, 'recalc', NOW(), %s)
+                        """,
+                        (r["id"], r["new_est"], r["per_guest_rate"], r["mu"], r["sigma"], note),
+                    )
                     cur.execute(
                         """
                         UPDATE mst_items
@@ -318,7 +342,7 @@ def main():
                     )
                     updated += 1
                 conn.commit()
-                print(f"[info] applied updates to {updated} items")
+                print(f"[info] applied updates to {updated} items (history written)")
             else:
                 print("[info] dry run — no DB writes")
     finally:
