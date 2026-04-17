@@ -1,6 +1,114 @@
 {% extends "help/_layout.html" %}
 {% block help_body %}
-<h1>{{ t("help.chapters.setup_revenue") }}</h1>
-<div class="callout warn">{{ t("help.common.coming_soon") }}</div>
-<p>{{ t("help.setup_revenue.teaser") }}</p>
+
+<h1>{{ t("help.setup_revenue.title") }}</h1>
+<p>{{ t("help.setup_revenue.intro") }}</p>
+
+<h2>{{ t("help.setup_revenue.why_heading") }}</h2>
+<p>{{ t("help.setup_revenue.why_body") }}</p>
+<ul>
+  <li>{{ t("help.setup_revenue.why_1") }}</li>
+  <li>{{ t("help.setup_revenue.why_2") }}</li>
+  <li>{{ t("help.setup_revenue.why_3") }}</li>
+</ul>
+
+<h2>{{ t("help.setup_revenue.concepts_heading") }}</h2>
+<p>{{ t("help.setup_revenue.concepts_body") }}</p>
+
+<dl style="line-height:1.7;">
+  <dt style="font-weight:700; color:#1a4d8f;">{{ t("help.setup_revenue.concept_cogs") }}</dt>
+  <dd style="margin-left:1em;">{{ t("help.setup_revenue.concept_cogs_desc") }}</dd>
+  <dt style="font-weight:700; color:#1a4d8f; margin-top:8px;">{{ t("help.setup_revenue.concept_fifo") }}</dt>
+  <dd style="margin-left:1em;">{{ t("help.setup_revenue.concept_fifo_desc") }}</dd>
+  <dt style="font-weight:700; color:#1a4d8f; margin-top:8px;">{{ t("help.setup_revenue.concept_margin") }}</dt>
+  <dd style="margin-left:1em;">{{ t("help.setup_revenue.concept_margin_desc") }}</dd>
+</dl>
+
+<div class="callout tip">
+  <strong>{{ t("help.setup_revenue.formula_heading") }}</strong>
+  <code>{{ t("help.setup_revenue.formula_body") }}</code>
+</div>
+
+<h2>{{ t("help.setup_revenue.step_by_step") }}</h2>
+
+<h3>{{ t("help.setup_revenue.step1_title") }}</h3>
+<p>{{ t("help.setup_revenue.step1_body") }}</p>
+<ol>
+  <li>{{ t("help.setup_revenue.step1_a") }}</li>
+  <li>{{ t("help.setup_revenue.step1_b") }}</li>
+  <li>{{ t("help.setup_revenue.step1_c") }}</li>
+</ol>
+<figure class="screenshot-placeholder">
+  {{ t("help.setup_revenue.screenshot_settings") }}
+</figure>
+
+<h3>{{ t("help.setup_revenue.step2_title") }}</h3>
+<p>{{ t("help.setup_revenue.step2_body") }}</p>
+<ul>
+  <li>{{ t("help.setup_revenue.step2_a") }}</li>
+  <li>{{ t("help.setup_revenue.step2_b") }}</li>
+  <li>{{ t("help.setup_revenue.step2_c") }}</li>
+</ul>
+
+<h3>{{ t("help.setup_revenue.step3_title") }}</h3>
+<p>{{ t("help.setup_revenue.step3_body") }}</p>
+<ol>
+  <li>{{ t("help.setup_revenue.step3_a") }} <a href="{{ url_for('reports.cost_report') }}">💰 {{ t("nav.cost_report") }}</a></li>
+  <li>{{ t("help.setup_revenue.step3_b") }}</li>
+  <li>{{ t("help.setup_revenue.step3_c") }}</li>
+</ol>
+<figure class="screenshot-placeholder">
+  {{ t("help.setup_revenue.screenshot_cost_report") }}
+</figure>
+
+<h2>{{ t("help.setup_revenue.interpret_heading") }}</h2>
+<p>{{ t("help.setup_revenue.interpret_body") }}</p>
+
+<h3>{{ t("help.setup_revenue.interpret_dashboard") }}</h3>
+<p>{{ t("help.setup_revenue.interpret_dashboard_body") }}</p>
+<ul>
+  <li>{{ t("help.setup_revenue.interpret_1") }}</li>
+  <li>{{ t("help.setup_revenue.interpret_2") }}</li>
+  <li>{{ t("help.setup_revenue.interpret_3") }}</li>
+</ul>
+
+<h3>{{ t("help.setup_revenue.interpret_dead_stock") }}</h3>
+<p>{{ t("help.setup_revenue.interpret_dead_stock_body") }}</p>
+
+<div class="callout warn">
+  <strong>{{ t("help.setup_revenue.warn_heading") }}</strong>
+  {{ t("help.setup_revenue.warn_body") }}
+</div>
+
+<h2>{{ t("help.setup_revenue.data_quality") }}</h2>
+<p>{{ t("help.setup_revenue.data_quality_body") }}</p>
+<ul>
+  <li>{{ t("help.setup_revenue.dq_1") }}</li>
+  <li>{{ t("help.setup_revenue.dq_2") }}</li>
+  <li>{{ t("help.setup_revenue.dq_3") }}</li>
+  <li>{{ t("help.setup_revenue.dq_4") }}</li>
+</ul>
+
+<h2>{{ t("help.setup_revenue.tips_heading") }}</h2>
+<ul>
+  <li>{{ t("help.setup_revenue.tip_1") }}</li>
+  <li>{{ t("help.setup_revenue.tip_2") }}</li>
+  <li>{{ t("help.setup_revenue.tip_3") }}</li>
+</ul>
+
+<h2>{{ t("help.setup_revenue.troubleshoot_heading") }}</h2>
+<dl style="line-height:1.7;">
+  <dt style="font-weight:700;">Q: {{ t("help.setup_revenue.q1") }}</dt>
+  <dd style="margin-left:1em;">A: {{ t("help.setup_revenue.a1") }}</dd>
+  <dt style="font-weight:700; margin-top:8px;">Q: {{ t("help.setup_revenue.q2") }}</dt>
+  <dd style="margin-left:1em;">A: {{ t("help.setup_revenue.a2") }}</dd>
+  <dt style="font-weight:700; margin-top:8px;">Q: {{ t("help.setup_revenue.q3") }}</dt>
+  <dd style="margin-left:1em;">A: {{ t("help.setup_revenue.a3") }}</dd>
+</dl>
+
+<p style="margin-top:24px;">
+  <strong>{{ t("help.common.back_to_index") }}:</strong>
+  <a href="{{ url_for('help.index') }}">{{ t("help.chapters.index") }}</a>
+</p>
+
 {% endblock %}
