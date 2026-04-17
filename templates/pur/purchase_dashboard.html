@@ -96,6 +96,53 @@
   </table>
 </div>
 
+<!-- Dead Stock Table (30 days without purchase) -->
+<div style="margin-top:32px;">
+  <h4>{{ t("dashboard.dead_stock.title") }}</h4>
+  <p style="color:#666; font-size:12px; margin-top:-6px;">
+    {{ t("dashboard.dead_stock.description") }}
+  </p>
+  <table border="1" cellpadding="5" cellspacing="0"
+         style="width:100%; font-size:13px; border-collapse:collapse;">
+    <thead style="background:#fff3cd;">
+      <tr>
+        <th style="width:30px;">{{ t("dashboard.rank") }}</th>
+        <th>{{ t("common.code") }}</th>
+        <th>{{ t("items.name") }}</th>
+        <th>{{ t("form.supplier") }}</th>
+        <th>{{ t("items.category") }}</th>
+        <th style="text-align:right;">{{ t("dashboard.dead_stock.current_stock") }}</th>
+        <th style="text-align:right;">{{ t("dashboard.dead_stock.unit_price") }}</th>
+        <th style="text-align:right;">{{ t("dashboard.dead_stock.estimated_value") }}</th>
+        <th style="text-align:center;">{{ t("dashboard.dead_stock.last_purchase_date") }}</th>
+        <th style="text-align:right;">{{ t("dashboard.dead_stock.days_since_purchase") }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in dead_stock_items %}
+      <tr>
+        <td style="text-align:center;">{{ loop.index }}</td>
+        <td>{{ item.code }}</td>
+        <td>{{ item.name }}</td>
+        <td>{{ item.supplier_name }}</td>
+        <td>{{ item.category or '' }}</td>
+        <td style="text-align:right;">{{ "{:,}".format(item.current_stock|int) }}</td>
+        <td style="text-align:right;">
+          {% if item.unit_price %}¥{{ "{:,}".format(item.unit_price|int) }}{% else %}-{% endif %}
+        </td>
+        <td style="text-align:right;">
+          {% if item.estimated_value %}¥{{ "{:,}".format(item.estimated_value|int) }}{% else %}-{% endif %}
+        </td>
+        <td style="text-align:center;">{{ item.last_purchase_date }}</td>
+        <td style="text-align:right; color:#c00;">{{ item.days_since_purchase }}{{ t("common.days") }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="10">{{ t("dashboard.dead_stock.none") }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
 {% endblock %}
 
 {% block body_extra %}
