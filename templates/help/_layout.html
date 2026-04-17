@@ -38,11 +38,30 @@
     max-width: 100%; height: auto;
     border: 1px solid #ddd; border-radius: 4px;
     box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    cursor: zoom-in;
+    transition: opacity .15s;
   }
+  .help-content figure img:hover { opacity: .85; }
   .help-content figcaption { font-size: 12px; color: #666; margin-top: 6px; }
-  .help-content .screenshot-placeholder {
-    padding: 40px 14px; background: #eef1f4; color: #888; font-size: 13px;
-    border-radius: 4px;
+
+  /* ── Click-to-enlarge modal overlay ─────────────────────────── */
+  .help-lightbox {
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(0, 0, 0, .85);
+    display: none;
+    align-items: center; justify-content: center;
+    cursor: zoom-out;
+    padding: 20px;
+  }
+  .help-lightbox.open { display: flex; }
+  .help-lightbox img {
+    max-width: 95vw; max-height: 90vh;
+    border-radius: 4px; box-shadow: 0 8px 30px rgba(0,0,0,.5);
+  }
+  .help-lightbox .close-hint {
+    position: absolute; top: 14px; right: 20px;
+    color: rgba(255,255,255,.7); font-size: 14px;
+    pointer-events: none;
   }
   .help-content .callout {
     border-left: 4px solid #2a7ae2; background: #eff6ff;
@@ -86,4 +105,26 @@
     {% block help_body %}{% endblock %}
   </main>
 </div>
+
+<!-- Click-to-enlarge modal -->
+<div class="help-lightbox" id="helpLightbox" onclick="this.classList.remove('open')">
+  <img id="helpLightboxImg" src="" alt="">
+  <div class="close-hint">Esc / {{ t("help.lightbox.click_to_close") }}</div>
+</div>
+<script>
+  (function() {
+    const lb  = document.getElementById('helpLightbox');
+    const img = document.getElementById('helpLightboxImg');
+    document.querySelectorAll('.help-content figure img').forEach(el => {
+      el.addEventListener('click', e => {
+        img.src = el.src;
+        img.alt = el.alt || '';
+        lb.classList.add('open');
+      });
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') lb.classList.remove('open');
+    });
+  })();
+</script>
 {% endblock %}
