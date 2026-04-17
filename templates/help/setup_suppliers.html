@@ -1,6 +1,114 @@
 {% extends "help/_layout.html" %}
 {% block help_body %}
-<h1>{{ t("help.chapters.setup_suppliers") }}</h1>
-<div class="callout warn">{{ t("help.common.coming_soon") }}</div>
-<p>{{ t("help.setup_suppliers.teaser") }}</p>
+
+<h1>{{ t("help.setup_suppliers.title") }}</h1>
+<p>{{ t("help.setup_suppliers.intro") }}</p>
+
+<h2>{{ t("help.setup_suppliers.why_heading") }}</h2>
+<p>{{ t("help.setup_suppliers.why_body") }}</p>
+<ul>
+  <li>{{ t("help.setup_suppliers.why_1") }}</li>
+  <li>{{ t("help.setup_suppliers.why_2") }}</li>
+  <li>{{ t("help.setup_suppliers.why_3") }}</li>
+</ul>
+
+<h2>{{ t("help.setup_suppliers.what_fields") }}</h2>
+<p>{{ t("help.setup_suppliers.what_fields_intro") }}</p>
+<dl style="line-height:1.7;">
+  <dt style="font-weight:700; color:#1a4d8f;">{{ t("help.setup_suppliers.field_basic") }}</dt>
+  <dd style="margin-left:1em;">{{ t("help.setup_suppliers.field_basic_desc") }}</dd>
+  <dt style="font-weight:700; color:#1a4d8f; margin-top:8px;">{{ t("help.setup_suppliers.field_contact") }}</dt>
+  <dd style="margin-left:1em;">{{ t("help.setup_suppliers.field_contact_desc") }}</dd>
+  <dt style="font-weight:700; color:#1a4d8f; margin-top:8px;">{{ t("help.setup_suppliers.field_order_method") }}</dt>
+  <dd style="margin-left:1em;">{{ t("help.setup_suppliers.field_order_method_desc") }}</dd>
+  <dt style="font-weight:700; color:#1a4d8f; margin-top:8px;">{{ t("help.setup_suppliers.field_schedule") }}</dt>
+  <dd style="margin-left:1em;">{{ t("help.setup_suppliers.field_schedule_desc") }}</dd>
+  <dt style="font-weight:700; color:#1a4d8f; margin-top:8px;">{{ t("help.setup_suppliers.field_holidays") }}</dt>
+  <dd style="margin-left:1em;">{{ t("help.setup_suppliers.field_holidays_desc") }}</dd>
+</dl>
+
+<h2>{{ t("help.setup_suppliers.step_by_step") }}</h2>
+
+<h3>{{ t("help.setup_suppliers.step1_title") }}</h3>
+<p>{{ t("help.setup_suppliers.step1_body") }}</p>
+<ol>
+  <li>{{ t("help.setup_suppliers.step1_a") }} <a href="{{ url_for('suppliers_master') }}">🏢 {{ t("nav.suppliers_master") }}</a></li>
+  <li>{{ t("help.setup_suppliers.step1_b") }}</li>
+  <li>{{ t("help.setup_suppliers.step1_c") }}</li>
+</ol>
+<figure class="screenshot-placeholder">
+  {{ t("help.setup_suppliers.screenshot_basic") }}
+</figure>
+
+<h3>{{ t("help.setup_suppliers.step2_title") }}</h3>
+<p>{{ t("help.setup_suppliers.step2_body") }}</p>
+<ol>
+  <li>{{ t("help.setup_suppliers.step2_a") }}</li>
+  <li>{{ t("help.setup_suppliers.step2_b") }}</li>
+  <li>{{ t("help.setup_suppliers.step2_c") }}</li>
+  <li>{{ t("help.setup_suppliers.step2_d") }}</li>
+</ol>
+<figure class="screenshot-placeholder">
+  {{ t("help.setup_suppliers.screenshot_schedule") }}
+</figure>
+
+<div class="callout tip">
+  <strong>{{ t("help.setup_suppliers.schedule_example_heading") }}</strong>
+  {{ t("help.setup_suppliers.schedule_example_body") }}
+</div>
+
+<h3>{{ t("help.setup_suppliers.step3_title") }}</h3>
+<p>{{ t("help.setup_suppliers.step3_body") }}</p>
+<ol>
+  <li>{{ t("help.setup_suppliers.step3_a") }}</li>
+  <li>{{ t("help.setup_suppliers.step3_b") }}</li>
+  <li>{{ t("help.setup_suppliers.step3_c") }}</li>
+</ol>
+<figure class="screenshot-placeholder">
+  {{ t("help.setup_suppliers.screenshot_holidays") }}
+</figure>
+
+<h3>{{ t("help.setup_suppliers.step4_title") }}</h3>
+<p>{{ t("help.setup_suppliers.step4_body") }}</p>
+<ol>
+  <li>{{ t("help.setup_suppliers.step4_a") }} <a href="{{ url_for('stores_master') }}">🏪 {{ t("nav.stores_master") }}</a></li>
+  <li>{{ t("help.setup_suppliers.step4_b") }}</li>
+  <li>{{ t("help.setup_suppliers.step4_c") }}</li>
+</ol>
+
+<div class="callout warn">
+  <strong>{{ t("help.setup_suppliers.warn_heading") }}</strong>
+  {{ t("help.setup_suppliers.warn_body") }}
+</div>
+
+<h2>{{ t("help.setup_suppliers.flow_to_order") }}</h2>
+<p>{{ t("help.setup_suppliers.flow_to_order_body") }}</p>
+<ul>
+  <li>{{ t("help.setup_suppliers.flow_1") }}</li>
+  <li>{{ t("help.setup_suppliers.flow_2") }}</li>
+  <li>{{ t("help.setup_suppliers.flow_3") }}</li>
+</ul>
+
+<h2>{{ t("help.setup_suppliers.tips_heading") }}</h2>
+<ul>
+  <li>{{ t("help.setup_suppliers.tip_1") }}</li>
+  <li>{{ t("help.setup_suppliers.tip_2") }}</li>
+  <li>{{ t("help.setup_suppliers.tip_3") }}</li>
+</ul>
+
+<h2>{{ t("help.setup_suppliers.troubleshoot_heading") }}</h2>
+<dl style="line-height:1.7;">
+  <dt style="font-weight:700;">Q: {{ t("help.setup_suppliers.q1") }}</dt>
+  <dd style="margin-left:1em;">A: {{ t("help.setup_suppliers.a1") }}</dd>
+  <dt style="font-weight:700; margin-top:8px;">Q: {{ t("help.setup_suppliers.q2") }}</dt>
+  <dd style="margin-left:1em;">A: {{ t("help.setup_suppliers.a2") }}</dd>
+  <dt style="font-weight:700; margin-top:8px;">Q: {{ t("help.setup_suppliers.q3") }}</dt>
+  <dd style="margin-left:1em;">A: {{ t("help.setup_suppliers.a3") }}</dd>
+</dl>
+
+<p style="margin-top:24px;">
+  <strong>{{ t("help.common.next") }}:</strong>
+  <a href="{{ url_for('help.topic', slug='setup_items') }}">{{ t("help.chapters.setup_items") }}</a>
+</p>
+
 {% endblock %}
