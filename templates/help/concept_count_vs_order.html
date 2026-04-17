@@ -62,8 +62,14 @@
 <h2>{{ t("help.count_vs_order.same_item") }}</h2>
 <p>{{ t("help.count_vs_order.same_item_intro") }}</p>
 
-<figure class="screenshot-placeholder">
-  {{ t("help.count_vs_order.screenshot_diagram") }}
+<figure>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+    <img src="{{ url_for('static', filename='help/screenshots/count_screen.png') }}"
+         alt="{{ t('help.count_vs_order.count_heading') }}">
+    <img src="{{ url_for('static', filename='help/screenshots/order_support_sheet.png') }}"
+         alt="{{ t('help.count_vs_order.order_heading') }}">
+  </div>
+  <figcaption>{{ t("help.count_vs_order.screenshot_diagram") }}</figcaption>
 </figure>
 
 <h2>{{ t("help.count_vs_order.when_to_use") }}</h2>

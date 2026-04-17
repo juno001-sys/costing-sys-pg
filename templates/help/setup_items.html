@@ -66,8 +66,10 @@
   <li>{{ t("help.setup_items.step1_b") }}</li>
   <li>{{ t("help.setup_items.step1_c") }}</li>
 </ol>
-<figure class="screenshot-placeholder">
-  {{ t("help.setup_items.screenshot_single") }}
+<figure>
+  <img src="{{ url_for('static', filename='help/screenshots/items_list.png') }}"
+       alt="{{ t('help.setup_items.screenshot_single') }}">
+  <figcaption>{{ t("help.setup_items.screenshot_single") }}</figcaption>
 </figure>
 
 <h3>{{ t("help.setup_items.step2_title") }}</h3>
@@ -80,8 +82,10 @@
 <div class="callout">
   {{ t("help.setup_items.csv_format_hint") }}
 </div>
-<figure class="screenshot-placeholder">
-  {{ t("help.setup_items.screenshot_csv") }}
+<figure>
+  <img src="{{ url_for('static', filename='help/screenshots/items_csv_import.png') }}"
+       alt="{{ t('help.setup_items.screenshot_csv') }}">
+  <figcaption>{{ t("help.setup_items.screenshot_csv") }}</figcaption>
 </figure>
 
 <h3>{{ t("help.setup_items.step3_title") }}</h3>
