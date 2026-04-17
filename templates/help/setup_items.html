@@ -1,6 +1,140 @@
 {% extends "help/_layout.html" %}
 {% block help_body %}
-<h1>{{ t("help.chapters.setup_items") }}</h1>
-<div class="callout warn">{{ t("help.common.coming_soon") }}</div>
-<p>{{ t("help.setup_items.teaser") }}</p>
+
+<h1>{{ t("help.setup_items.title") }}</h1>
+<p>{{ t("help.setup_items.intro") }}</p>
+
+<h2>{{ t("help.setup_items.why_heading") }}</h2>
+<p>{{ t("help.setup_items.why_body") }}</p>
+<ul>
+  <li>{{ t("help.setup_items.why_1") }}</li>
+  <li>{{ t("help.setup_items.why_2") }}</li>
+  <li>{{ t("help.setup_items.why_3") }}</li>
+</ul>
+
+<h2>{{ t("help.setup_items.what_fields") }}</h2>
+<dl style="line-height:1.7;">
+  <dt style="font-weight:700; color:#1a4d8f;">{{ t("help.setup_items.field_identity") }}</dt>
+  <dd style="margin-left:1em;">{{ t("help.setup_items.field_identity_desc") }}</dd>
+  <dt style="font-weight:700; color:#1a4d8f; margin-top:8px;">{{ t("help.setup_items.field_classification") }}</dt>
+  <dd style="margin-left:1em;">{{ t("help.setup_items.field_classification_desc") }}</dd>
+  <dt style="font-weight:700; color:#1a4d8f; margin-top:8px;">{{ t("help.setup_items.field_units") }}</dt>
+  <dd style="margin-left:1em;">{{ t("help.setup_items.field_units_desc") }}</dd>
+  <dt style="font-weight:700; color:#1a4d8f; margin-top:8px;">{{ t("help.setup_items.field_location") }}</dt>
+  <dd style="margin-left:1em;">{{ t("help.setup_items.field_location_desc") }}</dd>
+  <dt style="font-weight:700; color:#1a4d8f; margin-top:8px;">{{ t("help.setup_items.field_est_order_qty") }}</dt>
+  <dd style="margin-left:1em;">{{ t("help.setup_items.field_est_order_qty_desc") }}</dd>
+</dl>
+
+<h2>{{ t("help.setup_items.code_rule") }}</h2>
+<p>{{ t("help.setup_items.code_rule_body") }}</p>
+<div class="callout tip">
+  <code>12034</code> — <strong>12</strong>{{ t("help.setup_items.code_prefix") }} / <strong>034</strong>{{ t("help.setup_items.code_seq") }}
+</div>
+
+<h2>{{ t("help.setup_items.categories_heading") }}</h2>
+<p>{{ t("help.setup_items.categories_body") }}</p>
+<ul style="column-count:2; column-gap:24px;">
+  <li>🥬 {{ t("items.category.vegetables") }}</li>
+  <li>🍄 {{ t("items.category.mushrooms") }}</li>
+  <li>🥩 {{ t("items.category.meat_eggs") }}</li>
+  <li>🐟 {{ t("items.category.seafood") }}</li>
+  <li>🌾 {{ t("items.category.grains_dried") }}</li>
+  <li>🧂 {{ t("items.category.seasonings_oils") }}</li>
+  <li>🥛 {{ t("items.category.dairy_beverages") }}</li>
+  <li>🧊 {{ t("items.category.frozen_processed") }}</li>
+  <li>🥐 {{ t("items.category.bread_pastry") }}</li>
+  <li>🥫 {{ t("items.category.canned_retort") }}</li>
+  <li>🧽 {{ t("items.category.supplies_materials") }}</li>
+  <li>🍲 {{ t("items.category.prepared_items") }}</li>
+</ul>
+
+<h2>{{ t("help.setup_items.process_heading") }}</h2>
+<p>{{ t("help.setup_items.process_body") }}</p>
+<ul>
+  <li><strong>{{ t("items.process_level.raw") }}</strong> — {{ t("help.setup_items.process_raw_desc") }}</li>
+  <li><strong>{{ t("items.process_level.semi") }}</strong> — {{ t("help.setup_items.process_semi_desc") }}</li>
+  <li><strong>{{ t("items.process_level.finished") }}</strong> — {{ t("help.setup_items.process_finished_desc") }}</li>
+</ul>
+
+<h2>{{ t("help.setup_items.step_by_step") }}</h2>
+
+<h3>{{ t("help.setup_items.step1_title") }}</h3>
+<p>{{ t("help.setup_items.step1_body") }}</p>
+<ol>
+  <li>{{ t("help.setup_items.step1_a") }} <a href="{{ url_for('items_master') }}">📦 {{ t("nav.items_master") }}</a></li>
+  <li>{{ t("help.setup_items.step1_b") }}</li>
+  <li>{{ t("help.setup_items.step1_c") }}</li>
+</ol>
+<figure class="screenshot-placeholder">
+  {{ t("help.setup_items.screenshot_single") }}
+</figure>
+
+<h3>{{ t("help.setup_items.step2_title") }}</h3>
+<p>{{ t("help.setup_items.step2_body") }}</p>
+<ol>
+  <li>{{ t("help.setup_items.step2_a") }}</li>
+  <li>{{ t("help.setup_items.step2_b") }}</li>
+  <li>{{ t("help.setup_items.step2_c") }}</li>
+</ol>
+<div class="callout">
+  {{ t("help.setup_items.csv_format_hint") }}
+</div>
+<figure class="screenshot-placeholder">
+  {{ t("help.setup_items.screenshot_csv") }}
+</figure>
+
+<h3>{{ t("help.setup_items.step3_title") }}</h3>
+<p>{{ t("help.setup_items.step3_body") }}</p>
+<ul>
+  <li>{{ t("help.setup_items.step3_a") }}</li>
+  <li>{{ t("help.setup_items.step3_b") }}</li>
+  <li>{{ t("help.setup_items.step3_c") }}</li>
+</ul>
+
+<h2>{{ t("help.setup_items.est_qty_heading") }}</h2>
+<p>{{ t("help.setup_items.est_qty_body") }}</p>
+
+<h3>{{ t("help.setup_items.est_qty_auto") }}</h3>
+<p>{{ t("help.setup_items.est_qty_auto_body") }}</p>
+<div class="callout tip">
+  <code>{{ t("help.setup_items.est_qty_formula") }}</code>
+</div>
+<ul>
+  <li>{{ t("help.setup_items.est_qty_auto_1") }}</li>
+  <li>{{ t("help.setup_items.est_qty_auto_2") }}</li>
+  <li>{{ t("help.setup_items.est_qty_auto_3") }}</li>
+</ul>
+
+<h3>{{ t("help.setup_items.est_qty_manual") }}</h3>
+<p>{{ t("help.setup_items.est_qty_manual_body") }}</p>
+
+<h3>{{ t("help.setup_items.est_qty_history") }}</h3>
+<p>{{ t("help.setup_items.est_qty_history_body") }}</p>
+<figure class="screenshot-placeholder">
+  {{ t("help.setup_items.screenshot_stats") }}
+</figure>
+
+<h2>{{ t("help.setup_items.tips_heading") }}</h2>
+<ul>
+  <li>{{ t("help.setup_items.tip_1") }}</li>
+  <li>{{ t("help.setup_items.tip_2") }}</li>
+  <li>{{ t("help.setup_items.tip_3") }}</li>
+</ul>
+
+<h2>{{ t("help.setup_items.troubleshoot_heading") }}</h2>
+<dl style="line-height:1.7;">
+  <dt style="font-weight:700;">Q: {{ t("help.setup_items.q1") }}</dt>
+  <dd style="margin-left:1em;">A: {{ t("help.setup_items.a1") }}</dd>
+  <dt style="font-weight:700; margin-top:8px;">Q: {{ t("help.setup_items.q2") }}</dt>
+  <dd style="margin-left:1em;">A: {{ t("help.setup_items.a2") }}</dd>
+  <dt style="font-weight:700; margin-top:8px;">Q: {{ t("help.setup_items.q3") }}</dt>
+  <dd style="margin-left:1em;">A: {{ t("help.setup_items.a3") }}</dd>
+</dl>
+
+<p style="margin-top:24px;">
+  <strong>{{ t("help.common.next") }}:</strong>
+  <a href="{{ url_for('help.topic', slug='setup_revenue') }}">{{ t("help.chapters.setup_revenue") }}</a>
+</p>
+
 {% endblock %}
