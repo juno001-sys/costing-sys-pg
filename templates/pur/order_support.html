@@ -20,6 +20,17 @@
   <input type="hidden" name="base_date" value="{{ base_date }}">
 </form>
 
+{% if selected_store_id %}
+<div style="margin: -10px 0 18px; font-size: 13px;">
+  <strong>{{ t("order_support.view") }}：</strong>
+  <span style="color:#0066cc; font-weight:600;">📋 {{ t("order_support.view.cards") }}</span>
+  &nbsp;｜&nbsp;
+  <a href="?store_id={{ selected_store_id }}&amp;view=sheet" style="color:#555;">
+    📊 {{ t("order_support.view.sheet") }}
+  </a>
+</div>
+{% endif %}
+
 {% if selected_store_id and supplier_cards %}
 
 
@@ -93,6 +104,7 @@
         <th>{{ t("items.name") }}</th>
         <th>{{ t("items.category") }}</th>
         <th style="text-align:right;">{{ t("order_support.current_stock") }}</th>
+        <th style="text-align:center;">{{ t("inventory.sp.last_count") }}</th>
         <th style="text-align:right;">{{ t("order_support.est_qty") }}</th>
         <th>{{ t("order_support.status") }}</th>
       </tr>
@@ -109,6 +121,9 @@
         <td style="text-align:right; font-weight:600;
           {% if item.status == 'shortage' %}color:#dc3545;{% elif item.status == 'low' %}color:#e67700;{% endif %}">
           {{ item.current_stock }}
+        </td>
+        <td style="text-align:center; font-size:11px; color:#888;">
+          {{ item.last_count_date or '—' }}
         </td>
         <td style="text-align:right;">{{ item.est_order_qty or '-' }}</td>
         <td style="text-align:center;">

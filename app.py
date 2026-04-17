@@ -6,7 +6,7 @@ import os
 import uuid
 import time
 
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from flask import Flask, g, render_template, session, request, redirect, url_for
 from db import get_db, close_db
 from views.inventory import init_inventory_views
@@ -43,6 +43,15 @@ from views.pur_delivery_paste import init_delivery_paste_views
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "kurajika-dev")
 app.config["JSON_AS_ASCII"] = False
+
+# ── Session persistence (30 days, secure cookies) ───────────────────────────
+# Operators on mobile were being asked to log in every visit. Persistent
+# sessions keep them logged in for 30 days; Secure + HttpOnly + SameSite=Lax
+# cookies mitigate XSS/CSRF risk. Disabled on local (HTTP) so dev still works.
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = os.getenv("APP_ENV", "development") != "local"
 
 app.register_blueprint(admin_profit_settings_bp)
 
