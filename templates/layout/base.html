@@ -382,8 +382,8 @@
           <span class="user-name">{{ current_user.name }}</span>
           <span class="badge">{{ current_role }}</span>
           <span>{{ current_company_name }}</span>
-          <a href="{{ url_for('static', filename='docs/user_manual.pdf') }}" target="_blank" rel="noopener">
-            {{ t("nav.user_manual") }}
+          <a href="{{ url_for('help.index') }}">
+            ❓ {{ t("nav.help") }}
           </a>
           <form method="post" action="{{ url_for('logout') }}" style="margin:0; display:inline;">
             <button type="submit" class="logout-btn">Logout</button>
@@ -450,6 +450,11 @@
               🏪 {{ t("nav.stores_master") }}</a>
           </li>
           <li class="nav-sep"></li>
+          <li>
+            <a href="{{ url_for('help.index') }}"
+              class="{% if request.endpoint and request.endpoint.startswith('help.') %}active{% endif %}">
+              ❓ {{ t("nav.help") }}</a>
+          </li>
           <li>
             <a href="{{ url_for('reports.work_logs') }}"
               class="{% if request.endpoint == 'reports.work_logs' %}active{% endif %}">

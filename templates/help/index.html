@@ -1,0 +1,32 @@
+{% extends "help/_layout.html" %}
+{% block help_body %}
+
+<h1>{{ t("help.index.title") }}</h1>
+<p>{{ t("help.index.intro") }}</p>
+
+<div class="callout tip">
+  {{ t("help.index.callout_tip") }}
+</div>
+
+<h2>{{ t("help.index.whats_here") }}</h2>
+<ul>
+  <li><strong>{{ t("help.section.intro") }}</strong> — {{ t("help.index.section_intro_desc") }}</li>
+  <li><strong>{{ t("help.section.concepts") }}</strong> — {{ t("help.index.section_concepts_desc") }}</li>
+  <li><strong>{{ t("help.section.setup") }}</strong> — {{ t("help.index.section_setup_desc") }}</li>
+</ul>
+
+<h2>{{ t("help.index.recommended_order") }}</h2>
+<ol>
+  <li><a href="{{ url_for('help.topic', slug='nav_map') }}">{{ t("help.chapters.nav_map") }}</a> — {{ t("help.index.step1_desc") }}</li>
+  <li><a href="{{ url_for('help.topic', slug='concept_count_vs_order') }}">{{ t("help.chapters.concept_count_vs_order") }}</a> — {{ t("help.index.step2_desc") }}</li>
+  <li><a href="{{ url_for('help.topic', slug='setup_shelves') }}">{{ t("help.chapters.setup_shelves") }}</a> — {{ t("help.index.step3_desc") }}</li>
+  <li><a href="{{ url_for('help.topic', slug='setup_suppliers') }}">{{ t("help.chapters.setup_suppliers") }}</a> — {{ t("help.index.step4_desc") }}</li>
+  <li><a href="{{ url_for('help.topic', slug='setup_items') }}">{{ t("help.chapters.setup_items") }}</a> — {{ t("help.index.step5_desc") }}</li>
+  <li><a href="{{ url_for('help.topic', slug='setup_revenue') }}">{{ t("help.chapters.setup_revenue") }}</a> — {{ t("help.index.step6_desc") }}</li>
+</ol>
+
+<div class="callout">
+  {{ t("help.index.language_hint") }}
+</div>
+
+{% endblock %}
