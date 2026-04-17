@@ -36,8 +36,10 @@
   <li>{{ t("help.setup_suppliers.step1_b") }}</li>
   <li>{{ t("help.setup_suppliers.step1_c") }}</li>
 </ol>
-<figure class="screenshot-placeholder">
-  {{ t("help.setup_suppliers.screenshot_basic") }}
+<figure>
+  <img src="{{ url_for('static', filename='help/screenshots/suppliers_edit.png') }}"
+       alt="{{ t('help.setup_suppliers.screenshot_basic') }}">
+  <figcaption>{{ t("help.setup_suppliers.screenshot_basic") }}</figcaption>
 </figure>
 
 <h3>{{ t("help.setup_suppliers.step2_title") }}</h3>
@@ -48,8 +50,10 @@
   <li>{{ t("help.setup_suppliers.step2_c") }}</li>
   <li>{{ t("help.setup_suppliers.step2_d") }}</li>
 </ol>
-<figure class="screenshot-placeholder">
-  {{ t("help.setup_suppliers.screenshot_schedule") }}
+<figure>
+  <img src="{{ url_for('static', filename='help/screenshots/suppliers_schedule.png') }}"
+       alt="{{ t('help.setup_suppliers.screenshot_schedule') }}">
+  <figcaption>{{ t("help.setup_suppliers.screenshot_schedule") }}</figcaption>
 </figure>
 
 <div class="callout tip">

@@ -57,8 +57,10 @@
   <li>{{ t("help.setup_revenue.step3_b") }}</li>
   <li>{{ t("help.setup_revenue.step3_c") }}</li>
 </ol>
-<figure class="screenshot-placeholder">
-  {{ t("help.setup_revenue.screenshot_cost_report") }}
+<figure>
+  <img src="{{ url_for('static', filename='help/screenshots/cost_report.png') }}"
+       alt="{{ t('help.setup_revenue.screenshot_cost_report') }}">
+  <figcaption>{{ t("help.setup_revenue.screenshot_cost_report") }}</figcaption>
 </figure>
 
 <h2>{{ t("help.setup_revenue.interpret_heading") }}</h2>
