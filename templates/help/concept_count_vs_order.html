@@ -1,0 +1,97 @@
+{% extends "help/_layout.html" %}
+{% block help_body %}
+
+<h1>{{ t("help.count_vs_order.title") }}</h1>
+<p>{{ t("help.count_vs_order.intro") }}</p>
+
+<h2>{{ t("help.count_vs_order.two_views") }}</h2>
+
+<style>
+  .compare-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 14px 0;
+  }
+  .compare-card {
+    border: 1px solid #d8dee7; border-radius: 8px; padding: 14px;
+    background: #fbfdff;
+  }
+  .compare-card.count h3 { color: #059669; }
+  .compare-card.order h3 { color: #2a7ae2; }
+  .compare-card h3 { margin-top: 0; font-size: 16px; }
+  .compare-card dt { font-weight: 700; font-size: 13px; color: #333; margin-top: 10px; }
+  .compare-card dd { margin: 2px 0 0 0; font-size: 13px; color: #555; }
+  .arrow-down { text-align: center; font-size: 22px; color: #888; margin: -4px 0 4px; }
+  @media (max-width: 700px) { .compare-grid { grid-template-columns: 1fr; } }
+</style>
+
+<div class="compare-grid">
+  <div class="compare-card count">
+    <h3>📋 {{ t("help.count_vs_order.count_heading") }}</h3>
+    <dl>
+      <dt>{{ t("help.count_vs_order.label_groupedby") }}</dt>
+      <dd>{{ t("help.count_vs_order.count_groupedby") }}</dd>
+      <dt>{{ t("help.count_vs_order.label_question") }}</dt>
+      <dd>{{ t("help.count_vs_order.count_question") }}</dd>
+      <dt>{{ t("help.count_vs_order.label_physical") }}</dt>
+      <dd>{{ t("help.count_vs_order.count_physical") }}</dd>
+      <dt>{{ t("help.count_vs_order.label_screens") }}</dt>
+      <dd>
+        <a href="{{ url_for('inventory_count_v2') }}">📋 {{ t("nav.inventory_count") }}</a><br>
+        <a href="/inventory/count_sp">📱 {{ t("help.count_vs_order.count_sp") }}</a>
+      </dd>
+    </dl>
+  </div>
+
+  <div class="compare-card order">
+    <h3>🛒 {{ t("help.count_vs_order.order_heading") }}</h3>
+    <dl>
+      <dt>{{ t("help.count_vs_order.label_groupedby") }}</dt>
+      <dd>{{ t("help.count_vs_order.order_groupedby") }}</dd>
+      <dt>{{ t("help.count_vs_order.label_question") }}</dt>
+      <dd>{{ t("help.count_vs_order.order_question") }}</dd>
+      <dt>{{ t("help.count_vs_order.label_physical") }}</dt>
+      <dd>{{ t("help.count_vs_order.order_physical") }}</dd>
+      <dt>{{ t("help.count_vs_order.label_screens") }}</dt>
+      <dd>
+        <a href="{{ url_for('order_support') }}">🛒 {{ t("nav.order_support") }}</a><br>
+        <a href="{{ url_for('order_support') }}?view=sheet">📊 {{ t("order_support.view.sheet") }}</a>
+      </dd>
+    </dl>
+  </div>
+</div>
+
+<h2>{{ t("help.count_vs_order.same_item") }}</h2>
+<p>{{ t("help.count_vs_order.same_item_intro") }}</p>
+
+<figure class="screenshot-placeholder">
+  {{ t("help.count_vs_order.screenshot_diagram") }}
+</figure>
+
+<h2>{{ t("help.count_vs_order.when_to_use") }}</h2>
+
+<h3>📋 {{ t("help.count_vs_order.use_count_heading") }}</h3>
+<ul>
+  <li>{{ t("help.count_vs_order.use_count_1") }}</li>
+  <li>{{ t("help.count_vs_order.use_count_2") }}</li>
+  <li>{{ t("help.count_vs_order.use_count_3") }}</li>
+</ul>
+
+<h3>🛒 {{ t("help.count_vs_order.use_order_heading") }}</h3>
+<ul>
+  <li>{{ t("help.count_vs_order.use_order_1") }}</li>
+  <li>{{ t("help.count_vs_order.use_order_2") }}</li>
+  <li>{{ t("help.count_vs_order.use_order_3") }}</li>
+</ul>
+
+<div class="callout">
+  <strong>{{ t("help.count_vs_order.summary_label") }}</strong>
+  {{ t("help.count_vs_order.summary") }}
+</div>
+
+<h2>{{ t("help.count_vs_order.tips_heading") }}</h2>
+<ul>
+  <li>{{ t("help.count_vs_order.tip_1") }}</li>
+  <li>{{ t("help.count_vs_order.tip_2") }}</li>
+  <li>{{ t("help.count_vs_order.tip_3") }}</li>
+</ul>
+
+{% endblock %}

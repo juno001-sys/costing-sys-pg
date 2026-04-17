@@ -1,0 +1,110 @@
+{% extends "help/_layout.html" %}
+{% block help_body %}
+
+<h1>{{ t("help.setup_shelves.title") }}</h1>
+<p>{{ t("help.setup_shelves.intro") }}</p>
+
+<h2>{{ t("help.setup_shelves.why_heading") }}</h2>
+<p>{{ t("help.setup_shelves.why_body") }}</p>
+<ul>
+  <li>{{ t("help.setup_shelves.why_1") }}</li>
+  <li>{{ t("help.setup_shelves.why_2") }}</li>
+  <li>{{ t("help.setup_shelves.why_3") }}</li>
+</ul>
+
+<h2>{{ t("help.setup_shelves.three_layers") }}</h2>
+<p>{{ t("help.setup_shelves.three_layers_intro") }}</p>
+
+<ol>
+  <li>
+    <strong>{{ t("help.setup_shelves.layer1_name") }}</strong>
+    — {{ t("help.setup_shelves.layer1_desc") }}
+  </li>
+  <li>
+    <strong>{{ t("help.setup_shelves.layer2_name") }}</strong>
+    — {{ t("help.setup_shelves.layer2_desc") }}
+  </li>
+  <li>
+    <strong>{{ t("help.setup_shelves.layer3_name") }}</strong>
+    — {{ t("help.setup_shelves.layer3_desc") }}
+  </li>
+</ol>
+
+<div class="callout tip">
+  {{ t("help.setup_shelves.tip_hierarchy") }}
+</div>
+
+<h2>{{ t("help.setup_shelves.step_by_step") }}</h2>
+
+<h3>{{ t("help.setup_shelves.step1_title") }}</h3>
+<p>{{ t("help.setup_shelves.step1_body") }}</p>
+<ol>
+  <li>{{ t("help.setup_shelves.step1_a") }} <a href="{{ url_for('stores_master') }}">🏪 {{ t("nav.stores_master") }}</a></li>
+  <li>{{ t("help.setup_shelves.step1_b") }}</li>
+  <li>{{ t("help.setup_shelves.step1_c") }}</li>
+</ol>
+<figure class="screenshot-placeholder">
+  {{ t("help.setup_shelves.screenshot_temp") }}
+</figure>
+
+<h3>{{ t("help.setup_shelves.step2_title") }}</h3>
+<p>{{ t("help.setup_shelves.step2_body") }}</p>
+<ol>
+  <li>{{ t("help.setup_shelves.step2_a") }}</li>
+  <li>{{ t("help.setup_shelves.step2_b") }}</li>
+  <li>{{ t("help.setup_shelves.step2_c") }}</li>
+</ol>
+<figure class="screenshot-placeholder">
+  {{ t("help.setup_shelves.screenshot_area") }}
+</figure>
+
+<h3>{{ t("help.setup_shelves.step3_title") }}</h3>
+<p>{{ t("help.setup_shelves.step3_body") }}</p>
+<ol>
+  <li>{{ t("help.setup_shelves.step3_a") }}</li>
+  <li>{{ t("help.setup_shelves.step3_b") }}</li>
+  <li>{{ t("help.setup_shelves.step3_c") }}</li>
+</ol>
+<figure class="screenshot-placeholder">
+  {{ t("help.setup_shelves.screenshot_shelf") }}
+</figure>
+
+<h3>{{ t("help.setup_shelves.step4_title") }}</h3>
+<p>{{ t("help.setup_shelves.step4_body") }}</p>
+<ol>
+  <li>{{ t("help.setup_shelves.step4_a") }} <a href="{{ url_for('items_master') }}">📦 {{ t("nav.items_master") }}</a></li>
+  <li>{{ t("help.setup_shelves.step4_b") }}</li>
+  <li>{{ t("help.setup_shelves.step4_c") }}</li>
+</ol>
+<figure class="screenshot-placeholder">
+  {{ t("help.setup_shelves.screenshot_assign") }}
+</figure>
+
+<div class="callout warn">
+  <strong>{{ t("help.setup_shelves.warn_heading") }}</strong>
+  {{ t("help.setup_shelves.warn_body") }}
+</div>
+
+<h2>{{ t("help.setup_shelves.tips_heading") }}</h2>
+<ul>
+  <li>{{ t("help.setup_shelves.tip_1") }}</li>
+  <li>{{ t("help.setup_shelves.tip_2") }}</li>
+  <li>{{ t("help.setup_shelves.tip_3") }}</li>
+</ul>
+
+<h2>{{ t("help.setup_shelves.troubleshoot_heading") }}</h2>
+<dl style="line-height:1.7;">
+  <dt style="font-weight:700;">Q: {{ t("help.setup_shelves.q1") }}</dt>
+  <dd style="margin-left:1em;">A: {{ t("help.setup_shelves.a1") }}</dd>
+  <dt style="font-weight:700; margin-top:8px;">Q: {{ t("help.setup_shelves.q2") }}</dt>
+  <dd style="margin-left:1em;">A: {{ t("help.setup_shelves.a2") }}</dd>
+  <dt style="font-weight:700; margin-top:8px;">Q: {{ t("help.setup_shelves.q3") }}</dt>
+  <dd style="margin-left:1em;">A: {{ t("help.setup_shelves.a3") }}</dd>
+</dl>
+
+<p style="margin-top:24px;">
+  <strong>{{ t("help.common.next") }}:</strong>
+  <a href="{{ url_for('help.topic', slug='setup_suppliers') }}">{{ t("help.chapters.setup_suppliers") }}</a>
+</p>
+
+{% endblock %}
