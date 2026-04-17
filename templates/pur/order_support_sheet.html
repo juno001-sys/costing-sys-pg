@@ -78,7 +78,14 @@
   <tbody>
     {% for r in sheet_rows %}
     <tr class="{{ r.status }}">
-      <td><span class="freq-badge freq-{{ r.frequency }}">{{ r.rate_label }}</span></td>
+      <td>
+        <span class="freq-badge freq-{{ r.frequency }}">
+          {% if r.rate_scale == 'per_week' %}{{ t("items.frequency.rate.per_week")|replace("{n}", r.rate_n|string) }}
+          {%- elif r.rate_scale == 'per_month' %}{{ t("items.frequency.rate.per_month")|replace("{n}", r.rate_n|string) }}
+          {%- elif r.rate_scale == 'less_than_month' %}{{ t("items.frequency.rate.less_than_month") }}
+          {%- else %}{{ t("items.frequency.rate.none") }}{% endif %}
+        </span>
+      </td>
       <td>{{ r.supplier_name }}</td>
       <td style="text-align:center; font-size:11px;">
         {{ r.deadline or '—' }}
