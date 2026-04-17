@@ -129,6 +129,65 @@ def purchase_dashboard():
 
     top_items = db.execute(top_items_sql, top_items_params).fetchall()
 
+    # ── Dead stock (stock on hand, not purchased in last 30 days) ───────
+    dead_stock_sql = """
+        WITH latest_stock AS (
+          SELECT DISTINCT ON (sc.store_id, sc.item_id)
+            sc.store_id, sc.item_id, sc.counted_qty, sc.count_date
+          FROM stock_counts sc
+          ORDER BY sc.store_id, sc.item_id, sc.count_date DESC, sc.id DESC
+        ),
+        purchases_after_count AS (
+          SELECT ls.store_id, ls.item_id,
+                 COALESCE(SUM(p.quantity), 0) AS qty_after
+          FROM latest_stock ls
+          LEFT JOIN purchases p
+            ON p.store_id = ls.store_id
+           AND p.item_id  = ls.item_id
+           AND p.is_deleted = 0
+           AND p.delivery_date > ls.count_date
+          GROUP BY ls.store_id, ls.item_id
+        ),
+        last_purchase AS (
+          SELECT DISTINCT ON (p.store_id, p.item_id)
+            p.store_id, p.item_id, p.delivery_date, p.unit_price
+          FROM purchases p
+          WHERE p.is_deleted = 0
+          ORDER BY p.store_id, p.item_id, p.delivery_date DESC, p.id DESC
+        )
+        SELECT
+          i.code,
+          i.name,
+          s.name AS supplier_name,
+          i.category,
+          (ls.counted_qty + pac.qty_after) AS current_stock,
+          lp.delivery_date AS last_purchase_date,
+          (CURRENT_DATE - lp.delivery_date) AS days_since_purchase,
+          lp.unit_price,
+          ((ls.counted_qty + pac.qty_after) * lp.unit_price) AS estimated_value
+        FROM latest_stock ls
+        JOIN purchases_after_count pac
+          ON pac.store_id = ls.store_id AND pac.item_id = ls.item_id
+        JOIN mst_items i      ON i.id = ls.item_id AND i.is_active = 1
+        JOIN pur_suppliers s  ON s.id = i.supplier_id
+        LEFT JOIN mst_stores st ON st.id = ls.store_id
+        LEFT JOIN last_purchase lp
+          ON lp.store_id = ls.store_id AND lp.item_id = ls.item_id
+        WHERE (ls.counted_qty + pac.qty_after) > 0
+          AND lp.delivery_date IS NOT NULL
+          AND lp.delivery_date < (CURRENT_DATE - INTERVAL '30 days')
+          AND st.company_id = %s
+    """
+    dead_stock_params = [company_id]
+    if selected_store_id:
+        dead_stock_sql += " AND ls.store_id = %s"
+        dead_stock_params.append(selected_store_id)
+    dead_stock_sql += """
+        ORDER BY estimated_value DESC NULLS LAST, days_since_purchase DESC
+        LIMIT 50
+    """
+    dead_stock_items = db.execute(dead_stock_sql, dead_stock_params).fetchall()
+
     return render_template(
         "pur/purchase_dashboard.html",
         mst_stores=mst_stores,
@@ -143,4 +202,5 @@ def purchase_dashboard():
         top_items=top_items,
         process_labels=json.dumps([r["label"] for r in process_data], ensure_ascii=False),
         process_values=json.dumps([int(r["total"]) for r in process_data]),
+        dead_stock_items=dead_stock_items,
     )
