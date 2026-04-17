@@ -43,6 +43,29 @@ def classify(purchase_days_in_window: int, window_days: int = WINDOW_DAYS) -> st
     return "none"
 
 
+def format_rate(per_month: float) -> str:
+    """
+    Human-friendly rate label. Chooses 週/月 scale based on magnitude.
+      >= 1/week  → '週X回'  (X = per_month / 4.3, rounded to 1 decimal if needed)
+      >= 1/month → '月X回'
+      > 0        → '月1回未満'
+      0 or less  → '—'
+    """
+    if per_month <= 0:
+        return "—"
+    per_week = per_month / (DAYS_PER_MONTH / 7)  # per_month * 7/30
+    if per_week >= 1:
+        # Round nicely: integer when whole, else 1 decimal
+        n = round(per_week, 1)
+        n_str = str(int(n)) if n == int(n) else f"{n:.1f}"
+        return f"週{n_str}回"
+    if per_month >= 1:
+        n = round(per_month, 1)
+        n_str = str(int(n)) if n == int(n) else f"{n:.1f}"
+        return f"月{n_str}回"
+    return "月1回未満"
+
+
 def bucket_order(code: str) -> int:
     """Sort order: very_high(0) → high(1) → low(2) → none(3)."""
     for i, (b_code, *_) in enumerate(BUCKETS):
@@ -86,5 +109,6 @@ def fetch_item_frequency(db, item_ids: List[int], as_of: date | None = None) -> 
             "purchase_days": days,
             "bucket": classify(days),
             "per_month": round(per_month, 2),
+            "rate_label": format_rate(per_month),
         }
     return result

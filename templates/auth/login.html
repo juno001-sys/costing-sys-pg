@@ -33,8 +33,13 @@ block content %}
     </form>
   </div>
 
-  <!-- System admin -->
-  <div class="card" style="flex: 1; min-width: 320px">
+  <!-- System admin — hidden on narrow (mobile) viewports so operators see only the normal login -->
+  <style>
+    @media (max-width: 700px) {
+      .sys-admin-card { display: none; }
+    }
+  </style>
+  <div class="card sys-admin-card" style="flex: 1; min-width: 320px">
     <h3>System Admin</h3>
     <form method="post" action="{{ url_for('login') }}">
       <!-- Tell backend this is a system admin login -->
