@@ -295,7 +295,12 @@
             <div class="item-name" title="{{ item.item_name }}">
               {{ item.item_name }}
               {% if item.frequency and item.frequency.bucket and item.frequency.bucket != 'none' %}
-                <span class="freq-badge freq-{{ item.frequency.bucket }}">{{ item.frequency.rate_label }}</span>
+                <span class="freq-badge freq-{{ item.frequency.bucket }}">
+                  {% if item.frequency.rate_scale == 'per_week' %}{{ t("items.frequency.rate.per_week")|replace("{n}", item.frequency.rate_n|string) }}
+                  {%- elif item.frequency.rate_scale == 'per_month' %}{{ t("items.frequency.rate.per_month")|replace("{n}", item.frequency.rate_n|string) }}
+                  {%- elif item.frequency.rate_scale == 'less_than_month' %}{{ t("items.frequency.rate.less_than_month") }}
+                  {%- else %}{{ t("items.frequency.rate.none") }}{% endif %}
+                </span>
               {% endif %}
             </div>
             <div class="item-meta">{{ item.area_name }} / {{ item.shelf_label }}</div>
