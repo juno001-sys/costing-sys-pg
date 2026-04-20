@@ -101,5 +101,4 @@ def init_auth_views(app, get_db):
     @app.post("/logout")
     def logout():
         session.pop("user_id", None)
-        flash("ログアウトしました。")
         return redirect(url_for("login"))

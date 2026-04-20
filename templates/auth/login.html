@@ -1,60 +1,161 @@
-{% extends "layout/base_public.html" %} {% block title %}Login{% endblock %} {%
-block content %}
+{% extends "layout/base_public.html" %}
+{% block title %}Login{% endblock %}
 
-<img
-          src="{{ url_for('static', filename='img/kurajika_logo.png') }}"
-          alt="Kurajika"
-          style="height: 36px; width: auto"
-        />
+{% block head_extra %}
+<style>
+  /* ── System Admin: small, tucked in top-right ─────────────── */
+  .sys-admin-corner {
+    position: fixed;
+    top: 12px; right: 12px;
+    z-index: 50;
+  }
+  .sys-admin-toggle {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 10px;
+    background: #f0f5ec; color: #3a6c3e;
+    border: 1px solid #d4e0cc; border-radius: 18px;
+    font-size: 12px; font-weight: 600;
+    cursor: pointer; user-select: none;
+    text-decoration: none;
+  }
+  .sys-admin-toggle:hover { background: #e1ecdb; }
+  .sys-admin-popover {
+    display: none;
+    position: absolute; top: 36px; right: 0;
+    width: 280px;
+    background: white;
+    border: 1px solid #d4e0cc; border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    padding: 14px;
+  }
+  .sys-admin-popover.open { display: block; }
+  .sys-admin-popover h4 {
+    margin: 0 0 10px 0; font-size: 13px; color: #3a6c3e;
+  }
+  .sys-admin-popover label {
+    display: block; font-size: 11px; color: #555; margin-top: 8px;
+  }
+  .sys-admin-popover input {
+    width: 100%; padding: 6px 8px; font-size: 13px;
+    border: 1px solid #ccc; border-radius: 4px; margin-top: 2px;
+    box-sizing: border-box;
+  }
+  .sys-admin-popover button {
+    width: 100%; margin-top: 10px; padding: 8px;
+    background: #5a8a5d; color: white; border: none;
+    border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600;
+  }
+  .sys-admin-popover button:hover { background: #3a6c3e; }
 
-        {% if env == "prod" %}
-        <h1>倉島事業開発 CMS – Postgres</h1>
-        {% elif env == "rft" %}
-        <h1>⚠ RFT – Refactor Environment</h1>
-        {% elif env == "local" %}
-        <h1>LOCAL – Your Machine</h1>
-        {% else %}
-        <h1>DEV – Test Environment</h1>
-        {% endif %}
-      </div>
+  /* ── Normal User: main, centered ─────────────────────────── */
+  .login-main {
+    max-width: 420px; margin: 60px auto 0;
+    text-align: center;
+  }
+  .login-main .header {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 12px; margin-bottom: 24px;
+  }
+  .login-main .header img { height: 56px; width: auto; }
+  .login-main .header h1 {
+    font-size: 22px; margin: 0; color: #1a1a1a; font-weight: 700;
+  }
+  .login-card {
+    background: white;
+    border: 1px solid #d4e0cc; border-radius: 12px;
+    padding: 28px 28px 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.05);
+    text-align: left;
+  }
+  .login-card label {
+    display: block; font-size: 12px; color: #555;
+    margin-top: 14px; margin-bottom: 4px;
+  }
+  .login-card label:first-child { margin-top: 0; }
+  .login-card input {
+    width: 100%; padding: 10px 12px; font-size: 15px;
+    border: 1px solid #ccc; border-radius: 6px;
+    box-sizing: border-box;
+  }
+  .login-card input:focus {
+    border-color: #5a8a5d; outline: none;
+    box-shadow: 0 0 0 3px rgba(90,138,93,.15);
+  }
+  .login-card button {
+    width: 100%; margin-top: 20px; padding: 12px;
+    background: #5a8a5d; color: white; border: none;
+    border-radius: 6px; cursor: pointer;
+    font-size: 15px; font-weight: 700;
+  }
+  .login-card button:hover { background: #3a6c3e; }
 
+  @media (max-width: 480px) {
+    .login-main { margin-top: 30px; padding: 0 16px; }
+    .sys-admin-corner { top: 8px; right: 8px; }
+  }
+</style>
+{% endblock %}
 
-<div style="display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap">
-  <!-- Normal users -->
-  <div class="card" style="flex: 1; min-width: 320px">
-    <h3>Normal User</h3>
+{% block content %}
+
+<!-- ───────── System Admin: small corner widget ───────── -->
+<div class="sys-admin-corner">
+  <a class="sys-admin-toggle" onclick="toggleSysAdmin(event)">
+    🔒 System Admin
+  </a>
+  <div class="sys-admin-popover" id="sys-admin-popover">
+    <h4>System Admin Login</h4>
     <form method="post" action="{{ url_for('login') }}">
-      <input type="hidden" name="next" value="{{ next }}" />
-      <label>Email<br /><input name="email" required /></label><br /><br />
-      <label
-        >Password<br /><input name="password" type="password" required /></label
-      ><br /><br />
-      <button type="submit">Login</button>
-    </form>
-  </div>
-
-  <!-- System admin — hidden on narrow (mobile) viewports so operators see only the normal login -->
-  <style>
-    @media (max-width: 700px) {
-      .sys-admin-card { display: none; }
-    }
-  </style>
-  <div class="card sys-admin-card" style="flex: 1; min-width: 320px">
-    <h3>System Admin</h3>
-    <form method="post" action="{{ url_for('login') }}">
-      <!-- Tell backend this is a system admin login -->
-      <input type="hidden" name="system_admin" value="1" />
-
-      <!-- Force sys-admin landing after login -->
-      <input type="hidden" name="next" value="/admin/system" />
-
-      <label>Email<br /><input name="email" required /></label><br /><br />
-      <label
-        >Password<br /><input name="password" type="password" required /></label
-      ><br /><br />
-
+      <input type="hidden" name="system_admin" value="1">
+      <input type="hidden" name="next" value="/admin/system">
+      <label>Email</label>
+      <input name="email" required>
+      <label>Password</label>
+      <input name="password" type="password" required>
       <button type="submit">Login as System Admin</button>
     </form>
   </div>
 </div>
+
+<!-- ───────── Normal User: main, centered ───────── -->
+<div class="login-main">
+  <div class="header">
+    <img src="{{ url_for('static', filename='img/kurajika_logo.png') }}" alt="Kurajika">
+    {% if env == "prod" %}
+      <h1>倉島事業開発 CMS</h1>
+    {% elif env == "rft" %}
+      <h1>⚠ RFT – Refactor Environment</h1>
+    {% elif env == "local" %}
+      <h1>LOCAL – Your Machine</h1>
+    {% else %}
+      <h1>DEV – Test Environment</h1>
+    {% endif %}
+  </div>
+
+  <div class="login-card">
+    <form method="post" action="{{ url_for('login') }}">
+      <input type="hidden" name="next" value="{{ next }}">
+      <label>Email</label>
+      <input name="email" required autofocus>
+      <label>Password</label>
+      <input name="password" type="password" required>
+      <button type="submit">Login</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  function toggleSysAdmin(e) {
+    e.preventDefault();
+    document.getElementById('sys-admin-popover').classList.toggle('open');
+  }
+  // Close popover when clicking outside
+  document.addEventListener('click', function(e) {
+    const corner = document.querySelector('.sys-admin-corner');
+    if (corner && !corner.contains(e.target)) {
+      document.getElementById('sys-admin-popover').classList.remove('open');
+    }
+  });
+</script>
+
 {% endblock %}
