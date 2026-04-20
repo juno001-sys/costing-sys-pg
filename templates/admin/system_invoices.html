@@ -1,0 +1,115 @@
+{% extends "layout/base.html" %}
+{% block title %}Invoices{% endblock %}
+{% block content %}
+
+<div style="max-width:1200px; margin:0 auto;">
+  <h2>Invoices</h2>
+
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for m in messages %}<div class="flash">{{ m }}</div>{% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <p style="color:#666; font-size:12px;">
+    <a href="{{ url_for('admin_system_home') }}">← Sys Admin Home</a>
+  </p>
+
+  <!-- ============== Generate ============== -->
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header">Generate monthly invoices</div>
+    <form method="post" action="{{ url_for('admin_system_invoices_generate') }}"
+          class="card-form" style="display:flex; gap:10px; align-items:flex-end;">
+      <div class="card-field">
+        <label>Year</label>
+        <input type="number" name="year" value="{{ today_year if today_year else 2026 }}" min="2026" max="2099">
+      </div>
+      <div class="card-field">
+        <label>Month</label>
+        <input type="number" name="month" min="1" max="12" placeholder="1–12">
+      </div>
+      <button type="submit" class="btn-primary">Generate</button>
+      <span style="font-size:11px; color:#666;">(Skipped if already generated or in trial.)</span>
+    </form>
+  </div>
+
+  <!-- ============== Filter pills ============== -->
+  <div style="margin-bottom:12px; font-size:13px;">
+    {% for s in ['all', 'draft', 'issued', 'paid', 'void'] %}
+      <a href="{{ url_for('admin_system_invoices', status=s) }}"
+         style="display:inline-block; padding:4px 12px; margin-right:4px;
+                border-radius:14px; text-decoration:none;
+                {% if status_filter == s %}background:#5a8a5d; color:white;{% else %}background:#eee; color:#444;{% endif %}">
+        {{ s|capitalize }}
+        {% if s != 'all' and count_map.get(s) %}({{ count_map.get(s) }}){% endif %}
+      </a>
+    {% endfor %}
+  </div>
+
+  <!-- ============== Invoice list ============== -->
+  <table style="width:100%; border-collapse:collapse; font-size:13px;">
+    <thead style="background:#f0f5ec;">
+      <tr>
+        <th style="text-align:left; padding:6px 8px;">ID</th>
+        <th style="text-align:left; padding:6px 8px;">Company</th>
+        <th style="text-align:center; padding:6px 8px;">Period</th>
+        <th style="text-align:right; padding:6px 8px;">Amount</th>
+        <th style="text-align:center; padding:6px 8px;">Status</th>
+        <th style="text-align:center; padding:6px 8px;">Due Date</th>
+        <th style="text-align:right; padding:6px 8px;">Days Overdue</th>
+        <th style="text-align:center; padding:6px 8px;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for inv in invoices %}
+        <tr style="border-bottom:1px solid #eee;
+                   {% if inv.status == 'issued' and inv.days_overdue and inv.days_overdue > 0 %}background:#fbeae5;{% endif %}">
+          <td style="padding:6px 8px;">{{ inv.id }}</td>
+          <td style="padding:6px 8px;">
+            {{ inv.company_name }}
+            <span style="color:#888; font-size:11px;">(id={{ inv.company_id }})</span>
+          </td>
+          <td style="padding:6px 8px; text-align:center; font-size:11px;">
+            {{ inv.period_start }}<br>—<br>{{ inv.period_end }}
+          </td>
+          <td style="padding:6px 8px; text-align:right;">
+            ¥{{ "{:,}".format(inv.amount) }}
+          </td>
+          <td style="padding:6px 8px; text-align:center;">
+            {% set color = '#a0a0a0' %}
+            {% if inv.status == 'issued' %}{% set color = '#d29a55' %}{% endif %}
+            {% if inv.status == 'paid' %}{% set color = '#5a8a5d' %}{% endif %}
+            {% if inv.status == 'void' %}{% set color = '#888' %}{% endif %}
+            <span style="display:inline-block; padding:2px 8px; border-radius:10px;
+                         background:{{ color }}; color:white; font-size:11px;">
+              {{ inv.status }}
+            </span>
+          </td>
+          <td style="padding:6px 8px; text-align:center; font-size:11px;">
+            {{ inv.due_date or "" }}
+          </td>
+          <td style="padding:6px 8px; text-align:right;">
+            {% if inv.status == 'issued' and inv.days_overdue and inv.days_overdue > 0 %}
+              <span style="color:#c75a4a; font-weight:600;">+{{ inv.days_overdue }}日</span>
+            {% else %}
+              —
+            {% endif %}
+          </td>
+          <td style="padding:6px 8px; text-align:center;">
+            {% if inv.status == 'issued' %}
+              <form method="post"
+                    action="{{ url_for('admin_system_invoice_mark_paid', invoice_id=inv.id) }}"
+                    style="display:inline;">
+                <button type="submit" class="btn-link" style="font-size:12px;">Mark Paid</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="8" style="padding:20px; text-align:center; color:#888;">No invoices.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}
