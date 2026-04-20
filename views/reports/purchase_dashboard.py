@@ -45,6 +45,18 @@ def _build_threshold_case_sql() -> str:
     )
 
 
+def _grouped_threshold_tiers() -> list[dict]:
+    """Group categories by their threshold days, sorted ascending."""
+    tiers: dict[int, list[str]] = {}
+    for cat, days in CATEGORY_DEADSTOCK_DAYS.items():
+        tiers.setdefault(days, []).append(cat)
+    tiers.setdefault(DEADSTOCK_DEFAULT_DAYS, []).append("未分類")
+    return [
+        {"days": days, "categories": tiers[days]}
+        for days in sorted(tiers.keys())
+    ]
+
+
 @reports_bp.route("/dashboard", methods=["GET"])
 def purchase_dashboard():
     db = get_db()
@@ -250,4 +262,5 @@ def purchase_dashboard():
         process_labels=json.dumps([r["label"] for r in process_data], ensure_ascii=False),
         process_values=json.dumps([int(r["total"]) for r in process_data]),
         dead_stock_items=dead_stock_items,
+        deadstock_threshold_tiers=_grouped_threshold_tiers(),
     )
