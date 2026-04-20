@@ -292,7 +292,7 @@
   "dashboard.dead_stock.threshold": "基準日数",
   "dashboard.dead_stock.days_over": "超過日数",
   "dashboard.dead_stock.uncategorized": "未分類",
-  "dashboard.dead_stock.thresholds_legend": "📋 カテゴリ別 基準日数（この日数を超えると滞留扱い）",
+  "dashboard.dead_stock.thresholds_legend": "カテゴリ別 基準日数",
   "dashboard.dead_stock.none": "該当する滞留在庫はありません。",
   "admin.holidays.title": "店舗カレンダー（休日設定）",
   "admin.holidays.bulk_add": "一括追加",
