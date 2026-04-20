@@ -1,0 +1,228 @@
+{% extends "help/_layout.html" %}
+{% block help_body %}
+
+<h1>{{ t("help.concept_authority.title") }}</h1>
+<p>{{ t("help.concept_authority.intro") }}</p>
+
+<div class="callout">
+  <strong>{{ t("help.concept_authority.tl_dr_label") }}</strong>
+  {{ t("help.concept_authority.tl_dr") }}
+</div>
+
+<!-- =================================================================== -->
+<h2>{{ t("help.concept_authority.two_layers_heading") }}</h2>
+<p>{{ t("help.concept_authority.two_layers_intro") }}</p>
+
+<style>
+  .auth-layers {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0;
+  }
+  .auth-card {
+    border: 1px solid #d8dee7; border-radius: 8px; padding: 14px;
+  }
+  .auth-card.sys     { background: #f0f5ec; border-color: #a8c0a8; }
+  .auth-card.company { background: #fbf4e6; border-color: #d8c28c; }
+  .auth-card h3 { margin-top: 0; font-size: 15px; }
+  .auth-card.sys     h3 { color: #3a6c3e; }
+  .auth-card.company h3 { color: #8a6a32; }
+  .auth-card dt { font-weight: 700; font-size: 12px; color: #444; margin-top: 8px; }
+  .auth-card dd { margin: 2px 0 0 0; font-size: 13px; color: #555; }
+  @media (max-width: 700px) { .auth-layers { grid-template-columns: 1fr; } }
+</style>
+
+<div class="auth-layers">
+  <div class="auth-card sys">
+    <h3>🏛 {{ t("help.concept_authority.sys_admin_heading") }}</h3>
+    <dl>
+      <dt>{{ t("help.concept_authority.label_who") }}</dt>
+      <dd>{{ t("help.concept_authority.sys_admin_who") }}</dd>
+      <dt>{{ t("help.concept_authority.label_decides") }}</dt>
+      <dd>{{ t("help.concept_authority.sys_admin_decides") }}</dd>
+      <dt>{{ t("help.concept_authority.label_example") }}</dt>
+      <dd>{{ t("help.concept_authority.sys_admin_example") }}</dd>
+    </dl>
+  </div>
+
+  <div class="auth-card company">
+    <h3>🏢 {{ t("help.concept_authority.company_admin_heading") }}</h3>
+    <dl>
+      <dt>{{ t("help.concept_authority.label_who") }}</dt>
+      <dd>{{ t("help.concept_authority.company_admin_who") }}</dd>
+      <dt>{{ t("help.concept_authority.label_decides") }}</dt>
+      <dd>{{ t("help.concept_authority.company_admin_decides") }}</dd>
+      <dt>{{ t("help.concept_authority.label_example") }}</dt>
+      <dd>{{ t("help.concept_authority.company_admin_example") }}</dd>
+    </dl>
+  </div>
+</div>
+
+<!-- =================================================================== -->
+<h2>{{ t("help.concept_authority.roles_heading") }}</h2>
+<p>{{ t("help.concept_authority.roles_intro") }}</p>
+
+<style>
+  .role-table {
+    width: 100%; border-collapse: collapse; font-size: 13px; margin: 10px 0;
+  }
+  .role-table th, .role-table td {
+    border: 1px solid #e4e9ef; padding: 8px 10px; text-align: left;
+    vertical-align: top;
+  }
+  .role-table thead { background: #f0f5ec; }
+  .role-table th { color: #3a6c3e; font-size: 12px; }
+  .role-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    color: white; font-size: 11px; font-weight: 600;
+  }
+  .role-badge.chief     { background: #c75a4a; }
+  .role-badge.admin     { background: #5a8a5d; }
+  .role-badge.operator  { background: #3a6c3e; }
+  .role-badge.supervisor{ background: #a0a0a0; }
+</style>
+
+<table class="role-table">
+  <thead>
+    <tr>
+      <th style="width:130px;">{{ t("help.concept_authority.col_role") }}</th>
+      <th>{{ t("help.concept_authority.col_can_do") }}</th>
+      <th>{{ t("help.concept_authority.col_cannot_do") }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="role-badge chief">★ {{ t("help.concept_authority.role.chief_admin") }}</span></td>
+      <td>{{ t("help.concept_authority.chief_can") }}</td>
+      <td>{{ t("help.concept_authority.chief_cannot") }}</td>
+    </tr>
+    <tr>
+      <td><span class="role-badge admin">{{ t("help.concept_authority.role.admin") }}</span></td>
+      <td>{{ t("help.concept_authority.admin_can") }}</td>
+      <td>{{ t("help.concept_authority.admin_cannot") }}</td>
+    </tr>
+    <tr>
+      <td><span class="role-badge operator">{{ t("help.concept_authority.role.operator") }}</span></td>
+      <td>{{ t("help.concept_authority.operator_can") }}</td>
+      <td>{{ t("help.concept_authority.operator_cannot") }}</td>
+    </tr>
+    <tr>
+      <td><span class="role-badge supervisor">{{ t("help.concept_authority.role.supervisor") }}</span></td>
+      <td>{{ t("help.concept_authority.supervisor_can") }}</td>
+      <td>{{ t("help.concept_authority.supervisor_cannot") }}</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout tip">
+  <strong>💡 {{ t("help.concept_authority.chief_rule_heading") }}</strong>
+  {{ t("help.concept_authority.chief_rule") }}
+</div>
+
+<!-- =================================================================== -->
+<h2>{{ t("help.concept_authority.store_grants_heading") }}</h2>
+<p>{{ t("help.concept_authority.store_grants_intro") }}</p>
+
+<div class="callout">
+  <strong>{{ t("help.concept_authority.or_overlay_label") }}</strong>
+  {{ t("help.concept_authority.or_overlay_body") }}
+</div>
+
+<h3>{{ t("help.concept_authority.store_grants_example_heading") }}</h3>
+<p>{{ t("help.concept_authority.store_grants_example_intro") }}</p>
+<ul>
+  <li>{{ t("help.concept_authority.store_grants_example_1") }}</li>
+  <li>{{ t("help.concept_authority.store_grants_example_2") }}</li>
+  <li>{{ t("help.concept_authority.store_grants_example_3") }}</li>
+</ul>
+
+<h3>{{ t("help.concept_authority.store_grants_howto_heading") }}</h3>
+<ol>
+  <li>{{ t("help.concept_authority.store_grants_howto_1") }}</li>
+  <li>{{ t("help.concept_authority.store_grants_howto_2") }}</li>
+  <li>{{ t("help.concept_authority.store_grants_howto_3") }}</li>
+  <li>{{ t("help.concept_authority.store_grants_howto_4") }}</li>
+</ol>
+
+<!-- =================================================================== -->
+<h2>{{ t("help.concept_authority.features_heading") }}</h2>
+<p>{{ t("help.concept_authority.features_intro") }}</p>
+
+<style>
+  .tier-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 12px 0;
+  }
+  .tier-card {
+    border-radius: 8px; padding: 14px; color: white;
+  }
+  .tier-card.entry    { background: #a0a0a0; }
+  .tier-card.standard { background: #3a6c3e; }
+  .tier-card.premium  { background: #5a8a5d; }
+  .tier-card h3 { margin: 0 0 6px 0; font-size: 14px; }
+  .tier-card ul { margin: 4px 0 0 0; padding-left: 18px; font-size: 12px; line-height: 1.6; }
+  @media (max-width: 700px) { .tier-grid { grid-template-columns: 1fr; } }
+</style>
+
+<div class="tier-grid">
+  <div class="tier-card entry">
+    <h3>{{ t("help.concept_authority.tier.entry") }}</h3>
+    <ul>
+      <li>{{ t("help.concept_authority.tier.entry_features") }}</li>
+    </ul>
+  </div>
+  <div class="tier-card standard">
+    <h3>{{ t("help.concept_authority.tier.standard") }}</h3>
+    <ul>
+      <li>{{ t("help.concept_authority.tier.standard_features") }}</li>
+    </ul>
+  </div>
+  <div class="tier-card premium">
+    <h3>{{ t("help.concept_authority.tier.premium") }}</h3>
+    <ul>
+      <li>{{ t("help.concept_authority.tier.premium_features") }}</li>
+    </ul>
+  </div>
+</div>
+
+<p style="font-size:12px; color:#666;">
+  {{ t("help.concept_authority.tier_note") }}
+</p>
+
+<!-- =================================================================== -->
+<h2>{{ t("help.concept_authority.lifecycle_heading") }}</h2>
+<p>{{ t("help.concept_authority.lifecycle_intro") }}</p>
+
+<ul>
+  <li>
+    <strong style="color:#7a5a16;">🕒 {{ t("help.concept_authority.banner.trial") }}</strong>
+    — {{ t("help.concept_authority.banner.trial_body") }}
+  </li>
+  <li>
+    <strong style="color:#7a2418;">⚠ {{ t("help.concept_authority.banner.overdue") }}</strong>
+    — {{ t("help.concept_authority.banner.overdue_body") }}
+  </li>
+  <li>
+    <strong style="color:#7a2418;">🔒 {{ t("help.concept_authority.banner.blocked") }}</strong>
+    — {{ t("help.concept_authority.banner.blocked_body") }}
+  </li>
+</ul>
+
+<div class="callout warn">
+  <strong>{{ t("help.concept_authority.blocked_note_heading") }}</strong>
+  {{ t("help.concept_authority.blocked_note") }}
+</div>
+
+<!-- =================================================================== -->
+<h2>{{ t("help.concept_authority.faq_heading") }}</h2>
+
+<h3>{{ t("help.concept_authority.faq_q1") }}</h3>
+<p>{{ t("help.concept_authority.faq_a1") }}</p>
+
+<h3>{{ t("help.concept_authority.faq_q2") }}</h3>
+<p>{{ t("help.concept_authority.faq_a2") }}</p>
+
+<h3>{{ t("help.concept_authority.faq_q3") }}</h3>
+<p>{{ t("help.concept_authority.faq_a3") }}</p>
+
+<h3>{{ t("help.concept_authority.faq_q4") }}</h3>
+<p>{{ t("help.concept_authority.faq_a4") }}</p>
+
+{% endblock %}

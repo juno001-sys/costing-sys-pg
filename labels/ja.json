@@ -409,6 +409,105 @@
   "help.chapters.concept_count_vs_order": "棚卸しと発注の関係",
   "help.chapters.concept_holidays": "休業日の設定と仕入先との関係",
   "help.chapters.concept_order_support": "発注サポートの使い方",
+  "help.chapters.concept_authority": "ユーザー権限の仕組み",
+  "help.concept_authority.title": "ユーザー権限の仕組み",
+  "help.concept_authority.intro": "CMSは「サービス提供側（私たち）」と「お客様の会社内」の2層で権限を管理しています。誰が何をできるのか、店舗ごとの権限はどう設定するのかを説明します。",
+  "help.concept_authority.tl_dr_label": "📌 まとめ：",
+  "help.concept_authority.tl_dr": "あなたの会社には Chief Admin が1人います。Chief Admin が他の Admin を任命し、Admin が Operator や Supervisor を作成します。店舗単位で個別に権限を上げる「店舗別権限」も設定可能です。",
+
+  "help.concept_authority.two_layers_heading": "1. 2つの権限レイヤー",
+  "help.concept_authority.two_layers_intro": "権限は2段階で管理されます。私たち（くらじか事業開発）が決めるのは契約と機能のオン/オフ。お客様の会社内で誰が何をできるかは、お客様の Chief Admin が決めます。",
+  "help.concept_authority.label_who": "誰",
+  "help.concept_authority.label_decides": "決められること",
+  "help.concept_authority.label_example": "例",
+
+  "help.concept_authority.sys_admin_heading": "システム管理者（くらじか事業開発側）",
+  "help.concept_authority.sys_admin_who": "私たち、サービス提供者です。お客様の会社の中には入りません。",
+  "help.concept_authority.sys_admin_decides": "契約プラン（ENTRY / STANDARD / PREMIUM）、無料試用期間、月額、請求の発行・入金確認。",
+  "help.concept_authority.sys_admin_example": "「くらじか自然豊農 を Premium プランで契約、3か月無料」",
+
+  "help.concept_authority.company_admin_heading": "会社内の Chief Admin / Admin",
+  "help.concept_authority.company_admin_who": "お客様の会社の責任者・管理者。会社ごとに独立して管理されます。",
+  "help.concept_authority.company_admin_decides": "ユーザーの作成・無効化、機能ロール（Admin / Operator / Supervisor）の付与、店舗別の権限上書き。",
+  "help.concept_authority.company_admin_example": "「田中さんを Operator として登録、銀座店だけ Admin に昇格」",
+
+  "help.concept_authority.roles_heading": "2. 4つの役割（ロール）",
+  "help.concept_authority.roles_intro": "会社内のユーザーには次の4つの役割があります。Chief Admin → Admin → Operator → Supervisor の順に権限が広い／読み取り中心になります。",
+  "help.concept_authority.col_role": "役割",
+  "help.concept_authority.col_can_do": "できること",
+  "help.concept_authority.col_cannot_do": "できないこと",
+
+  "help.concept_authority.role.chief_admin": "Chief Admin",
+  "help.concept_authority.role.admin": "Admin",
+  "help.concept_authority.role.operator": "Operator",
+  "help.concept_authority.role.supervisor": "Supervisor",
+
+  "help.concept_authority.chief_can": "Admin と同じ全権限。さらに「他のAdminを任命する」「Chief Admin を別のAdminへ移譲する」ことができます（会社内に1人だけ）。",
+  "help.concept_authority.chief_cannot": "自分自身を直接削除することはできません。先に他のAdminへ Chief を移譲してから無効化します。",
+
+  "help.concept_authority.admin_can": "ユーザーの作成（Operator / Supervisor）、マスタ編集、店舗別権限の付与、すべてのレポート閲覧、すべての設定変更。",
+  "help.concept_authority.admin_cannot": "他のAdminの新規作成・任命はできません（Chief Admin のみ可能）。",
+
+  "help.concept_authority.operator_can": "仕入れ入力、棚卸し入力、品目検索、レポート閲覧（読み取り）。日々の現場業務はすべて可能。",
+  "help.concept_authority.operator_cannot": "ユーザーの作成・編集、マスタ（仕入先・品目・店舗）の編集、契約や月額に関する操作はできません。",
+
+  "help.concept_authority.supervisor_can": "すべてのレポート・データを閲覧（読み取り）できます。経営者・監査担当者向け。",
+  "help.concept_authority.supervisor_cannot": "データ入力（仕入れ・棚卸し）、編集、削除は一切できません。閲覧専用です。",
+
+  "help.concept_authority.chief_rule_heading": "Chief Admin のルール",
+  "help.concept_authority.chief_rule": "1社につき Chief Admin は必ず1人。これは「最終責任者」を明確にするためです。退職や役割変更があった場合は、現在の Chief Admin が他の Admin に Chief を移譲してから自分の役割を変更してください。",
+
+  "help.concept_authority.store_grants_heading": "3. 店舗別権限（OR上書き）",
+  "help.concept_authority.store_grants_intro": "会社全体の役割（機能ロール）に加えて、特定の店舗だけ別の権限を上書きすることができます。これを「店舗別権限」と呼びます。",
+  "help.concept_authority.or_overlay_label": "💡 OR上書きの考え方",
+  "help.concept_authority.or_overlay_body": "店舗別権限は、会社全体の役割を「下げる」ことはできません。「上げる」だけです。たとえば Operator のユーザーに「銀座店だけ Admin」を付与すると、銀座店では Admin として動けます。他の店舗ではそのまま Operator のままです。",
+
+  "help.concept_authority.store_grants_example_heading": "具体例",
+  "help.concept_authority.store_grants_example_intro": "佐藤さんの会社全体の役割が Operator の場合：",
+  "help.concept_authority.store_grants_example_1": "店舗別権限なし → すべての店舗で Operator として動く",
+  "help.concept_authority.store_grants_example_2": "「銀座店：Admin」を付与 → 銀座店では Admin、それ以外は Operator",
+  "help.concept_authority.store_grants_example_3": "「新宿店：Admin」も追加 → 銀座店と新宿店では Admin、それ以外は Operator",
+
+  "help.concept_authority.store_grants_howto_heading": "設定手順",
+  "help.concept_authority.store_grants_howto_1": "Admin としてログインし、ナビゲーションから「ユーザー」を開く。",
+  "help.concept_authority.store_grants_howto_2": "対象ユーザーの行で「Store grants」をクリック。",
+  "help.concept_authority.store_grants_howto_3": "店舗ごとに「— (no override)」「Operator」「Admin」のいずれかを選択。",
+  "help.concept_authority.store_grants_howto_4": "保存。次回そのユーザーがログインしたときから反映されます。",
+
+  "help.concept_authority.features_heading": "4. 契約プランで使える機能が変わります",
+  "help.concept_authority.features_intro": "あなたの会社の契約プランによって、表示される機能が変わります。プランは上位互換です（Premium ⊇ Standard ⊇ Entry）。",
+
+  "help.concept_authority.tier.entry": "ENTRY",
+  "help.concept_authority.tier.entry_features": "仕入れ入力（あいまい検索）／コピペで一括入力／棚卸し入力／仕入先別仕入れ金額照会",
+  "help.concept_authority.tier.standard": "STANDARD",
+  "help.concept_authority.tier.standard_features": "ENTRYのすべて＋棚割り設定／棚卸しスマホUI／品目別仕入れ金額照会／月次利用量／売上原価月次推移／売上利益推計",
+  "help.concept_authority.tier.premium": "PREMIUM",
+  "help.concept_authority.tier.premium_features": "STANDARDのすべて＋ダッシュボード（仕入れシェア・TOP20・死に筋）／発注サポート",
+
+  "help.concept_authority.tier_note": "プランによって使えない機能はナビゲーションに表示されません。「あれ、メニューにあったはずのものが見当たらない…」という場合、契約プランをご確認ください。プラン変更のご相談はくらじか事業開発までお問い合わせください。",
+
+  "help.concept_authority.lifecycle_heading": "5. 契約状態を表す画面上部のバナー",
+  "help.concept_authority.lifecycle_intro": "請求や試用期間に関する情報は画面上部にカラーバナーで表示されます。",
+
+  "help.concept_authority.banner.trial": "黄色：無料試用期間",
+  "help.concept_authority.banner.trial_body": "あと何日で試用期間が終了し、自動的に請求書が発行されるかを表示します。残り日数が少なくなるほど色が濃くなります。",
+  "help.concept_authority.banner.overdue": "赤色：請求書のお支払い遅延",
+  "help.concept_authority.banner.overdue_body": "発行済みの請求書が期日を過ぎています。お早めにお支払いをお願いします。",
+  "help.concept_authority.banner.blocked": "赤色＋ロック：アカウント一時停止",
+  "help.concept_authority.banner.blocked_body": "長期にわたり未払いの場合、CMSは閲覧専用モードに切り替わります。データは保持されます。お支払い確認後にすぐ通常利用に戻せます。",
+
+  "help.concept_authority.blocked_note_heading": "⚠ 重要：",
+  "help.concept_authority.blocked_note": "閲覧専用モードに切り替わってもデータは消えません。お支払い確認後、システム管理者が解除するとすぐ通常通りお使いいただけます。",
+
+  "help.concept_authority.faq_heading": "よくある質問",
+  "help.concept_authority.faq_q1": "Q. 自分が Chief Admin かどうか確認したい",
+  "help.concept_authority.faq_a1": "A. ユーザー画面（/admin/users）で自分の行に「★ Chief」と表示されていれば Chief Admin です。",
+  "help.concept_authority.faq_q2": "Q. Chief Admin が退職してしまった場合は？",
+  "help.concept_authority.faq_a2": "A. くらじか事業開発（システム管理者）にご連絡ください。本人確認のうえ、後任のAdminへ Chief を移譲します。",
+  "help.concept_authority.faq_q3": "Q. Operator が「店舗別権限」で Admin に昇格した場合、ユーザー作成もできるようになりますか？",
+  "help.concept_authority.faq_a3": "A. いいえ。店舗別権限は「店舗内の操作」（その店の仕入先の追加など）を上書きするものです。会社全体に関わる操作（ユーザー作成）には影響しません。",
+  "help.concept_authority.faq_q4": "Q. メニューに「ダッシュボード」が出ません",
+  "help.concept_authority.faq_a4": "A. ダッシュボードは Premium プランの機能です。契約プランをご確認ください。",
   "help.chapters.setup_shelves": "棚・温度帯・エリアの設定",
   "help.chapters.setup_suppliers": "仕入先マスタの使い方",
   "help.chapters.setup_items": "品目マスタの使い方",
