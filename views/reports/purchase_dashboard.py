@@ -12,6 +12,39 @@ from utils.access_scope import (
 from . import reports_bp, get_db
 
 
+# Per-category deadstock threshold (days since last delivery before flagged).
+# Uncategorized items (ELSE branch) get 0 — they always surface as a
+# data-quality nudge to assign a proper category.
+CATEGORY_DEADSTOCK_DAYS: dict[str, int] = {
+    "青果（野菜）": 7,
+    "きのこ類": 7,
+    "水産・魚": 7,
+    "仕込み品": 7,
+    "精肉・卵": 14,
+    "乳製品・飲料": 14,
+    "パン・製菓": 14,
+    "冷凍食品（加工品）": 60,
+    "米・穀物・乾物": 60,
+    "缶詰・レトルト": 90,
+    "調味料・油脂": 90,
+    "消耗品・資材": 120,
+}
+DEADSTOCK_DEFAULT_DAYS = 0
+
+
+def _build_threshold_case_sql() -> str:
+    whens = "\n".join(
+        f"            WHEN '{cat}' THEN {days}"
+        for cat, days in CATEGORY_DEADSTOCK_DAYS.items()
+    )
+    return (
+        "CASE i.category\n"
+        f"{whens}\n"
+        f"            ELSE {DEADSTOCK_DEFAULT_DAYS}\n"
+        "          END"
+    )
+
+
 @reports_bp.route("/dashboard", methods=["GET"])
 def purchase_dashboard():
     db = get_db()
@@ -129,8 +162,12 @@ def purchase_dashboard():
 
     top_items = db.execute(top_items_sql, top_items_params).fetchall()
 
-    # ── Dead stock (stock on hand, not purchased in last 30 days) ───────
-    dead_stock_sql = """
+    # ── Dead stock (per-category threshold) ─────────────────────────────
+    # Each category has its own "ideal duration" before stock is considered
+    # stale (see CATEGORY_DEADSTOCK_DAYS at module top). Uncategorized items
+    # use threshold = 0 so they surface as a data-quality nudge.
+    threshold_case = _build_threshold_case_sql()
+    dead_stock_sql = f"""
         WITH latest_stock AS (
           SELECT DISTINCT ON (sc.store_id, sc.item_id)
             sc.store_id, sc.item_id, sc.counted_qty, sc.count_date
@@ -154,36 +191,46 @@ def purchase_dashboard():
           FROM purchases p
           WHERE p.is_deleted = 0
           ORDER BY p.store_id, p.item_id, p.delivery_date DESC, p.id DESC
+        ),
+        scored AS (
+          SELECT
+            i.code,
+            i.name,
+            s.name AS supplier_name,
+            i.category,
+            (ls.counted_qty + pac.qty_after) AS current_stock,
+            lp.delivery_date AS last_purchase_date,
+            (CURRENT_DATE - lp.delivery_date) AS days_since_purchase,
+            lp.unit_price,
+            ((ls.counted_qty + pac.qty_after) * lp.unit_price) AS estimated_value,
+            {threshold_case} AS threshold_days,
+            ls.store_id AS store_id
+          FROM latest_stock ls
+          JOIN purchases_after_count pac
+            ON pac.store_id = ls.store_id AND pac.item_id = ls.item_id
+          JOIN mst_items i      ON i.id = ls.item_id AND i.is_active = 1
+          JOIN pur_suppliers s  ON s.id = i.supplier_id
+          LEFT JOIN mst_stores st ON st.id = ls.store_id
+          LEFT JOIN last_purchase lp
+            ON lp.store_id = ls.store_id AND lp.item_id = ls.item_id
+          WHERE (ls.counted_qty + pac.qty_after) > 0
+            AND lp.delivery_date IS NOT NULL
+            AND st.company_id = %s
         )
         SELECT
-          i.code,
-          i.name,
-          s.name AS supplier_name,
-          i.category,
-          (ls.counted_qty + pac.qty_after) AS current_stock,
-          lp.delivery_date AS last_purchase_date,
-          (CURRENT_DATE - lp.delivery_date) AS days_since_purchase,
-          lp.unit_price,
-          ((ls.counted_qty + pac.qty_after) * lp.unit_price) AS estimated_value
-        FROM latest_stock ls
-        JOIN purchases_after_count pac
-          ON pac.store_id = ls.store_id AND pac.item_id = ls.item_id
-        JOIN mst_items i      ON i.id = ls.item_id AND i.is_active = 1
-        JOIN pur_suppliers s  ON s.id = i.supplier_id
-        LEFT JOIN mst_stores st ON st.id = ls.store_id
-        LEFT JOIN last_purchase lp
-          ON lp.store_id = ls.store_id AND lp.item_id = ls.item_id
-        WHERE (ls.counted_qty + pac.qty_after) > 0
-          AND lp.delivery_date IS NOT NULL
-          AND lp.delivery_date < (CURRENT_DATE - INTERVAL '30 days')
-          AND st.company_id = %s
+          code, name, supplier_name, category,
+          current_stock, last_purchase_date, days_since_purchase,
+          unit_price, estimated_value, threshold_days,
+          (days_since_purchase - threshold_days) AS days_over
+        FROM scored
+        WHERE days_since_purchase >= threshold_days
     """
     dead_stock_params = [company_id]
     if selected_store_id:
-        dead_stock_sql += " AND ls.store_id = %s"
+        dead_stock_sql += " AND store_id = %s"
         dead_stock_params.append(selected_store_id)
     dead_stock_sql += """
-        ORDER BY estimated_value DESC NULLS LAST, days_since_purchase DESC
+        ORDER BY days_over DESC, estimated_value DESC NULLS LAST
         LIMIT 50
     """
     dead_stock_items = db.execute(dead_stock_sql, dead_stock_params).fetchall()
