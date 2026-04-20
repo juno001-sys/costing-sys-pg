@@ -240,6 +240,105 @@
   "help.chapters.setup_suppliers": "Using the Supplier Master",
   "help.chapters.setup_items": "Using the Item Master",
   "help.chapters.setup_revenue": "Revenue Estimation Setup",
+  "help.chapters.concept_authority": "How User Permissions Work",
+  "help.concept_authority.title": "How User Permissions Work",
+  "help.concept_authority.intro": "The CMS manages permissions in two layers: the service provider (us) and your company. This guide explains who can do what, and how store-level permissions work.",
+  "help.concept_authority.tl_dr_label": "📌 In short:",
+  "help.concept_authority.tl_dr": "Your company has exactly one Chief Admin. The Chief Admin appoints other Admins; Admins create Operators and Supervisors. You can also override roles per store ('store grants').",
+
+  "help.concept_authority.two_layers_heading": "1. Two Permission Layers",
+  "help.concept_authority.two_layers_intro": "Permissions are split into two layers. We (the service provider) decide your contract and which features are available. You (your Chief Admin) decide who in your company can do what.",
+  "help.concept_authority.label_who": "Who",
+  "help.concept_authority.label_decides": "Decides",
+  "help.concept_authority.label_example": "Example",
+
+  "help.concept_authority.sys_admin_heading": "System Admin (Kurashima side)",
+  "help.concept_authority.sys_admin_who": "Us — the service provider. We do not work inside your company.",
+  "help.concept_authority.sys_admin_decides": "Contract tier (ENTRY / STANDARD / PREMIUM), free-trial period, monthly fee, invoice issuance & payment confirmation.",
+  "help.concept_authority.sys_admin_example": "'Kurajika is on Premium with a 3-month free trial.'",
+
+  "help.concept_authority.company_admin_heading": "Chief Admin / Admin (your side)",
+  "help.concept_authority.company_admin_who": "The responsible managers inside your company. Each company is managed independently.",
+  "help.concept_authority.company_admin_decides": "User creation/disable, function-role assignment (Admin / Operator / Supervisor), per-store role overrides.",
+  "help.concept_authority.company_admin_example": "'Register Mr. Tanaka as Operator, but elevate him to Admin only on the Ginza store.'",
+
+  "help.concept_authority.roles_heading": "2. The Four Roles",
+  "help.concept_authority.roles_intro": "Inside your company, users have one of four roles. From most powerful to most restricted: Chief Admin → Admin → Operator → Supervisor.",
+  "help.concept_authority.col_role": "Role",
+  "help.concept_authority.col_can_do": "Can do",
+  "help.concept_authority.col_cannot_do": "Cannot do",
+
+  "help.concept_authority.role.chief_admin": "Chief Admin",
+  "help.concept_authority.role.admin": "Admin",
+  "help.concept_authority.role.operator": "Operator",
+  "help.concept_authority.role.supervisor": "Supervisor",
+
+  "help.concept_authority.chief_can": "Everything an Admin can do, plus appoint other Admins and transfer Chief Admin to another Admin (only one per company).",
+  "help.concept_authority.chief_cannot": "Cannot directly disable themselves. Must transfer Chief Admin to another Admin first, then disable.",
+
+  "help.concept_authority.admin_can": "Create users (Operator / Supervisor), edit masters, grant per-store permissions, view all reports, change all settings.",
+  "help.concept_authority.admin_cannot": "Cannot create or appoint other Admins (only Chief Admin can).",
+
+  "help.concept_authority.operator_can": "Purchase entry, stock count, item search, view all reports. All daily on-site operations.",
+  "help.concept_authority.operator_cannot": "Cannot create/edit users, edit masters (suppliers, items, stores), or modify contract/billing.",
+
+  "help.concept_authority.supervisor_can": "Read-only access to all reports and data. For owners and auditors.",
+  "help.concept_authority.supervisor_cannot": "Cannot enter, edit, or delete any data. View-only.",
+
+  "help.concept_authority.chief_rule_heading": "Chief Admin rule",
+  "help.concept_authority.chief_rule": "Each company has exactly one Chief Admin — to make the responsible owner explicit. When that person leaves or changes role, the current Chief Admin must transfer the role to another Admin first, then change their own status.",
+
+  "help.concept_authority.store_grants_heading": "3. Store Grants (OR overlay)",
+  "help.concept_authority.store_grants_intro": "On top of the company-wide function role, you can override permissions on specific stores. We call this a 'store grant'.",
+  "help.concept_authority.or_overlay_label": "💡 OR overlay concept",
+  "help.concept_authority.or_overlay_body": "Store grants can only ELEVATE the function role on a specific store, never lower it. For example, an Operator with 'Ginza store: Admin' will be Admin on Ginza but stay Operator on every other store.",
+
+  "help.concept_authority.store_grants_example_heading": "Concrete example",
+  "help.concept_authority.store_grants_example_intro": "If Sato-san's company-wide role is Operator:",
+  "help.concept_authority.store_grants_example_1": "No store grants → acts as Operator on every store",
+  "help.concept_authority.store_grants_example_2": "Add 'Ginza: Admin' → Admin on Ginza, Operator everywhere else",
+  "help.concept_authority.store_grants_example_3": "Also add 'Shinjuku: Admin' → Admin on Ginza & Shinjuku, Operator everywhere else",
+
+  "help.concept_authority.store_grants_howto_heading": "How to set",
+  "help.concept_authority.store_grants_howto_1": "Log in as Admin and open 'Users' in the navigation.",
+  "help.concept_authority.store_grants_howto_2": "Click 'Store grants' on the target user's row.",
+  "help.concept_authority.store_grants_howto_3": "Per store, choose '— (no override)', 'Operator', or 'Admin'.",
+  "help.concept_authority.store_grants_howto_4": "Save. Effective from the user's next login.",
+
+  "help.concept_authority.features_heading": "4. Features Available Depend on Your Contract",
+  "help.concept_authority.features_intro": "The features visible to your company depend on your contract tier. Tiers are cumulative (Premium ⊇ Standard ⊇ Entry).",
+
+  "help.concept_authority.tier.entry": "ENTRY",
+  "help.concept_authority.tier.entry_features": "Purchase entry (fuzzy search) / bulk paste / stock count / purchase report by supplier",
+  "help.concept_authority.tier.standard": "STANDARD",
+  "help.concept_authority.tier.standard_features": "All ENTRY features + shelf layout / mobile stock-count UI / purchase report by item / monthly usage / monthly cost of sales / profit estimation",
+  "help.concept_authority.tier.premium": "PREMIUM",
+  "help.concept_authority.tier.premium_features": "All STANDARD features + Dashboard (purchase share / Top 20 / dead stock) / Order Support",
+
+  "help.concept_authority.tier_note": "Features your tier doesn't include simply don't appear in the navigation. If you're missing something you expect to see, check your contract. Contact Kurajika to discuss tier changes.",
+
+  "help.concept_authority.lifecycle_heading": "5. Banners at the Top of the Screen",
+  "help.concept_authority.lifecycle_intro": "Information about your trial / billing status appears as a colored banner at the top of every page.",
+
+  "help.concept_authority.banner.trial": "Yellow: Free trial",
+  "help.concept_authority.banner.trial_body": "Shows how many days remain before the trial ends and an invoice is issued automatically. The color deepens as the deadline approaches.",
+  "help.concept_authority.banner.overdue": "Red: Invoice overdue",
+  "help.concept_authority.banner.overdue_body": "An issued invoice has passed its due date. Please arrange payment as soon as possible.",
+  "help.concept_authority.banner.blocked": "Red + lock: Account suspended",
+  "help.concept_authority.banner.blocked_body": "After extended non-payment, the CMS switches to read-only mode. Your data is preserved. Once payment is confirmed, normal access resumes immediately.",
+
+  "help.concept_authority.blocked_note_heading": "⚠ Important:",
+  "help.concept_authority.blocked_note": "Going to read-only mode does not delete any data. Once payment is confirmed, the system admin lifts the block and you continue as normal.",
+
+  "help.concept_authority.faq_heading": "FAQ",
+  "help.concept_authority.faq_q1": "Q. How do I check whether I'm the Chief Admin?",
+  "help.concept_authority.faq_a1": "A. On the Users screen (/admin/users), look at your row — if it shows '★ Chief', you're the Chief Admin.",
+  "help.concept_authority.faq_q2": "Q. What if our Chief Admin has left the company?",
+  "help.concept_authority.faq_a2": "A. Contact Kurajika (system admin). After identity verification, we'll transfer Chief Admin to a successor.",
+  "help.concept_authority.faq_q3": "Q. If an Operator is elevated to Admin via a store grant, can they create users too?",
+  "help.concept_authority.faq_a3": "A. No. Store grants only override store-level operations (e.g., adding suppliers for that store). Company-wide actions (user creation) are unaffected.",
+  "help.concept_authority.faq_q4": "Q. The Dashboard menu doesn't show up.",
+  "help.concept_authority.faq_a4": "A. The Dashboard is a Premium feature. Please check your contract tier.",
   "help.index.title": "Kurajika CMS Help",
   "help.index.intro": "A guide for users new to the CMS. No accounting expertise or technical jargon required — just the operations needed for daily work and initial setup, explained step by step.",
   "help.index.callout_tip": "💡 Jump to any chapter from the menu on the left. We recommend starting with \"Screen Map\".",
