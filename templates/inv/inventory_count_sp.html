@@ -346,6 +346,16 @@
   </div>
 </form>
 
+{# i18n strings consumed by the JS sanity-check below #}
+<script>
+  const I18N_OUTLIER = {
+    intro: {{ t("inventory.sp.outlier.intro") | tojson }},
+    system: {{ t("inventory.sp.outlier.system_label") | tojson }},
+    entered: {{ t("inventory.sp.outlier.entered_label") | tojson }},
+    confirm: {{ t("inventory.sp.outlier.confirm") | tojson }},
+  };
+</script>
+
 {% elif selected_store_id %}
 <div class="empty-state">
   <div class="icon">📋</div>
@@ -435,6 +445,37 @@ function updateProgress() {
     const done  = sec.querySelectorAll('.count-input.has-value').length;
     el.textContent = done + '/' + total + '件';
   });
+}
+
+// ── Layer A: Sanity check on save ─────────────────────────────────────────
+// Catches typos like "1 → 41" by warning when an entered qty is far from
+// the system-shown value. Triggers when value ≥ 10 and is more than 5×
+// the system qty (and at least 10 above it). Also catches sudden drops
+// when sys ≥ 10 and entered < sys × 20%.
+function confirmSave() {
+  const outliers = [];
+  document.querySelectorAll('.count-input.has-value').forEach(inp => {
+    const sys = parseInt(inp.dataset.system) || 0;
+    const val = parseInt(inp.value);
+    if (isNaN(val)) return;
+    const muchHigher = val >= 10 && val > Math.max(sys * 5, sys + 10);
+    const muchLower  = sys >= 10 && val < sys * 0.2;
+    if (muchHigher || muchLower) {
+      const card = inp.closest('.item-card');
+      const name = card.querySelector('.item-name')
+                       .childNodes[0].nodeValue.trim();
+      outliers.push({ name, sys, val });
+    }
+  });
+  if (outliers.length === 0) return true;
+
+  let msg = I18N_OUTLIER.intro + "\n\n";
+  outliers.forEach(o => {
+    msg += `• ${o.name}\n  ${I18N_OUTLIER.system}: ${o.sys}  →  `
+         + `${I18N_OUTLIER.entered}: ${o.val}\n\n`;
+  });
+  msg += I18N_OUTLIER.confirm;
+  return confirm(msg);
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────
