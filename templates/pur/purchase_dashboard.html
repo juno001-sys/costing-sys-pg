@@ -96,7 +96,7 @@
   </table>
 </div>
 
-<!-- Dead Stock Table (30 days without purchase) -->
+<!-- Dead Stock Table (per-category threshold) -->
 <div style="margin-top:32px;">
   <h4>{{ t("dashboard.dead_stock.title") }}</h4>
   <p style="color:#666; font-size:12px; margin-top:-6px;">
@@ -116,6 +116,8 @@
         <th style="text-align:right;">{{ t("dashboard.dead_stock.estimated_value") }}</th>
         <th style="text-align:center;">{{ t("dashboard.dead_stock.last_purchase_date") }}</th>
         <th style="text-align:right;">{{ t("dashboard.dead_stock.days_since_purchase") }}</th>
+        <th style="text-align:right;">{{ t("dashboard.dead_stock.threshold") }}</th>
+        <th style="text-align:right;">{{ t("dashboard.dead_stock.days_over") }}</th>
       </tr>
     </thead>
     <tbody>
@@ -125,7 +127,13 @@
         <td>{{ item.code }}</td>
         <td>{{ item.name }}</td>
         <td>{{ item.supplier_name }}</td>
-        <td>{{ item.category or '' }}</td>
+        <td>
+          {% if item.category %}
+            {{ item.category }}
+          {% else %}
+            <span style="color:#c75a4a; font-weight:600;">⚠ {{ t("dashboard.dead_stock.uncategorized") }}</span>
+          {% endif %}
+        </td>
         <td style="text-align:right;">{{ "{:,}".format(item.current_stock|int) }}</td>
         <td style="text-align:right;">
           {% if item.unit_price %}¥{{ "{:,}".format(item.unit_price|int) }}{% else %}-{% endif %}
@@ -134,10 +142,12 @@
           {% if item.estimated_value %}¥{{ "{:,}".format(item.estimated_value|int) }}{% else %}-{% endif %}
         </td>
         <td style="text-align:center;">{{ item.last_purchase_date }}</td>
-        <td style="text-align:right; color:#c00;">{{ item.days_since_purchase }}{{ t("common.days") }}</td>
+        <td style="text-align:right;">{{ item.days_since_purchase }}{{ t("common.days") }}</td>
+        <td style="text-align:right; color:#666;">{{ item.threshold_days }}{{ t("common.days") }}</td>
+        <td style="text-align:right; color:#c00; font-weight:600;">+{{ item.days_over }}{{ t("common.days") }}</td>
       </tr>
       {% else %}
-      <tr><td colspan="10">{{ t("dashboard.dead_stock.none") }}</td></tr>
+      <tr><td colspan="12">{{ t("dashboard.dead_stock.none") }}</td></tr>
       {% endfor %}
     </tbody>
   </table>
