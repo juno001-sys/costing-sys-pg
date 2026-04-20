@@ -392,47 +392,88 @@
         {% endif %}
       </div>
 
+      <!-- Lifecycle banner (trial / overdue / blocked) -->
+      {% if current_user and lifecycle_state and lifecycle_state.state and lifecycle_state.state not in ['active', 'no_contract'] %}
+        {% set ls = lifecycle_state %}
+        {% set banner_color = '#fff8e1' %}
+        {% set banner_border = '#d4a93e' %}
+        {% set banner_text = '#7a5a16' %}
+        {% if ls.state == 'overdue' or ls.state == 'blocked' %}
+          {% set banner_color = '#fbeae5' %}
+          {% set banner_border = '#c75a4a' %}
+          {% set banner_text = '#7a2418' %}
+        {% elif ls.state == 'trial' and ls.days_left is not none and ls.days_left <= 7 %}
+          {% set banner_color = '#fde9d6' %}
+          {% set banner_border = '#d29a55' %}
+          {% set banner_text = '#7a4a18' %}
+        {% endif %}
+        <div style="background:{{ banner_color }}; border-bottom:2px solid {{ banner_border }};
+                    color:{{ banner_text }}; padding:8px 14px; font-size:13px; text-align:center;">
+          {% if ls.state == 'trial' %}
+            🕒 {{ t("lifecycle.trial.banner") | replace("{n}", ls.days_left|string) }}
+          {% elif ls.state == 'overdue' %}
+            ⚠ {{ t("lifecycle.overdue.banner") | replace("{n}", (ls.days_left|abs)|string) }}
+          {% elif ls.state == 'blocked' %}
+            🔒 {{ t("lifecycle.blocked.banner") }}
+          {% endif %}
+        </div>
+      {% endif %}
+
       <!-- Navigation -->
       {% block nav %}
       <nav>
         <ul class="header-nav">
+          {% if feature_enabled('purchase_dashboard') %}
           <li>
             <a href="{{ url_for('reports.purchase_dashboard') }}"
               class="{% if request.endpoint == 'reports.purchase_dashboard' %}active{% endif %}">
               📊 {{ t("nav.dashboard") }}</a>
           </li>
+          {% endif %}
+          {% if feature_enabled('order_support') %}
           <li>
             <a href="{{ url_for('order_support') }}"
               class="{% if request.endpoint == 'order_support' %}active{% endif %}">
               🛒 {{ t("nav.order_support") }}</a>
           </li>
+          {% endif %}
           <li class="nav-sep"></li>
+          {% if feature_enabled('purchase_entry_fuzzy') %}
           <li>
             <a href="{{ url_for('new_purchase') }}"
               class="{% if request.endpoint in ['new_purchase','edit_purchase'] %}active{% endif %}">
               📝 {{ t("nav.purchase_form") }}</a>
           </li>
+          {% endif %}
+          {% if feature_enabled('inventory_count') %}
           <li>
             <a href="{{ url_for('inventory_count_v2') }}"
               class="{% if request.endpoint == 'inventory_count_v2' %}active{% endif %}">
               📋 {{ t("nav.inventory_count") }}</a>
           </li>
+          {% endif %}
           <li class="nav-sep"></li>
+          {% if feature_enabled('report_purchase_supplier') %}
           <li>
             <a href="{{ url_for('reports.purchase_report') }}"
               class="{% if request.endpoint == 'reports.purchase_report' %}active{% endif %}">
               📈 {{ t("nav.purchase_report") }}</a>
           </li>
+          {% endif %}
+          {% if feature_enabled('report_usage_monthly') %}
           <li>
             <a href="{{ url_for('reports.usage_report') }}"
               class="{% if request.endpoint == 'reports.usage_report' %}active{% endif %}">
               📊 {{ t("nav.usage_report") }}</a>
           </li>
+          {% endif %}
+          {% if feature_enabled('report_cost_monthly') %}
           <li>
             <a href="{{ url_for('reports.cost_report') }}"
               class="{% if request.endpoint == 'reports.cost_report' %}active{% endif %}">
               💰 {{ t("nav.cost_report") }}</a>
           </li>
+          {% endif %}
           <li class="nav-sep"></li>
           <li>
             <a href="{{ url_for('suppliers_master') }}"

@@ -1,65 +1,122 @@
-{% extends "layout/base.html" %} {% block title %}Users{% endblock %} {% block
-content %}
+{% extends "layout/base.html" %}
+{% block title %}Users{% endblock %}
+{% block content %}
 
-<h2>Users</h2>
-{% with messages = get_flashed_messages() %} {% if messages %} {% for m in
-messages %}
-<div class="flash">{{ m }}</div>
-{% endfor %} {% endif %} {% endwith %}
-<h3>Create user</h3>
-<form method="post">
-  <label>Email<br /><input name="email" required /></label><br /><br />
-  <label>Name<br /><input name="name" /></label><br /><br />
-  <label
-    >Role<br />
-    <select name="role">
-      <option value="operator">operator</option>
-      <option value="admin">admin</option>
-      <option value="auditor">auditor</option>
-    </select> </label
-  ><br /><br />
-  <label
-    >Initial password<br /><input
-      name="password"
-      type="password"
-      required /></label
-  ><br /><br />
-  <button type="submit">Create</button>
-</form>
+<div style="max-width:980px; margin:0 auto;">
+  <h2>Users</h2>
 
-<h3 style="margin-top: 24px">Existing users</h3>
-<table>
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Email</th>
-      <th>Name</th>
-      <th>Role</th>
-      <th>Active</th>
-      <th>Action</th>
-    </tr>
-  </thead>
-  <tbody>
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for m in messages %}
+        <div class="flash">{{ m }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <!-- ============== Create user ============== -->
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-header">Create user</div>
+    <form method="post" class="card-form">
+      <div class="card-row">
+        <div class="card-field">
+          <label>Email</label>
+          <input name="email" required>
+        </div>
+        <div class="card-field">
+          <label>Name</label>
+          <input name="name">
+        </div>
+      </div>
+      <div class="card-row">
+        <div class="card-field">
+          <label>Role</label>
+          <select name="role">
+            <option value="operator">Operator</option>
+            <option value="auditor">Supervisor (read-only)</option>
+            {% if actor_is_chief %}
+              <option value="admin">Admin (Chief Admin only)</option>
+            {% endif %}
+          </select>
+        </div>
+        <div class="card-field">
+          <label>Initial password</label>
+          <input name="password" type="password" required>
+        </div>
+      </div>
+      <div class="card-actions">
+        <button type="submit" class="btn-primary">Create</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ============== Existing users ============== -->
+  <h3>Existing users</h3>
+  <table style="width:100%; border-collapse:collapse; font-size:13px;">
+    <thead style="background:#f0f5ec;">
+      <tr>
+        <th style="text-align:left; padding:6px 8px;">ID</th>
+        <th style="text-align:left; padding:6px 8px;">Email</th>
+        <th style="text-align:left; padding:6px 8px;">Name</th>
+        <th style="text-align:left; padding:6px 8px;">Function Role</th>
+        <th style="text-align:center; padding:6px 8px;">Chief Admin</th>
+        <th style="text-align:center; padding:6px 8px;">Active</th>
+        <th style="text-align:left; padding:6px 8px;">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
     {% for u in users %}
-    <tr>
-      <td>{{ u.id }}</td>
-      <td>{{ u.email }}</td>
-      <td>{{ u.name or "" }}</td>
-      <td>{{ u.role }}</td>
-      <td>{{ u.is_active }}</td>
-      <td>
-        {% if u.is_active == 1 %}
-        <form
-          method="post"
-          action="{{ url_for('disable_user', user_id=u.id) }}"
-        >
-          <button type="submit">Disable</button>
-        </form>
-        {% endif %}
-      </td>
-    </tr>
+      <tr style="border-bottom:1px solid #eee;
+                 {% if u.is_chief_admin %}background:#f0f5ec;{% endif %}">
+        <td style="padding:6px 8px;">{{ u.id }}</td>
+        <td style="padding:6px 8px;">{{ u.email }}</td>
+        <td style="padding:6px 8px;">{{ u.name or "" }}</td>
+        <td style="padding:6px 8px;">
+          {% if u.role == 'admin' %}
+            <span style="background:#5a8a5d; color:white; padding:2px 8px; border-radius:10px; font-size:11px;">Admin</span>
+          {% elif u.role == 'operator' %}
+            <span style="background:#3a6c3e; color:white; padding:2px 8px; border-radius:10px; font-size:11px;">Operator</span>
+          {% elif u.role == 'auditor' %}
+            <span style="background:#a0a0a0; color:white; padding:2px 8px; border-radius:10px; font-size:11px;">Supervisor</span>
+          {% else %}
+            {{ u.role }}
+          {% endif %}
+        </td>
+        <td style="padding:6px 8px; text-align:center;">
+          {% if u.is_chief_admin %}
+            <span style="color:#c75a4a; font-weight:600;">★ Chief</span>
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td style="padding:6px 8px; text-align:center;">
+          {{ "✓" if u.is_active == 1 else "—" }}
+        </td>
+        <td style="padding:6px 8px;">
+          <a href="{{ url_for('admin_user_store_grants', user_id=u.id) }}"
+             style="font-size:12px; margin-right:8px;">Store grants</a>
+
+          {% if actor_is_chief and not u.is_chief_admin and u.role == 'admin' %}
+            <form method="post"
+                  action="{{ url_for('transfer_chief_admin', user_id=u.id) }}"
+                  style="display:inline;"
+                  onsubmit="return confirm('Transfer Chief Admin to {{ u.email }}? You will lose Chief Admin privileges.');">
+              <button type="submit" class="btn-link" style="font-size:12px;">Make Chief</button>
+            </form>
+          {% endif %}
+
+          {% if u.is_active == 1 and not u.is_chief_admin %}
+            <form method="post"
+                  action="{{ url_for('disable_user', user_id=u.id) }}"
+                  style="display:inline;"
+                  onsubmit="return confirm('Disable user {{ u.email }}?');">
+              <button type="submit" class="btn-danger" style="font-size:12px;">Disable</button>
+            </form>
+          {% endif %}
+        </td>
+      </tr>
     {% endfor %}
-  </tbody>
-</table>
+    </tbody>
+  </table>
+</div>
 
 {% endblock %}
