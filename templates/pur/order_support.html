@@ -23,7 +23,7 @@
 {% if selected_store_id %}
 <div style="margin: -10px 0 18px; font-size: 13px;">
   <strong>{{ t("order_support.view") }}：</strong>
-  <span style="color:#0066cc; font-weight:600;">📋 {{ t("order_support.view.cards") }}</span>
+  <span style="color:#3a6c3e; font-weight:600;">📋 {{ t("order_support.view.cards") }}</span>
   &nbsp;｜&nbsp;
   <a href="?store_id={{ selected_store_id }}&amp;view=sheet" style="color:#555;">
     📊 {{ t("order_support.view.sheet") }}
@@ -52,10 +52,10 @@
     </div>
     <div style="font-size:12px; color:#666;">
       {% if card.shortage_count > 0 %}
-        <span style="color:#dc3545; font-weight:600;">⚠ {{ card.shortage_count }}品目 不足</span>
+        <span style="color:#c75a4a; font-weight:600;">⚠ {{ card.shortage_count }}品目 不足</span>
       {% endif %}
       {% if card.low_count > 0 %}
-        <span style="color:#e67700; font-weight:600; margin-left:8px;">📉 {{ card.low_count }}品目 残少</span>
+        <span style="color:#d29a55; font-weight:600; margin-left:8px;">📉 {{ card.low_count }}品目 残少</span>
       {% endif %}
     </div>
   </div>
@@ -119,7 +119,7 @@
         <td>{{ item.name }}</td>
         <td style="font-size:11px; color:#666;">{{ item.category or '' }}</td>
         <td style="text-align:right; font-weight:600;
-          {% if item.status == 'shortage' %}color:#dc3545;{% elif item.status == 'low' %}color:#e67700;{% endif %}">
+          {% if item.status == 'shortage' %}color:#c75a4a;{% elif item.status == 'low' %}color:#d29a55;{% endif %}">
           {{ item.current_stock }}
         </td>
         <td style="text-align:center; font-size:11px; color:#888;">
@@ -128,9 +128,9 @@
         <td style="text-align:right;">{{ item.est_order_qty or '-' }}</td>
         <td style="text-align:center;">
           {% if item.status == 'shortage' %}
-            <span style="color:#dc3545; font-weight:600;">⚠ {{ t("order_support.status_shortage") }}</span>
+            <span style="color:#c75a4a; font-weight:600;">⚠ {{ t("order_support.status_shortage") }}</span>
           {% elif item.status == 'low' %}
-            <span style="color:#e67700;">📉 {{ t("order_support.status_low") }}</span>
+            <span style="color:#d29a55;">📉 {{ t("order_support.status_low") }}</span>
           {% elif item.status == 'ok' %}
             <span style="color:#28a745;">✅</span>
           {% else %}

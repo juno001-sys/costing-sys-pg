@@ -28,7 +28,7 @@
     📋 {{ t("order_support.view.cards") }}
   </a>
   &nbsp;｜&nbsp;
-  <span style="color:#0066cc; font-weight:600;">📊 {{ t("order_support.view.sheet") }}</span>
+  <span style="color:#3a6c3e; font-weight:600;">📊 {{ t("order_support.view.sheet") }}</span>
 </div>
 {% endif %}
 
@@ -49,8 +49,8 @@
     display: inline-block; font-size: 11px; font-weight: 700;
     line-height: 1.4;
   }
-  .freq-very_high { color: #c0392b; }
-  .freq-high      { color: #b07400; }
+  .freq-very_high { color: #9b3f2d; }
+  .freq-high      { color: #8a6a32; }
   .freq-low       { color: #5f6368; }
   .freq-none      { color: #bbb; }
 </style>
@@ -96,17 +96,17 @@
       <td>{{ r.name }}</td>
       <td style="font-size:11px; color:#666;">{{ r.category or '' }}</td>
       <td style="text-align:right; font-weight:600;
-        {% if r.status == 'shortage' %}color:#dc3545;
-        {% elif r.status == 'low' %}color:#e67700;{% endif %}">
+        {% if r.status == 'shortage' %}color:#c75a4a;
+        {% elif r.status == 'low' %}color:#d29a55;{% endif %}">
         {{ r.current_stock }}
       </td>
       <td style="text-align:center; font-size:11px; color:#888;">{{ r.last_count_date or '—' }}</td>
       <td style="text-align:right;">{{ r.est_order_qty or '-' }}</td>
       <td style="text-align:center;">
         {% if r.status == 'shortage' %}
-          <span style="color:#dc3545; font-weight:600;">⚠ {{ t("order_support.status_shortage") }}</span>
+          <span style="color:#c75a4a; font-weight:600;">⚠ {{ t("order_support.status_shortage") }}</span>
         {% elif r.status == 'low' %}
-          <span style="color:#e67700;">{{ t("order_support.status_low") }}</span>
+          <span style="color:#d29a55;">{{ t("order_support.status_low") }}</span>
         {% elif r.status == 'ok' %}
           <span style="color:#2e7d32;">{{ t("order_support.status_ok") }}</span>
         {% else %}
