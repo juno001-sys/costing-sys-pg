@@ -1,0 +1,161 @@
+{% extends "layout/base.html" %}
+{% block title %}{{ t("sys_admin.features.title") }}{% endblock %}
+
+{% block content %}
+<div style="max-width:980px; margin:0 auto;">
+
+  <h2 style="margin-bottom:4px;">{{ t("sys_admin.features.heading") }}</h2>
+  <p style="color:#666; margin-top:0;">
+    {{ t("sys_admin.features.company") }}:
+    <strong>{{ company.name }}</strong> (id={{ company.id }})
+  </p>
+
+  <p style="color:#666; font-size:12px;">
+    <a href="{{ url_for('admin_system_home') }}">← {{ t("nav.admin_users") if false else "Sys Admin Home" }}</a>
+  </p>
+
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for m in messages %}
+        <div class="flash" style="margin:8px 0;">{{ m }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <form method="post" action="{{ url_for('admin_system_company_features_save', company_id=company.id) }}"
+        class="card-form">
+
+    <!-- ============== Contract section ============== -->
+    <div class="card">
+      <div class="card-header">{{ t("sys_admin.features.tier") }}</div>
+
+      <div class="card-row">
+        <div class="card-field">
+          <label>{{ t("sys_admin.features.tier") }}</label>
+          <select name="tier" id="tier-select" onchange="onTierChange()">
+            {% for tier in valid_tiers %}
+              <option value="{{ tier }}"
+                {% if contract and contract.tier == tier %}selected{% elif not contract and tier == 'standard' %}selected{% endif %}>
+                {{ t("sys_admin.features.tier." ~ tier) }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="card-field">
+          <label>{{ t("sys_admin.features.monthly_fee") }}</label>
+          <input type="number" name="monthly_fee" id="monthly-fee-input"
+                 value="{{ contract.monthly_fee if contract and contract.monthly_fee else '' }}"
+                 placeholder="{{ tier_default_fees['standard'] }}">
+        </div>
+      </div>
+
+      <div class="card-row">
+        <div class="card-field">
+          <label>{{ t("sys_admin.features.trial_ends_at") }}</label>
+          <input type="date" name="trial_ends_at"
+                 value="{{ contract.trial_ends_at.isoformat() if contract and contract.trial_ends_at else '' }}">
+        </div>
+
+        <div class="card-field">
+          <label>{{ t("sys_admin.features.payment_method") }}</label>
+          <select name="payment_method">
+            {% for pm in valid_payment_methods %}
+              <option value="{{ pm }}"
+                {% if contract and contract.payment_method == pm %}selected{% elif not contract and pm == 'invoice' %}selected{% endif %}
+                {% if pm == 'credit_card' %}disabled{% endif %}>
+                {{ t("sys_admin.features.payment." ~ pm) }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="card-row">
+        <div class="card-field" style="flex:1;">
+          <label>Notes</label>
+          <textarea name="notes" rows="2"
+                    style="width:100%;">{{ contract.notes if contract else '' }}</textarea>
+        </div>
+      </div>
+
+      <p style="color:#666; font-size:12px; margin:6px 0 0 0;">
+        {{ t("sys_admin.features.contract_change_note") }}
+      </p>
+    </div>
+
+    <!-- ============== Feature grid ============== -->
+    <div class="card" style="margin-top:14px;">
+      <div class="card-header">{{ t("sys_admin.features.feature_table") }}</div>
+
+      <table style="width:100%; border-collapse:collapse; font-size:13px;">
+        <thead style="background:#f0f5ec;">
+          <tr>
+            <th style="text-align:left; padding:6px 8px; width:60px;">
+              {{ t("sys_admin.features.enabled") }}
+            </th>
+            <th style="text-align:left; padding:6px 8px;">
+              {{ t("sys_admin.features.feature") }}
+            </th>
+            <th style="text-align:left; padding:6px 8px; width:120px;">
+              {{ t("sys_admin.features.default_tier") }}
+            </th>
+            <th style="text-align:left; padding:6px 8px; width:120px;">
+              {{ t("sys_admin.features.source.tier_default") }} / {{ t("sys_admin.features.source.admin_override") }}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for feat in feature_rows %}
+            <tr style="border-bottom:1px solid #eee;">
+              <td style="padding:6px 8px; text-align:center;">
+                <input type="checkbox" name="feature" value="{{ feat.feature_key }}"
+                       {% if feat.enabled %}checked{% endif %}>
+              </td>
+              <td style="padding:6px 8px;">
+                <strong>{{ feat.name_ja }}</strong>
+                <br><span style="color:#888; font-size:11px;">{{ feat.feature_key }}</span>
+              </td>
+              <td style="padding:6px 8px;">
+                <span style="display:inline-block; padding:2px 8px; border-radius:10px;
+                             background:{% if feat.default_tier == 'premium' %}#5a8a5d{% elif feat.default_tier == 'standard' %}#3a6c3e{% else %}#a0a0a0{% endif %};
+                             color:white; font-size:11px;">
+                  {{ feat.default_tier|upper }}
+                </span>
+              </td>
+              <td style="padding:6px 8px; font-size:11px;
+                          {% if feat.source == 'admin_override' %}color:#c75a4a; font-weight:600;{% else %}color:#666;{% endif %}">
+                {% if feat.source == 'admin_override' %}
+                  ⚙ {{ t("sys_admin.features.source.admin_override") }}
+                {% else %}
+                  {{ t("sys_admin.features.source.tier_default") }}
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card-actions" style="margin-top:14px;">
+      <button type="submit" class="btn-primary">{{ t("sys_admin.features.save") }}</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  // Tier defaults — populate fee placeholder when tier dropdown changes.
+  const TIER_FEES = {
+    {% for tier, fee in tier_default_fees.items() %}
+      "{{ tier }}": {{ fee }},
+    {% endfor %}
+  };
+  function onTierChange() {
+    const tier = document.getElementById('tier-select').value;
+    const feeInput = document.getElementById('monthly-fee-input');
+    if (TIER_FEES[tier]) {
+      feeInput.placeholder = TIER_FEES[tier];
+    }
+  }
+</script>
+{% endblock %}
