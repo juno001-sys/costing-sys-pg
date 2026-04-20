@@ -164,8 +164,8 @@
               <td style="text-align:right; padding:4px 6px;">{{ '%.3f'|format(h.est_sigma) if h.est_sigma else '—' }}</td>
               <td style="padding:4px 6px;">
                 <span style="font-size:11px; font-weight:600;
-                  color:{% if h.calc_source == 'recalc' %}#0066cc
-                        {% elif h.calc_source == 'manual' %}#b07400
+                  color:{% if h.calc_source == 'recalc' %}#3a6c3e
+                        {% elif h.calc_source == 'manual' %}#8a6a32
                         {% else %}#666{% endif %};">
                   {{ t("items.stats.source." + h.calc_source) }}
                 </span>
