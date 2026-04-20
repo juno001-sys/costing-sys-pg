@@ -315,7 +315,7 @@
   "help.concept_authority.tier.premium": "PREMIUM",
   "help.concept_authority.tier.premium_features": "All STANDARD features + Dashboard (purchase share / Top 20 / dead stock) / Order Support",
 
-  "help.concept_authority.tier_note": "Features your tier doesn't include simply don't appear in the navigation. If you're missing something you expect to see, check your contract. Contact Kurashima Business Development to discuss tier changes.",
+  "help.concept_authority.tier_note": "Features your tier doesn't include simply don't appear in the navigation. If you're missing something you expect to see, check your contract. Contact Kurajika to discuss tier changes.",
 
   "help.concept_authority.lifecycle_heading": "5. Banners at the Top of the Screen",
   "help.concept_authority.lifecycle_intro": "Information about your trial / billing status appears as a colored banner at the top of every page.",
@@ -334,7 +334,7 @@
   "help.concept_authority.faq_q1": "Q. How do I check whether I'm the Chief Admin?",
   "help.concept_authority.faq_a1": "A. On the Users screen (/admin/users), look at your row — if it shows '★ Chief', you're the Chief Admin.",
   "help.concept_authority.faq_q2": "Q. What if our Chief Admin has left the company?",
-  "help.concept_authority.faq_a2": "A. Contact Kurashima Business Development (system admin). After identity verification, we'll transfer Chief Admin to a successor.",
+  "help.concept_authority.faq_a2": "A. Contact Kurajika (system admin). After identity verification, we'll transfer Chief Admin to a successor.",
   "help.concept_authority.faq_q3": "Q. If an Operator is elevated to Admin via a store grant, can they create users too?",
   "help.concept_authority.faq_a3": "A. No. Store grants only override store-level operations (e.g., adding suppliers for that store). Company-wide actions (user creation) are unaffected.",
   "help.concept_authority.faq_q4": "Q. The Dashboard menu doesn't show up.",

@@ -416,12 +416,12 @@
   "help.concept_authority.tl_dr": "あなたの会社には Chief Admin が1人います。Chief Admin が他の Admin を任命し、Admin が Operator や Supervisor を作成します。店舗単位で個別に権限を上げる「店舗別権限」も設定可能です。",
 
   "help.concept_authority.two_layers_heading": "1. 2つの権限レイヤー",
-  "help.concept_authority.two_layers_intro": "権限は2段階で管理されます。私たち（くらじか事業開発）が決めるのは契約と機能のオン/オフ。お客様の会社内で誰が何をできるかは、お客様の Chief Admin が決めます。",
+  "help.concept_authority.two_layers_intro": "権限は2段階で管理されます。私たち（くらじか）が決めるのは契約と機能のオン/オフ。お客様の会社内で誰が何をできるかは、お客様の Chief Admin が決めます。",
   "help.concept_authority.label_who": "誰",
   "help.concept_authority.label_decides": "決められること",
   "help.concept_authority.label_example": "例",
 
-  "help.concept_authority.sys_admin_heading": "システム管理者（くらじか事業開発側）",
+  "help.concept_authority.sys_admin_heading": "システム管理者（くらじか側）",
   "help.concept_authority.sys_admin_who": "私たち、サービス提供者です。お客様の会社の中には入りません。",
   "help.concept_authority.sys_admin_decides": "契約プラン（ENTRY / STANDARD / PREMIUM）、無料試用期間、月額、請求の発行・入金確認。",
   "help.concept_authority.sys_admin_example": "「くらじか自然豊農 を Premium プランで契約、3か月無料」",
@@ -484,7 +484,7 @@
   "help.concept_authority.tier.premium": "PREMIUM",
   "help.concept_authority.tier.premium_features": "STANDARDのすべて＋ダッシュボード（仕入れシェア・TOP20・死に筋）／発注サポート",
 
-  "help.concept_authority.tier_note": "プランによって使えない機能はナビゲーションに表示されません。「あれ、メニューにあったはずのものが見当たらない…」という場合、契約プランをご確認ください。プラン変更のご相談はくらじか事業開発までお問い合わせください。",
+  "help.concept_authority.tier_note": "プランによって使えない機能はナビゲーションに表示されません。「あれ、メニューにあったはずのものが見当たらない…」という場合、契約プランをご確認ください。プラン変更のご相談はくらじかまでお問い合わせください。",
 
   "help.concept_authority.lifecycle_heading": "5. 契約状態を表す画面上部のバナー",
   "help.concept_authority.lifecycle_intro": "請求や試用期間に関する情報は画面上部にカラーバナーで表示されます。",
@@ -503,7 +503,7 @@
   "help.concept_authority.faq_q1": "Q. 自分が Chief Admin かどうか確認したい",
   "help.concept_authority.faq_a1": "A. ユーザー画面（/admin/users）で自分の行に「★ Chief」と表示されていれば Chief Admin です。",
   "help.concept_authority.faq_q2": "Q. Chief Admin が退職してしまった場合は？",
-  "help.concept_authority.faq_a2": "A. くらじか事業開発（システム管理者）にご連絡ください。本人確認のうえ、後任のAdminへ Chief を移譲します。",
+  "help.concept_authority.faq_a2": "A. くらじか（システム管理者）にご連絡ください。本人確認のうえ、後任のAdminへ Chief を移譲します。",
   "help.concept_authority.faq_q3": "Q. Operator が「店舗別権限」で Admin に昇格した場合、ユーザー作成もできるようになりますか？",
   "help.concept_authority.faq_a3": "A. いいえ。店舗別権限は「店舗内の操作」（その店の仕入先の追加など）を上書きするものです。会社全体に関わる操作（ユーザー作成）には影響しません。",
   "help.concept_authority.faq_q4": "Q. メニューに「ダッシュボード」が出ません",
