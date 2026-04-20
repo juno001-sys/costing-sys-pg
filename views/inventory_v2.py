@@ -11,6 +11,31 @@ from utils.access_scope import (
 )
 
 
+def _is_recent_duplicate_count(db, store_id, item_id, count_date,
+                               counted_qty, window_minutes=10):
+    """Layer B: detect re-submits.
+
+    Returns True if an identical count (same store/item/date/qty) was
+    inserted within the last `window_minutes`. Used to suppress duplicate
+    INSERTs when an operator presses Save multiple times in a row.
+
+    Background: on 2026-04-20, item 15005 was saved 4 times (qty=41) within
+    50 min from the SP UI; the dashboard correctly showed the latest value
+    but the audit history was noisy. This check keeps the row count clean.
+    """
+    rows = db.execute(
+        """
+        SELECT 1 FROM stock_counts
+        WHERE store_id = %s AND item_id = %s AND count_date = %s
+          AND counted_qty = %s
+          AND created_at >= now() - (interval '1 minute' * %s)
+        LIMIT 1
+        """,
+        (store_id, item_id, count_date, counted_qty, window_minutes),
+    ).fetchone()
+    return rows is not None
+
+
 def get_latest_stock_count_dates(db, store_id, limit=3):
     rows = db.execute(
         """
@@ -217,6 +242,12 @@ def init_inventory_views_v2(app, get_db):
 
                 diff = cnt_val - sys_val
 
+                # Layer B — skip if an identical save just landed.
+                if _is_recent_duplicate_count(
+                    db, store_id, item_id, count_date, cnt_val
+                ):
+                    continue
+
                 db.execute(
                     """
                     INSERT INTO stock_counts
@@ -234,8 +265,8 @@ def init_inventory_views_v2(app, get_db):
                         datetime.now().isoformat(timespec="seconds"),
                     ),
                 )
-            
-                inserted_rows += 1  # NEW
+
+                inserted_rows += 1
 
             #  NEW: one audit log per submit (lightweight)
             try:
@@ -593,6 +624,12 @@ def init_inventory_views_v2(app, get_db):
                     sys_val = int(system_qty or 0)
                     cnt_val = int(counted_qty)
                 except ValueError:
+                    continue
+
+                # Layer B — skip if an identical save just landed.
+                if _is_recent_duplicate_count(
+                    db, store_id, item_id, count_date, cnt_val
+                ):
                     continue
 
                 db.execute(
