@@ -102,6 +102,65 @@
   <p style="color:#666; font-size:12px; margin-top:-6px;">
     {{ t("dashboard.dead_stock.description") }}
   </p>
+
+  <style>
+    .threshold-help {
+      position: relative;
+      display: inline-block;
+      margin-left: 4px;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: #5a8a5d;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 16px;
+      text-align: center;
+      cursor: help;
+      user-select: none;
+    }
+    .threshold-help .threshold-tip {
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.15s;
+      position: absolute;
+      bottom: 130%;
+      right: 0;
+      z-index: 100;
+      width: 320px;
+      background: #fff;
+      border: 1px solid #d4e0cc;
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+      padding: 10px 12px;
+      font-size: 12px;
+      font-weight: normal;
+      color: #333;
+      text-align: left;
+    }
+    .threshold-help:hover .threshold-tip {
+      visibility: visible;
+      opacity: 1;
+    }
+    .threshold-tip-title {
+      font-weight: 600;
+      color: #3a6c3e;
+      margin-bottom: 6px;
+      border-bottom: 1px solid #e0e8db;
+      padding-bottom: 4px;
+    }
+    .threshold-tip table { width: 100%; border-collapse: collapse; }
+    .threshold-tip td { padding: 3px 0; vertical-align: top; }
+    .threshold-tip .tip-days {
+      white-space: nowrap;
+      padding-right: 10px;
+      font-weight: 600;
+      color: #3a6c3e;
+      width: 50px;
+    }
+    .threshold-tip .tip-days-zero { color: #c75a4a; }
+  </style>
+
   <table border="1" cellpadding="5" cellspacing="0"
          style="width:100%; font-size:13px; border-collapse:collapse;">
     <thead style="background:#fff3cd;">
@@ -116,7 +175,23 @@
         <th style="text-align:right;">{{ t("dashboard.dead_stock.estimated_value") }}</th>
         <th style="text-align:center;">{{ t("dashboard.dead_stock.last_purchase_date") }}</th>
         <th style="text-align:right;">{{ t("dashboard.dead_stock.days_since_purchase") }}</th>
-        <th style="text-align:right;">{{ t("dashboard.dead_stock.threshold") }}</th>
+        <th style="text-align:right; white-space:nowrap;">
+          {{ t("dashboard.dead_stock.threshold") }}<span class="threshold-help" title="{{ t('dashboard.dead_stock.thresholds_legend') }}">?<span class="threshold-tip">
+            <div class="threshold-tip-title">{{ t("dashboard.dead_stock.thresholds_legend") }}</div>
+            <table>
+              <tbody>
+                {% for tier in deadstock_threshold_tiers %}
+                <tr>
+                  <td class="tip-days {% if tier.days == 0 %}tip-days-zero{% endif %}">
+                    {{ tier.days }}{{ t("common.days") }}
+                  </td>
+                  <td>{{ tier.categories | join(' / ') }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </span></span>
+        </th>
         <th style="text-align:right;">{{ t("dashboard.dead_stock.days_over") }}</th>
       </tr>
     </thead>
