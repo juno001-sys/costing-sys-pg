@@ -102,6 +102,34 @@
   <p style="color:#666; font-size:12px; margin-top:-6px;">
     {{ t("dashboard.dead_stock.description") }}
   </p>
+
+  <!-- Threshold reference panel -->
+  <div style="background:#f0f5ec; border:1px solid #d4e0cc; border-radius:6px;
+              padding:10px 14px; margin:12px 0; font-size:12px;">
+    <div style="font-weight:600; color:#3a6c3e; margin-bottom:6px;">
+      {{ t("dashboard.dead_stock.thresholds_legend") }}
+    </div>
+    <table style="width:100%; border-collapse:collapse;">
+      <tbody>
+        {% for tier in deadstock_threshold_tiers %}
+        <tr>
+          <td style="white-space:nowrap; padding:3px 12px 3px 0;
+                     font-weight:600; color:#3a6c3e; vertical-align:top; width:90px;">
+            {% if tier.days == 0 %}
+              <span style="color:#c75a4a;">{{ tier.days }}{{ t("common.days") }}</span>
+            {% else %}
+              {{ tier.days }}{{ t("common.days") }}
+            {% endif %}
+          </td>
+          <td style="padding:3px 0; color:#444;">
+            {{ tier.categories | join(' / ') }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
   <table border="1" cellpadding="5" cellspacing="0"
          style="width:100%; font-size:13px; border-collapse:collapse;">
     <thead style="background:#fff3cd;">
