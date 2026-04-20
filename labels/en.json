@@ -100,7 +100,7 @@
   "dashboard.dead_stock.threshold": "Threshold",
   "dashboard.dead_stock.days_over": "Days Over",
   "dashboard.dead_stock.uncategorized": "Uncategorized",
-  "dashboard.dead_stock.thresholds_legend": "📋 Threshold by category (stale if days since last delivery exceeds this)",
+  "dashboard.dead_stock.thresholds_legend": "Threshold by category",
   "dashboard.dead_stock.none": "No dead stock items.",
   "stores.edit.title": "Edit Store",
   "stores.edit.heading": "Edit Store",
