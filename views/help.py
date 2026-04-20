@@ -24,6 +24,7 @@ CHAPTERS = [
     ("concept_count_vs_order",  "help.chapters.concept_count_vs_order", "concepts"),
     ("concept_holidays",        "help.chapters.concept_holidays",     "concepts"),
     ("concept_order_support",   "help.chapters.concept_order_support", "concepts"),
+    ("concept_authority",       "help.chapters.concept_authority",    "concepts"),
     ("setup_shelves",           "help.chapters.setup_shelves",        "setup"),
     ("setup_suppliers",         "help.chapters.setup_suppliers",      "setup"),
     ("setup_items",             "help.chapters.setup_items",          "setup"),
