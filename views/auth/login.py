@@ -336,5 +336,4 @@ def init_auth_login_views(app, get_db):
                 db.commit()
             except Exception:
                 pass
-        flash("ログアウトしました。")
         return redirect(url_for("login"))
