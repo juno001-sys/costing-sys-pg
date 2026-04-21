@@ -33,6 +33,7 @@ from views.admin.system_home import init_admin_system_home_views
 from views.admin.system_companies import init_admin_system_company_views
 from views.admin.system_features import init_admin_system_features_views
 from views.admin.system_invoices import init_admin_system_invoices_views
+from views.admin.system_health import init_admin_system_health_views
 from views.admin.dev_dashboard import init_dev_dashboard_views
 from views.admin.store_holidays import init_store_holidays_views
 from views.order_support import init_order_support_views
@@ -418,6 +419,7 @@ init_admin_system_home_views(app, get_db)
 init_admin_system_company_views(app, get_db)
 init_admin_system_features_views(app, get_db)
 init_admin_system_invoices_views(app, get_db)
+init_admin_system_health_views(app, get_db)
 init_dev_dashboard_views(app, get_db)
 init_store_holidays_views(app, get_db)
 init_order_support_views(app, get_db)

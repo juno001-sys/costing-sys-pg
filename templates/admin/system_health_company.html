@@ -1,0 +1,274 @@
+{% extends "layout/base.html" %}
+{% block title %}Customer Health — {{ kpis.name }}{% endblock %}
+{% block nav %}{% if not g.is_system_admin %}{{ super() }}{% endif %}{% endblock %}
+{% block content %}
+
+{% include "admin/_admin_tabs.html" with context %}
+
+<style>
+  .health-page { max-width: 1200px; margin: 0 auto; }
+
+  .page-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 16px;
+  }
+  .page-header h2 { margin: 0; font-size: 20px; }
+  .page-meta { color: #666; font-size: 12px; margin-top: 4px; }
+
+  .print-btn {
+    padding: 6px 14px; background: #5a8a5d; color: white;
+    border: none; border-radius: 6px; cursor: pointer; font-size: 13px;
+  }
+  .print-btn:hover { background: #3a6c3e; }
+  @media print {
+    .print-btn, .breadcrumb-link, .filter-pills { display: none; }
+    .admin-tabs { display: none; }
+    .health-page { max-width: 100%; }
+    body { background: white; }
+  }
+
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 11px; font-weight: 600; color: white;
+  }
+  .badge.healthy  { background: #5a8a5d; }
+  .badge.quiet    { background: #d29a55; }
+  .badge.dormant  { background: #c08040; }
+  .badge.critical { background: #c75a4a; }
+  .badge.new      { background: #6a8caf; }
+
+  .tier-badge {
+    display: inline-block; padding: 1px 7px; border-radius: 10px;
+    font-size: 10px; font-weight: 700; color: white;
+  }
+  .tier-badge.entry    { background: #a0a0a0; }
+  .tier-badge.standard { background: #3a6c3e; }
+  .tier-badge.premium  { background: #5a8a5d; }
+  .tier-badge.none     { background: #ccc; color: #666; }
+
+  /* KPI cards */
+  .kpi-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin-bottom: 20px;
+  }
+  .kpi {
+    background: white; border: 1px solid #e0e8db; border-radius: 10px;
+    padding: 14px; text-align: center;
+  }
+  .kpi .val { font-size: 28px; font-weight: 700; color: #3a6c3e; }
+  .kpi .lbl { font-size: 11px; color: #888; margin-top: 2px; }
+  .kpi.warn .val { color: #c75a4a; }
+  @media (max-width: 700px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+
+  /* Section card */
+  .section { background: white; border: 1px solid #e0e8db; border-radius: 10px;
+             padding: 16px; margin-bottom: 16px; }
+  .section h3 { margin: 0 0 12px; font-size: 14px; color: #3a6c3e;
+                border-bottom: 1px solid #e0e8db; padding-bottom: 6px; }
+
+  /* Tables */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .data-table th { text-align: left; padding: 6px 8px;
+                   color: #666; font-size: 11px; border-bottom: 1px solid #eee; }
+  .data-table td { padding: 6px 8px; border-bottom: 1px solid #f4f4f4; }
+  .data-table td.num { text-align: right; }
+  .data-table tr:hover { background: #fafbf8; }
+
+  /* Feature usage */
+  .feature-row { display: flex; align-items: center; padding: 6px 0;
+                 border-bottom: 1px solid #f4f4f4; }
+  .feature-row:last-child { border-bottom: none; }
+  .feature-name { flex: 1; font-size: 13px; }
+  .feature-stat { font-size: 12px; color: #666; }
+  .feature-untouched { color: #c75a4a; font-weight: 600; }
+  .feature-touched   { color: #3a6c3e; font-weight: 600; }
+
+  .chart-container { position: relative; height: 240px; }
+</style>
+
+<div class="health-page">
+  <p class="breadcrumb-link">
+    <a href="{{ url_for('admin_system_health_overview') }}">← Back to overview</a>
+  </p>
+
+  <div class="page-header">
+    <div>
+      <h2>{{ kpis.name }}</h2>
+      <div class="page-meta">
+        <span class="badge {{ kpis.status }}">
+          {% if kpis.status == 'critical' %}🔴
+          {% elif kpis.status == 'dormant' %}🟠
+          {% elif kpis.status == 'quiet' %}🟡
+          {% elif kpis.status == 'healthy' %}🟢
+          {% elif kpis.status == 'new' %}🔵{% endif %}
+          {{ kpis.status }}
+        </span>
+        &nbsp;
+        <span class="tier-badge {{ kpis.tier or 'none' }}">
+          {{ (kpis.tier or '—')|upper }}
+        </span>
+        {% if kpis.trial_ends_at %}
+          &nbsp;Trial ends {{ kpis.trial_ends_at }}
+        {% endif %}
+        {% if kpis.has_overdue_invoice %}
+          &nbsp;<span style="color:#c75a4a;">⚠ Invoice overdue</span>
+        {% endif %}
+        &nbsp;·&nbsp; Period: last 30 days
+      </div>
+    </div>
+    <button class="print-btn" onclick="window.print()">🖨 Print</button>
+  </div>
+
+  <!-- KPI cards -->
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="val">{{ kpis.active_users_30d }}<span style="font-size:14px; color:#888;"> / {{ kpis.total_users }}</span></div>
+      <div class="lbl">Active users (30d) / total</div>
+    </div>
+    <div class="kpi">
+      <div class="val">{{ kpis.logins_30d }}</div>
+      <div class="lbl">Logins (30d)</div>
+    </div>
+    <div class="kpi">
+      <div class="val">{{ kpis.purchases_30d }}</div>
+      <div class="lbl">Purchases entered (30d)</div>
+    </div>
+    <div class="kpi">
+      <div class="val">{{ kpis.stock_counts_30d }}</div>
+      <div class="lbl">Stock counts (30d)</div>
+    </div>
+  </div>
+
+  <!-- Trend chart -->
+  <div class="section">
+    <h3>📈 6-Month Trend</h3>
+    <div class="chart-container">
+      <canvas id="trendChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Feature usage -->
+  <div class="section">
+    <h3>⚙ Feature Usage (30d)</h3>
+    {% for f in features %}
+      <div class="feature-row">
+        <div class="feature-name">
+          {{ f.name_ja }}
+          <span style="color:#888; font-size:11px;">({{ f.feature_key }})</span>
+          <span class="tier-badge {{ f.default_tier }}" style="margin-left:6px;">{{ f.default_tier|upper }}</span>
+        </div>
+        <div class="feature-stat">
+          {% if f.touch_count > 0 %}
+            <span class="feature-touched">{{ f.touch_count }} touches</span>
+            {% if f.last_touched_at %}
+              · last {{ f.last_touched_at.strftime("%Y-%m-%d") }}
+            {% endif %}
+          {% else %}
+            <span class="feature-untouched">untouched</span>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- User activity -->
+  <div class="section">
+    <h3>👤 User Activity</h3>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Name</th>
+          <th>Role</th>
+          <th>Last login</th>
+          <th class="num">Actions (30d)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>
+            {{ u.email }}
+            {% if u.is_chief_admin %}<span style="color:#c75a4a;">★</span>{% endif %}
+            {% if not u.is_active %}<span style="color:#888; font-size:11px;">(disabled)</span>{% endif %}
+          </td>
+          <td>{{ u.name or "" }}</td>
+          <td>{{ u.role }}</td>
+          <td>
+            {% if u.last_login_at %}
+              {{ u.last_login_at.strftime("%Y-%m-%d %H:%M") }}
+            {% else %}
+              <span style="color:#888;">—</span>
+            {% endif %}
+          </td>
+          <td class="num">{{ u.actions_30d }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Per-store breakdown -->
+  <div class="section">
+    <h3>🏪 Per-Store Activity (30d)</h3>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Store</th>
+          <th class="num">Purchases (30d)</th>
+          <th class="num">Counts (30d)</th>
+          <th>Last purchase</th>
+          <th>Last count</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in stores %}
+        <tr>
+          <td>
+            <strong>{{ s.name }}</strong>
+            <span style="color:#888; font-size:11px;">({{ s.code }})</span>
+          </td>
+          <td class="num">{{ s.purchases_30d }}</td>
+          <td class="num">{{ s.stock_counts_30d }}</td>
+          <td>{% if s.last_purchase_at %}{{ s.last_purchase_at.strftime("%Y-%m-%d") }}{% else %}—{% endif %}</td>
+          <td>{% if s.last_count_at %}{{ s.last_count_at.strftime("%Y-%m-%d") }}{% else %}—{% endif %}</td>
+          <td>
+            <a href="{{ url_for('admin_system_health_store', company_id=kpis.id, store_id=s.id) }}"
+               style="font-size:12px;">Detail →</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block body_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: {{ trend_labels|safe }},
+      datasets: [
+        { label: 'Logins',     data: {{ trend_logins|safe }},
+          backgroundColor: '#5a8a5d' },
+        { label: 'Purchases',  data: {{ trend_purchases|safe }},
+          backgroundColor: '#d29a55' },
+        { label: 'Stock counts', data: {{ trend_counts|safe }},
+          backgroundColor: '#3a6c3e' },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { y: { beginAtZero: true } },
+      plugins: { legend: { position: 'bottom' } },
+    },
+  });
+</script>
+{% endblock %}
