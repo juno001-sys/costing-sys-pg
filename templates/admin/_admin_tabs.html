@@ -5,8 +5,10 @@
    Tabs that the current sys-role can't access are hidden (super_admin
    sees all). Roles must match the SCREEN_ROLES map in utils/sys_roles.py.
 #}
-{% set _r = g.current_sys_role or 'super_admin' %}
-{% set _is_super = (_r == 'super_admin') %}
+{% set _roles = g.current_sys_roles or [] %}
+{% set _is_super = ('super_admin' in _roles) %}
+{# Backward-compat singular for screens that haven't been touched yet #}
+{% set _r = (_roles[0] if _roles else 'super_admin') %}
 <style>
   .admin-tabs { display:flex; gap:0; margin-bottom:24px; border-bottom:2px solid #ddd; }
   .admin-tabs a {
@@ -30,17 +32,17 @@
   <a href="{{ url_for('admin_system_home') }}"
      class="{{ 'active' if active == 'system_admin' else '' }}">System Admin</a>
 
-  {% if _is_super or _r in ('sales', 'engineer') %}
+  {% if _is_super or 'sales' in _roles or 'engineer' in _roles %}
   <a href="{{ url_for('admin_system_health_overview') }}"
      class="{{ 'active' if active == 'health' else '' }}">Client Health</a>
   {% endif %}
 
-  {% if _is_super or _r == 'accounting' %}
+  {% if _is_super or 'accounting' in _roles %}
   <a href="{{ url_for('admin_system_invoices') }}"
      class="{{ 'active' if active == 'invoices' else '' }}">Invoices</a>
   {% endif %}
 
-  {% if _is_super or _r == 'engineer' %}
+  {% if _is_super or 'engineer' in _roles %}
   <a href="{{ url_for('dev_dashboard') }}"
      class="{{ 'active' if active == 'dev_dashboard' else '' }}">Developer Dashboard</a>
   {% endif %}
@@ -49,5 +51,5 @@
   <a href="{{ url_for('admin_system_help_index') }}"
      class="{{ 'active' if active == 'help' else '' }}">📘 References</a>
 
-  <span class="sys-role-badge">{{ _r }}</span>
+  <span class="sys-role-badge">{{ _roles | join(' / ') if _roles else '—' }}</span>
 </div>

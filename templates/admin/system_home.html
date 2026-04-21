@@ -155,6 +155,7 @@
 {% endif %}
 
 <!-- ──────────────── Sys Admins (Kurajika staff) ──────────────── -->
+{% set is_super = 'super_admin' in (g.current_sys_roles or []) %}
 <div class="section">
   <h3>🛡 Sys Admins <small>(Kurajika staff — independent of client companies)</small></h3>
   <table class="data-table">
@@ -163,7 +164,7 @@
         <th>ID</th>
         <th>Email</th>
         <th>Name</th>
-        <th>Sys Role</th>
+        <th style="min-width:280px;">Sys Roles</th>
         <th>Active</th>
         <th>Created</th>
       </tr>
@@ -175,18 +176,25 @@
           <td>{{ u.email }}</td>
           <td>{{ u.name or "" }}</td>
           <td>
-            {% if g.current_sys_role == 'super_admin' %}
+            {% if is_super %}
               <form method="post"
                     action="{{ url_for('admin_system_assign_sys_role', user_id=u.id) }}"
-                    style="margin:0; display:inline;">
-                <select name="sys_role" onchange="this.form.submit()" style="font-size:11px;">
-                  {% for r in sys_roles %}
-                    <option value="{{ r }}" {% if u.sys_role == r %}selected{% endif %}>{{ r }}</option>
-                  {% endfor %}
-                </select>
+                    style="margin:0; display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                {% for r in sys_roles %}
+                  <label style="font-size:11px; display:inline-flex; align-items:center; gap:3px;">
+                    <input type="checkbox" name="sys_role" value="{{ r }}"
+                           {% if r in u.sys_role_list %}checked{% endif %}>
+                    <span class="sys-role-pill {{ r }}">{{ r }}</span>
+                  </label>
+                {% endfor %}
+                <button type="submit" style="font-size:11px; padding:3px 8px;
+                        background:#5a8a5d; color:white; border:none; border-radius:4px;
+                        cursor:pointer;">Save</button>
               </form>
             {% else %}
-              <span class="sys-role-pill {{ u.sys_role }}">{{ u.sys_role }}</span>
+              {% for r in u.sys_role_list %}
+                <span class="sys-role-pill {{ r }}" style="margin-right:3px;">{{ r }}</span>
+              {% endfor %}
             {% endif %}
           </td>
           <td>{{ "✓" if u.is_active else "—" }}</td>
@@ -197,11 +205,58 @@
       {% endfor %}
     </tbody>
   </table>
-  <p style="font-size:11px; color:#666; margin-top:6px;">
-    Sys admins are added via the existing "Register New Client Company" flow
-    (then mark the user as system admin). A dedicated "+ Add Sys Admin" form
-    can be added later if needed.
-  </p>
+
+  {% if is_super %}
+    <!-- Register-new-sys-admin form (super_admin only) -->
+    <details style="margin-top:14px; padding:10px; border:1px solid #d4e0cc;
+                    border-radius:6px; background:#f0f5ec;">
+      <summary style="cursor:pointer; font-weight:600; color:#3a6c3e;">
+        + Register New Sys Admin
+      </summary>
+      <form method="post" action="{{ url_for('admin_system_sys_admin_new') }}"
+            style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:10px; max-width:680px;">
+        <div>
+          <label style="font-size:11px; color:#555;">Email *</label>
+          <input name="email" type="email" required
+                 style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px;">
+        </div>
+        <div>
+          <label style="font-size:11px; color:#555;">Name</label>
+          <input name="name"
+                 style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px;">
+        </div>
+        <div>
+          <label style="font-size:11px; color:#555;">Initial password *</label>
+          <input name="password" type="password" required
+                 style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px;">
+        </div>
+        <div>
+          <label style="font-size:11px; color:#555;">Sys Roles * (pick at least one)</label>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; padding:4px;">
+            {% for r in sys_roles %}
+              <label style="font-size:11px; display:inline-flex; align-items:center; gap:3px;">
+                <input type="checkbox" name="sys_role" value="{{ r }}"
+                       {% if r != 'super_admin' %}checked{% endif %}>
+                <span class="sys-role-pill {{ r }}">{{ r }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+        <div style="grid-column: 1 / -1; display:flex; justify-content:flex-end; gap:8px;">
+          <button type="submit"
+                  style="padding:6px 14px; background:#5a8a5d; color:white;
+                         border:none; border-radius:4px; cursor:pointer; font-size:13px;">
+            Create Sys Admin
+          </button>
+        </div>
+      </form>
+      <p style="font-size:11px; color:#666; margin-top:8px;">
+        New sys admin will be added to Kurajika's internal company (<code>id=1</code>)
+        as <code>admin</code> for session purposes. They log in via the
+        <strong>System Admin</strong> form on the login page.
+      </p>
+    </details>
+  {% endif %}
 </div>
 
 {% endblock %}

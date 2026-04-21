@@ -11,15 +11,20 @@ This is the sys-admin equivalent of the company-side function roles
                   client onboarding tooling
   accounting    = invoices, payments, billing reports
 
+Each sys admin holds a SET of roles (PostgreSQL TEXT[]). At the early
+stage one person often wears multiple hats — e.g. founder is both sales
+AND accounting. Multi-role keeps that explicit instead of forcing a
+super_admin grant.
+
 This module is import-safe BEFORE the migration runs:
-get_current_sys_role() falls back to 'super_admin' for every user that
-has is_system_admin = TRUE if the sys_role column doesn't exist yet
+get_current_sys_roles() falls back to ['super_admin'] for every user
+that has is_system_admin = TRUE if the column doesn't exist yet
 (deny-nothing fallback for the transition window).
 """
 from __future__ import annotations
 
 from functools import wraps
-from typing import Optional
+from typing import Iterable, List, Optional
 
 from flask import flash, g, redirect, request, url_for
 
@@ -42,19 +47,65 @@ SCREEN_ROLES: dict[str, tuple[str, ...]] = {
     "admin_system_invoices_generate":   ("accounting",),
     "dev_dashboard":                    ("engineer",),
     "admin_system_company_new":         (),  # super_admin only
-    # Sys-role assignment UI — super_admin only (empty extra list)
-    "admin_system_assign_sys_role":     (),
+    "admin_system_assign_sys_role":     (),  # super_admin only
+    "admin_system_sys_admin_new":       (),  # super_admin only
+    "admin_system_help_index":          ("engineer", "sales", "accounting"),
+    "admin_system_help_topic":          ("engineer", "sales", "accounting"),
 }
 
 
-def get_current_sys_role() -> Optional[str]:
-    """Return the current logged-in sys-admin's sys_role, or None if not
-    a sys-admin. Defaults to 'super_admin' for sys-admins on a database
+def _normalize_roles(value) -> List[str]:
+    """Coerce whatever shape sys_role comes in (PG list, comma string,
+    None) into a normalized list[str]. Defensive — the DB driver might
+    return arrays as Python lists OR as strings depending on type info."""
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return [str(r).strip().lower() for r in value if r]
+    if isinstance(value, str):
+        # Could be 'super_admin' (legacy varchar) OR '{a,b}' (PG array literal)
+        s = value.strip()
+        if s.startswith("{") and s.endswith("}"):
+            inner = s[1:-1]
+            return [r.strip().strip('"').lower() for r in inner.split(",") if r.strip()]
+        if "," in s:
+            return [r.strip().lower() for r in s.split(",") if r.strip()]
+        return [s.lower()] if s else []
+    return [str(value).strip().lower()]
+
+
+def get_current_sys_roles() -> List[str]:
+    """Return the current logged-in sys-admin's roles, or [] if not a
+    sys-admin. Defaults to ['super_admin'] for sys-admins on a database
     that hasn't been migrated yet."""
     user = getattr(g, "current_user", None)
     if not user or not user.get("is_system_admin"):
-        return None
-    return (user.get("sys_role") or "super_admin").strip().lower()
+        return []
+    raw = user.get("sys_role") if "sys_role" in user else user.get("sys_roles")
+    roles = _normalize_roles(raw)
+    return roles or ["super_admin"]
+
+
+def get_current_sys_role() -> Optional[str]:
+    """Backward-compat: returns the FIRST role, or None. Prefer
+    get_current_sys_roles() in new code."""
+    roles = get_current_sys_roles()
+    return roles[0] if roles else None
+
+
+def is_super_admin() -> bool:
+    return "super_admin" in get_current_sys_roles()
+
+
+def has_any_sys_role(*roles: str) -> bool:
+    """True if the current sys admin has at least one of `roles` (or is
+    super_admin, which is implicit access to everything)."""
+    current = set(get_current_sys_roles())
+    if not current:
+        return False
+    if "super_admin" in current:
+        return True
+    return bool(current & set(roles))
 
 
 def sys_role_required(*allowed_roles: str):
@@ -76,8 +127,8 @@ def sys_role_required(*allowed_roles: str):
             if not user.get("is_system_admin"):
                 flash("System admin only.")
                 return redirect(url_for("index"))
-            role = get_current_sys_role()
-            if role not in allowed:
+            current_roles = set(get_current_sys_roles())
+            if not (current_roles & allowed):
                 flash(f"Access denied — this screen requires one of: {', '.join(sorted(allowed))}.")
                 return redirect(url_for("admin_system_home"))
             return fn(*args, **kwargs)
@@ -88,10 +139,10 @@ def sys_role_required(*allowed_roles: str):
 def can_access_screen(endpoint: str) -> bool:
     """Helper for templates — used by the admin tabs partial to hide
     tabs the current sys-admin doesn't have access to."""
-    role = get_current_sys_role()
-    if role is None:
+    roles = set(get_current_sys_roles())
+    if not roles:
         return False
-    if role == "super_admin":
+    if "super_admin" in roles:
         return True
-    extra_roles = SCREEN_ROLES.get(endpoint, ())
-    return role in extra_roles
+    extra_roles = set(SCREEN_ROLES.get(endpoint, ()))
+    return bool(roles & extra_roles)

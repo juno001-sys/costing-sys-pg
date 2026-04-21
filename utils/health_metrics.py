@@ -151,8 +151,13 @@ def _compute_status(row: dict) -> str:
 # Per-company detail
 # ─────────────────────────────────────────────────────────────────────
 def get_company_kpis(db, company_id: int) -> dict:
-    """Return KPI dict for the company detail screen header."""
-    rows = list_companies_with_health(db)
+    """Return KPI dict for the company detail screen header.
+
+    Always include_internal=True here — the OVERVIEW screen filters
+    internal accounts, but the detail screen must work for any company
+    you can drill into (including the internal house account).
+    """
+    rows = list_companies_with_health(db, include_internal=True)
     for r in rows:
         if r["id"] == company_id:
             return r
