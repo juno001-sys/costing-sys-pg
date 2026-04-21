@@ -161,6 +161,115 @@ def get_effective_role_on_store(store_id, user_id=None, company_id=None,
     return None
 
 
+# ----------------------------------------------------------------------
+# Per-company nav visibility policy
+# ----------------------------------------------------------------------
+# Nav items that can be toggled per (company, role). The key is used in
+# both the sys_company_nav_policies table and the Jinja template guards
+# (`{% if nav_allowed('items_master') %}`).
+NAV_KEYS = [
+    "dashboard",
+    "order_support",
+    "purchase_form",
+    "inventory_count",
+    "purchase_report",
+    "usage_report",
+    "cost_report",
+    "suppliers_master",
+    "items_master",
+    "stores_master",
+    "help",
+    "work_logs",
+]
+
+# Default visibility when no policy row exists. Master data is hidden
+# from operators/auditors by default — typical expectation for a
+# restaurant operator who should not be editing supplier/item/store
+# definitions. Company admins can flip these on explicitly.
+NAV_DEFAULT_VISIBILITY = {
+    "operator": {
+        "dashboard": True,
+        "order_support": True,
+        "purchase_form": True,
+        "inventory_count": True,
+        "purchase_report": True,
+        "usage_report": True,
+        "cost_report": True,
+        "suppliers_master": False,
+        "items_master": False,
+        "stores_master": False,
+        "help": True,
+        "work_logs": True,
+    },
+    "auditor": {
+        "dashboard": True,
+        "order_support": True,
+        "purchase_form": True,
+        "inventory_count": True,
+        "purchase_report": True,
+        "usage_report": True,
+        "cost_report": True,
+        "suppliers_master": False,
+        "items_master": False,
+        "stores_master": False,
+        "help": True,
+        "work_logs": True,
+    },
+}
+
+
+def get_company_nav_policy(company_id, role):
+    """Return {nav_key: visible} for (company, role). Cached on `g`.
+
+    Missing table or missing row → empty dict; callers should fall back
+    to NAV_DEFAULT_VISIBILITY.
+    """
+    cache_key = f"_nav_policy_{company_id}_{role}"
+    cached = getattr(g, cache_key, None)
+    if cached is not None:
+        return cached
+
+    if not company_id or not role:
+        setattr(g, cache_key, {})
+        return {}
+
+    db = get_db()
+    rows = _safe_query(db, """
+        SELECT nav_key, visible
+        FROM sys_company_nav_policies
+        WHERE company_id = %s AND role = %s
+    """, (company_id, role))
+    policy = {r["nav_key"]: bool(r["visible"]) for r in rows}
+    setattr(g, cache_key, policy)
+    return policy
+
+
+def nav_allowed(nav_key):
+    """Template helper: should this nav item be shown to the current user?
+
+    Rules:
+      - admin function role → always visible (feature-flag gates still
+        apply separately in the template).
+      - operator / auditor → look up the per-company policy; fall back
+        to NAV_DEFAULT_VISIBILITY when no row exists.
+      - no role / no company → hide (defensive).
+    """
+    role = getattr(g, "current_role", None)
+    if role == "admin":
+        return True
+    if role not in NAV_DEFAULT_VISIBILITY:
+        return False
+
+    company_id = getattr(g, "current_company_id", None)
+    if not company_id:
+        return False
+
+    policy = get_company_nav_policy(company_id, role)
+    if nav_key in policy:
+        return policy[nav_key]
+    return NAV_DEFAULT_VISIBILITY[role].get(nav_key, True)
+
+
 def is_chief_admin(user_id=None, company_id=None):
     """Is the given (user, company) the Chief Admin? Defaults to current user."""
     if user_id is None:

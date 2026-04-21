@@ -420,14 +420,14 @@
       {% block nav %}
       <nav>
         <ul class="header-nav">
-          {% if feature_enabled('purchase_dashboard') %}
+          {% if feature_enabled('purchase_dashboard') and nav_allowed('dashboard') %}
           <li>
             <a href="{{ url_for('reports.purchase_dashboard') }}"
               class="{% if request.endpoint == 'reports.purchase_dashboard' %}active{% endif %}">
               📊 {{ t("nav.dashboard") }}</a>
           </li>
           {% endif %}
-          {% if feature_enabled('order_support') %}
+          {% if feature_enabled('order_support') and nav_allowed('order_support') %}
           <li>
             <a href="{{ url_for('order_support') }}"
               class="{% if request.endpoint == 'order_support' %}active{% endif %}">
@@ -435,14 +435,14 @@
           </li>
           {% endif %}
           <li class="nav-sep"></li>
-          {% if feature_enabled('purchase_entry_fuzzy') %}
+          {% if feature_enabled('purchase_entry_fuzzy') and nav_allowed('purchase_form') %}
           <li>
             <a href="{{ url_for('new_purchase') }}"
               class="{% if request.endpoint in ['new_purchase','edit_purchase'] %}active{% endif %}">
               📝 {{ t("nav.purchase_form") }}</a>
           </li>
           {% endif %}
-          {% if feature_enabled('inventory_count') %}
+          {% if feature_enabled('inventory_count') and nav_allowed('inventory_count') %}
           <li>
             <a href="{{ url_for('inventory_count_v2') }}"
               class="{% if request.endpoint == 'inventory_count_v2' %}active{% endif %}">
@@ -450,21 +450,21 @@
           </li>
           {% endif %}
           <li class="nav-sep"></li>
-          {% if feature_enabled('report_purchase_supplier') %}
+          {% if feature_enabled('report_purchase_supplier') and nav_allowed('purchase_report') %}
           <li>
             <a href="{{ url_for('reports.purchase_report') }}"
               class="{% if request.endpoint == 'reports.purchase_report' %}active{% endif %}">
               📈 {{ t("nav.purchase_report") }}</a>
           </li>
           {% endif %}
-          {% if feature_enabled('report_usage_monthly') %}
+          {% if feature_enabled('report_usage_monthly') and nav_allowed('usage_report') %}
           <li>
             <a href="{{ url_for('reports.usage_report') }}"
               class="{% if request.endpoint == 'reports.usage_report' %}active{% endif %}">
               📊 {{ t("nav.usage_report") }}</a>
           </li>
           {% endif %}
-          {% if feature_enabled('report_cost_monthly') %}
+          {% if feature_enabled('report_cost_monthly') and nav_allowed('cost_report') %}
           <li>
             <a href="{{ url_for('reports.cost_report') }}"
               class="{% if request.endpoint == 'reports.cost_report' %}active{% endif %}">
@@ -472,32 +472,42 @@
           </li>
           {% endif %}
           <li class="nav-sep"></li>
+          {% if nav_allowed('suppliers_master') %}
           <li>
             <a href="{{ url_for('suppliers_master') }}"
               class="{% if request.endpoint in ['suppliers_master','edit_supplier'] %}active{% endif %}">
               🏢 {{ t("nav.suppliers_master") }}</a>
           </li>
+          {% endif %}
+          {% if nav_allowed('items_master') %}
           <li>
             <a href="{{ url_for('items_master') }}"
               class="{% if request.endpoint in ['items_master','edit_item'] %}active{% endif %}">
               📦 {{ t("nav.items_master") }}</a>
           </li>
+          {% endif %}
+          {% if nav_allowed('stores_master') %}
           <li>
             <a href="{{ url_for('stores_master') }}"
               class="{% if request.endpoint in ['stores_master','edit_store'] %}active{% endif %}">
               🏪 {{ t("nav.stores_master") }}</a>
           </li>
+          {% endif %}
           <li class="nav-sep"></li>
+          {% if nav_allowed('help') %}
           <li>
             <a href="{{ url_for('help.index') }}"
               class="{% if request.endpoint and request.endpoint.startswith('help.') %}active{% endif %}">
               ❓ {{ t("nav.help") }}</a>
           </li>
+          {% endif %}
+          {% if nav_allowed('work_logs') %}
           <li>
             <a href="{{ url_for('reports.work_logs') }}"
               class="{% if request.endpoint == 'reports.work_logs' %}active{% endif %}">
               📝 {{ t("nav.work_logs") }}</a>
           </li>
+          {% endif %}
           {% if current_role == "admin" %}
           <li>
             <a href="{{ url_for('admin_users') }}"

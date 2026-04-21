@@ -1,0 +1,74 @@
+{% extends "layout/base.html" %}
+{% block title %}{{ t("admin.nav_policy.title") }}{% endblock %}
+{% block content %}
+
+<div style="max-width:880px; margin:0 auto;">
+  <h2>{{ t("admin.nav_policy.title") }}</h2>
+
+  <p style="color:#555; line-height:1.6;">
+    {{ t("admin.nav_policy.description") }}
+  </p>
+
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for m in messages %}
+        <div class="flash">{{ m }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div style="margin: 10px 0 18px;">
+    <a href="{{ url_for('admin_users') }}" style="color:#555;">
+      ← {{ t("admin.nav_policy.back_to_users") }}
+    </a>
+  </div>
+
+  <form method="post" class="card" style="padding: 18px;">
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="background:#f4f4f4; border-bottom:2px solid #ddd;">
+          <th style="text-align:left; padding:10px;">
+            {{ t("admin.nav_policy.col_nav_item") }}
+          </th>
+          {% for role in roles %}
+            <th style="text-align:center; padding:10px; width:160px;">
+              {{ t("admin.nav_policy.role_" ~ role) }}
+            </th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for nav_key in nav_keys %}
+        <tr style="border-bottom:1px solid #eee;">
+          <td style="padding:10px;">
+            {{ t("nav." ~ nav_key) }}
+            <span style="color:#999; font-size:0.8em; margin-left:6px;">({{ nav_key }})</span>
+          </td>
+          {% for role in roles %}
+            <td style="text-align:center; padding:10px;">
+              <label style="cursor:pointer;">
+                <input type="checkbox"
+                       name="policy__{{ role }}__{{ nav_key }}"
+                       value="1"
+                       {% if policy_by_role[role][nav_key] %}checked{% endif %}>
+              </label>
+            </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div style="margin-top: 20px; text-align: right;">
+      <button type="submit" style="padding:8px 22px;">
+        {{ t("admin.nav_policy.save") }}
+      </button>
+    </div>
+  </form>
+
+  <p style="color:#888; font-size:0.85em; margin-top:16px;">
+    {{ t("admin.nav_policy.note_admin_always_visible") }}
+  </p>
+</div>
+
+{% endblock %}

@@ -13,6 +13,17 @@
     {% endif %}
   {% endwith %}
 
+  {% if actor_is_chief %}
+  <div style="margin-bottom: 16px;">
+    <a href="{{ url_for('admin_nav_policy') }}"
+       style="display:inline-block; padding:6px 14px; background:#eef5ff;
+              border:1px solid #b8d4f5; border-radius:4px; color:#2a5aa0;
+              text-decoration:none;">
+      ⚙ {{ t("admin.nav_policy.title") }}
+    </a>
+  </div>
+  {% endif %}
+
   <!-- ============== Create user ============== -->
   <div class="card" style="margin-bottom:20px;">
     <div class="card-header">Create user</div>

@@ -810,5 +810,14 @@
   "help.concept_order_support.q2": "Stock numbers look wrong",
   "help.concept_order_support.a2": "Probably an old count or missing purchase entries after it. Verify the \"Last count date\" on the inventory screen.",
   "help.concept_order_support.q3": "est_order_qty is 0 or blank",
-  "help.concept_order_support.a3": "Not enough purchase history in the last 90 days. Set manually on the item edit screen, or keep operating and request a recalculation."
+  "help.concept_order_support.a3": "Not enough purchase history in the last 90 days. Set manually on the item edit screen, or keep operating and request a recalculation.",
+  "common.select_store_prompt": "Please select a store from the menu above.",
+  "admin.nav_policy.title": "Nav visibility settings",
+  "admin.nav_policy.description": "Choose which navigation menu items are visible to operator and supervisor users. Unchecked items are hidden. Admin-role users always see everything.",
+  "admin.nav_policy.col_nav_item": "Nav item",
+  "admin.nav_policy.role_operator": "Operator",
+  "admin.nav_policy.role_auditor": "Supervisor",
+  "admin.nav_policy.save": "Save",
+  "admin.nav_policy.back_to_users": "Back to user management",
+  "admin.nav_policy.note_admin_always_visible": "Note: users with the Admin role always see all menu items, regardless of this setting."
 }

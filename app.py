@@ -24,6 +24,7 @@ from views.reports.audit_log import log_event
 from views.auth.invite import init_auth_invite_views
 
 from views.admin.users import init_admin_user_views
+from views.admin.nav_policy import init_admin_nav_policy_views
 from views.admin.invites import init_admin_invites_views
 from views.admin.profit_settings import bp as admin_profit_settings_bp
 
@@ -235,9 +236,12 @@ def inject_feature_gate():
         is_company_blocked,
     )
 
+    from utils.access_scope import nav_allowed
+
     company_id = getattr(g, "current_company_id", None)
     return {
         "feature_enabled": feature_enabled,
+        "nav_allowed": nav_allowed,
         "lifecycle_state": get_lifecycle_state(company_id) if company_id else {"state": "no_contract"},
         "company_blocked": is_company_blocked(company_id) if company_id else False,
     }
@@ -416,6 +420,7 @@ init_auth_invite_views(app, get_db)
 # Admin screens that depend on admin_required
 init_admin_invites_views(app, get_db)
 init_admin_user_views(app, get_db)
+init_admin_nav_policy_views(app, get_db)
 init_admin_system_home_views(app, get_db)
 init_admin_system_company_views(app, get_db)
 init_admin_system_features_views(app, get_db)
