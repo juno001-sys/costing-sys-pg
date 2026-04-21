@@ -18,11 +18,9 @@ def get_accessible_stores():
     Phase B semantics:
       - Function role = baseline (1 per user per company), set in
         sys_user_companies.role
-      - sys_user_store_grants overlays additional stores (or elevates the
-        role on stores already accessible via the company)
-      - Result = union of: all stores in the user's current company
-        (filtered by function role's company-wide scope) + all stores
-        explicitly granted to the user
+      - 'admin' function role → all active stores in the current company
+      - 'operator' / 'auditor' → only stores explicitly granted via
+        sys_user_store_grants (OR-overlay; no company-wide store scope)
 
     Falls back to legacy "all company stores" behavior if
     sys_user_store_grants table does not exist (pre-migration).
@@ -35,7 +33,7 @@ def get_accessible_stores():
         return []
 
     db = get_db()
-    rows = db.execute(
+    all_rows = db.execute(
         """
         SELECT id, code, name
         FROM mst_stores
@@ -46,6 +44,26 @@ def get_accessible_stores():
         (company_id,),
     ).fetchall()
 
+    role = getattr(g, "current_role", None)
+    if role == "admin":
+        g._stores_cache = all_rows
+        return all_rows
+
+    user_id = (getattr(g, "current_user", {}) or {}).get("id")
+    grant_rows = _safe_query_or_none(db, """
+        SELECT store_id
+        FROM sys_user_store_grants
+        WHERE user_id = %s AND company_id = %s AND is_active = 1
+          AND revoked_at IS NULL
+    """, (user_id, company_id))
+
+    if grant_rows is None:
+        # Legacy fallback: grants table missing (pre-migration).
+        g._stores_cache = all_rows
+        return all_rows
+
+    granted_ids = {r["store_id"] for r in grant_rows}
+    rows = [r for r in all_rows if r["id"] in granted_ids]
     g._stores_cache = rows
     return rows
 
@@ -79,6 +97,19 @@ def _safe_query(db, sql, params=()):
         except Exception:
             pass
         return []
+
+
+def _safe_query_or_none(db, sql, params=()):
+    """Like _safe_query but returns None on error so callers can distinguish
+    'query failed / table missing' from 'query succeeded with zero rows'."""
+    try:
+        return db.execute(sql, params).fetchall()
+    except Exception:
+        try:
+            db.connection.rollback()
+        except Exception:
+            pass
+        return None
 
 
 def get_user_store_grants(user_id, company_id):
