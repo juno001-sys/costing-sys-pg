@@ -44,9 +44,6 @@ def init_purchase_views(app, get_db, log_purchase_change):
         selected_store_id = normalize_accessible_store_id(
             request.args.get("store_id")
         )
-        # Auto-select when the user has exactly one accessible store.
-        if not selected_store_id and len(mst_stores) == 1:
-            selected_store_id = mst_stores[0]["id"]
 
         company_id = getattr(g, "current_company_id", None)
 

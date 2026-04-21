@@ -22,8 +22,6 @@ def usage_report():
     selected_store_id = normalize_accessible_store_id(
         request.args.get("store_id")
     )
-    if not selected_store_id and len(mst_stores) == 1:
-        selected_store_id = mst_stores[0]["id"]
 
     supplier_id = request.args.get("supplier_id") or ""
     selected_supplier_id = int(supplier_id) if supplier_id else None

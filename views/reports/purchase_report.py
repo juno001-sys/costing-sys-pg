@@ -20,8 +20,6 @@ def purchase_report():
     selected_store_id = normalize_accessible_store_id(
         request.args.get("store_id")
     )
-    if not selected_store_id and len(mst_stores) == 1:
-        selected_store_id = mst_stores[0]["id"]
 
     # last 13 months (computed regardless so the template still renders headers)
     today = datetime.now().date()
