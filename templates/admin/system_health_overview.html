@@ -54,9 +54,10 @@
 
   <div class="filter-pills">
     {% set order = ['all', 'critical', 'dormant', 'quiet', 'healthy', 'new'] %}
+    {% set extra = '&include_internal=1' if include_internal else '' %}
     {% for s in order %}
       {% set count = total_companies if s == 'all' else status_counts.get(s, 0) %}
-      <a href="?status={{ s }}" class="{{ 'active' if status_filter == s else '' }}">
+      <a href="?status={{ s }}{{ extra }}" class="{{ 'active' if status_filter == s else '' }}">
         {% if s == 'critical' %}🔴 critical
         {% elif s == 'dormant' %}🟠 dormant
         {% elif s == 'quiet' %}🟡 quiet
@@ -66,6 +67,16 @@
         ({{ count }})
       </a>
     {% endfor %}
+
+    <span style="margin-left:16px; color:#666; font-size:12px;">
+      {% if include_internal %}
+        🏠 Internal accounts shown ·
+        <a href="?status={{ status_filter }}" style="color:#5a8a5d;">Hide internal</a>
+      {% else %}
+        Showing client companies only ·
+        <a href="?status={{ status_filter }}&include_internal=1" style="color:#5a8a5d;">Include internal</a>
+      {% endif %}
+    </span>
   </div>
 
   <table class="health-table">
@@ -85,7 +96,7 @@
     </thead>
     <tbody>
       {% for c in companies %}
-      <tr>
+      <tr {% if c.is_internal %}style="background:#fbf4e6;"{% endif %}>
         <td>
           <span class="badge {{ c.status }}">
             {% if c.status == 'critical' %}🔴
@@ -98,6 +109,9 @@
         </td>
         <td>
           <strong>{{ c.name }}</strong>
+          {% if c.is_internal %}
+            <span style="color:#8a6a32; font-size:11px;">🏠 internal</span>
+          {% endif %}
           {% if c.has_overdue_invoice %}
             <span style="color:#c75a4a; font-size:11px;">⚠ overdue invoice</span>
           {% endif %}

@@ -41,22 +41,33 @@ def _safe_query(db, sql, params=()):
 # ─────────────────────────────────────────────────────────────────────
 # Per-company aggregations
 # ─────────────────────────────────────────────────────────────────────
-def list_companies_with_health(db) -> list[dict]:
+def list_companies_with_health(db, include_internal: bool = False) -> list[dict]:
     """Return all companies with their basic health KPIs for the overview screen.
 
-    Columns: id, name, tier, trial_ends_at, total_users, active_users_30d,
-             logins_30d, purchases_30d, stock_counts_30d, errors_7d,
-             last_login_at, last_action_at, has_overdue_invoice, status
+    By default excludes internal accounts (mst_companies.is_internal = TRUE)
+    so the Client Health view focuses on actual paying / trial customers.
+    Pass include_internal=True to also see Kurajika's own house account.
+
+    Columns: id, name, is_internal, tier, trial_ends_at, total_users,
+             active_users_30d, logins_30d, purchases_30d, stock_counts_30d,
+             errors_7d, last_login_at, last_action_at, has_overdue_invoice,
+             status
     """
+    # Filter clause is built so it works even before the is_internal column
+    # exists (try/except in _safe_query rolls back if it fails).
+    where_clause = "" if include_internal else \
+        "WHERE COALESCE(c.is_internal, FALSE) = FALSE"
     rows = _safe_query(db, f"""
         WITH base AS (
-          SELECT c.id, c.name
+          SELECT c.id, c.name, COALESCE(c.is_internal, FALSE) AS is_internal
           FROM mst_companies c
+          {where_clause}
           ORDER BY c.id
         )
         SELECT
           b.id,
           b.name,
+          b.is_internal,
           -- Current contract tier
           (SELECT tier FROM sys_company_contracts cc
             WHERE cc.company_id = b.id AND cc.effective_to IS NULL

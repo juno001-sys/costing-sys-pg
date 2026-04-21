@@ -1,7 +1,11 @@
 {% extends "layout/base.html" %}
 {% block title %}{{ t("sys_admin.features.title") }}{% endblock %}
+{% block nav %}{% if not g.is_system_admin %}{{ super() }}{% endif %}{% endblock %}
 
 {% block content %}
+
+{% set active = 'system_admin' %}
+{% include "admin/_admin_tabs.html" %}
 <div style="max-width:980px; margin:0 auto;">
 
   <h2 style="margin-bottom:4px;">{{ t("sys_admin.features.heading") }}</h2>

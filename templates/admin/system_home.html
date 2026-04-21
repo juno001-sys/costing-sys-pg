@@ -1,134 +1,207 @@
-{% extends "layout/base.html" %} {% block nav %} {% if not g.is_system_admin %}
-{{ super() }} {% endif %} {% endblock %} {% block content %}
+{% extends "layout/base.html" %}
+{% block title %}System Admin{% endblock %}
+{% block nav %}{% if not g.is_system_admin %}{{ super() }}{% endif %}{% endblock %}
+{% block content %}
 
 {% set active = 'system_admin' %}
 {% include "admin/_admin_tabs.html" %}
 
-<div style="margin-bottom: 16px">
-  <a
-    href="{{ url_for('admin_system_company_new') }}"
-    style="
-      display: inline-block;
-      padding: 8px 12px;
-      border: 1px solid #ccc;
-      text-decoration: none;
-      border-radius: 6px;
-      margin-right: 8px;
-      background: #f5f5f5;
-    "
-  >
-    + Register New Company
+<style>
+  .section { margin-top: 22px; }
+  .section h3 {
+    margin: 0 0 8px 0; font-size: 16px; color: #3a6c3e;
+    border-bottom: 2px solid #d4e0cc; padding-bottom: 4px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section h3 small { color: #888; font-weight: 400; font-size: 11px; }
+
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px;
+                background: white; }
+  .data-table thead { background: #f0f5ec; }
+  .data-table th, .data-table td {
+    padding: 8px 10px; border: 1px solid #e0e8db; text-align: left;
+  }
+  .data-table th { color: #3a6c3e; font-size: 12px; }
+  .data-table td.num { text-align: right; }
+  .data-table tr:hover { background: #fafbf8; }
+
+  .tier-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    color: white; font-size: 11px; font-weight: 700;
+  }
+  .tier-badge.entry    { background: #a0a0a0; }
+  .tier-badge.standard { background: #3a6c3e; }
+  .tier-badge.premium  { background: #5a8a5d; }
+  .tier-badge.none     { background: #ccc; color: #666; }
+
+  .sys-role-pill {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 11px; font-weight: 600; color: white;
+  }
+  .sys-role-pill.super_admin { background: #c75a4a; }
+  .sys-role-pill.engineer    { background: #6a8caf; }
+  .sys-role-pill.sales       { background: #5a8a5d; }
+  .sys-role-pill.accounting  { background: #d29a55; }
+
+  .empty-row { color: #888; padding: 16px; text-align: center; }
+
+  .action-btn {
+    display: inline-block; padding: 4px 10px; font-size: 11px;
+    background: #5a8a5d; color: white; text-decoration: none;
+    border-radius: 4px; margin-right: 6px;
+  }
+  .action-btn:hover { background: #3a6c3e; }
+  .action-btn.secondary { background: #eee; color: #444; }
+  .action-btn.secondary:hover { background: #ddd; }
+</style>
+
+<div style="margin-bottom: 8px; display: flex; gap: 10px;">
+  <a class="action-btn" href="{{ url_for('admin_system_company_new') }}">
+    + Register New Client Company
   </a>
 </div>
 
-<hr />
+<!-- ──────────────── Client Companies (paying / trial) ──────────────── -->
+<div class="section">
+  <h3>🏢 Client Companies <small>(paying or in trial)</small></h3>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Code</th>
+        <th>Name</th>
+        <th>Created</th>
+        <th class="num">Users</th>
+        <th class="num">Stores</th>
+        <th>Tier</th>
+        <th>Trial Ends</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in client_companies %}
+        <tr>
+          <td>{{ c.id }}</td>
+          <td>{{ c.code or "" }}</td>
+          <td><strong>{{ c.name }}</strong></td>
+          <td style="font-size:11px;">{{ c.created_at.strftime("%Y-%m-%d") if c.created_at else "" }}</td>
+          <td class="num">{{ c.user_count }}</td>
+          <td class="num">{{ c.store_count }}</td>
+          <td>
+            {% if c.tier %}
+              <span class="tier-badge {{ c.tier }}">{{ c.tier|upper }}</span>
+            {% else %}
+              <span class="tier-badge none">—</span>
+            {% endif %}
+          </td>
+          <td style="font-size:11px;">{{ c.trial_ends_at or "" }}</td>
+          <td>
+            <a href="{{ url_for('admin_system_health_company', company_id=c.id) }}"
+               class="action-btn secondary">👤 Users</a>
+            <a href="{{ url_for('admin_system_company_features', company_id=c.id) }}"
+               class="action-btn">⚙ Features</a>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="9" class="empty-row">No client companies yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
-<h3>Companies</h3>
+<!-- ──────────────── Internal accounts (Kurajika own) ──────────────── -->
+{% if internal_companies %}
+<div class="section">
+  <h3>🏠 Internal Accounts <small>(Kurajika's own — used for breakfast staff & smoke testing)</small></h3>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Code</th>
+        <th>Name</th>
+        <th class="num">Users</th>
+        <th class="num">Stores</th>
+        <th>Tier</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in internal_companies %}
+        <tr style="background:#fbf4e6;">
+          <td>{{ c.id }}</td>
+          <td>{{ c.code or "" }}</td>
+          <td><strong>{{ c.name }}</strong>
+            <span style="color:#8a6a32; font-size:11px;">(internal)</span></td>
+          <td class="num">{{ c.user_count }}</td>
+          <td class="num">{{ c.store_count }}</td>
+          <td>
+            {% if c.tier %}
+              <span class="tier-badge {{ c.tier }}">{{ c.tier|upper }}</span>
+            {% else %}
+              <span class="tier-badge none">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('admin_system_health_company', company_id=c.id) }}"
+               class="action-btn secondary">👤 Users</a>
+            <a href="{{ url_for('admin_system_company_features', company_id=c.id) }}"
+               class="action-btn">⚙ Features</a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
 
-<table border="1" cellpadding="6" cellspacing="0">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Code</th>
-      <th>Name</th>
-      <th>Created</th>
-      <th>Users</th>
-      <th>Stores</th>
-      <th>Tier</th>
-      <th>Trial Ends</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
+<!-- ──────────────── Sys Admins (Kurajika staff) ──────────────── -->
+<div class="section">
+  <h3>🛡 Sys Admins <small>(Kurajika staff — independent of client companies)</small></h3>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Email</th>
+        <th>Name</th>
+        <th>Sys Role</th>
+        <th>Active</th>
+        <th>Created</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in sys_admins %}
+        <tr>
+          <td>{{ u.id }}</td>
+          <td>{{ u.email }}</td>
+          <td>{{ u.name or "" }}</td>
+          <td>
+            {% if g.current_sys_role == 'super_admin' %}
+              <form method="post"
+                    action="{{ url_for('admin_system_assign_sys_role', user_id=u.id) }}"
+                    style="margin:0; display:inline;">
+                <select name="sys_role" onchange="this.form.submit()" style="font-size:11px;">
+                  {% for r in sys_roles %}
+                    <option value="{{ r }}" {% if u.sys_role == r %}selected{% endif %}>{{ r }}</option>
+                  {% endfor %}
+                </select>
+              </form>
+            {% else %}
+              <span class="sys-role-pill {{ u.sys_role }}">{{ u.sys_role }}</span>
+            {% endif %}
+          </td>
+          <td>{{ "✓" if u.is_active else "—" }}</td>
+          <td style="font-size:11px;">{{ u.created_at.strftime("%Y-%m-%d") if u.created_at else "" }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="empty-row">No sys admins.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p style="font-size:11px; color:#666; margin-top:6px;">
+    Sys admins are added via the existing "Register New Client Company" flow
+    (then mark the user as system admin). A dedicated "+ Add Sys Admin" form
+    can be added later if needed.
+  </p>
+</div>
 
-  <tbody>
-    {% for c in companies %}
-    <tr>
-      <td>{{ c.id }}</td>
-      <td>{{ c.code or "" }}</td>
-      <td>{{ c.name }}</td>
-      <td>{{ c.created_at }}</td>
-      <td>{{ c.user_count }}</td>
-      <td>{{ c.store_count }}</td>
-      <td>
-        {% if c.tier %}
-          <span style="display:inline-block; padding:2px 8px; border-radius:10px;
-                       background:{% if c.tier == 'premium' %}#5a8a5d{% elif c.tier == 'standard' %}#3a6c3e{% else %}#a0a0a0{% endif %};
-                       color:white; font-size:11px;">
-            {{ c.tier|upper }}
-          </span>
-        {% else %}
-          <span style="color:#c75a4a; font-size:11px;">—</span>
-        {% endif %}
-      </td>
-      <td style="font-size:11px;">{{ c.trial_ends_at or "" }}</td>
-      <td>
-        <a href="{{ url_for('admin_system_company_features', company_id=c.id) }}"
-           style="font-size:12px;">⚙ Manage Features</a>
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-
-<br />
-<hr />
-<br />
-
-<h3>Users by Company</h3>
-
-{% for c in companies %}
-
-<h4>{{ c.name }} (ID: {{ c.id }})</h4>
-
-<table border="1" cellpadding="6" cellspacing="0">
-  <thead>
-    <tr>
-      <th>User ID</th>
-      <th>Email</th>
-      <th>Name</th>
-      <th>Role</th>
-      <th>Sys Admin</th>
-      <th>Sys Role</th>
-      <th>Active</th>
-      <th>Created</th>
-    </tr>
-  </thead>
-
-  <tbody>
-    {% for u in users if u.company_id == c.id %}
-    <tr>
-      <td>{{ u.id }}</td>
-      <td>{{ u.email }}</td>
-      <td>{{ u.name or "" }}</td>
-      <td>{{ u.role }}</td>
-      <td>{{ "Yes" if u.is_system_admin else "No" }}</td>
-      <td>
-        {% if u.is_system_admin %}
-          {% if g.current_sys_role == 'super_admin' %}
-            {# Super admin can change other sys-admins' roles #}
-            <form method="post"
-                  action="{{ url_for('admin_system_assign_sys_role', user_id=u.id) }}"
-                  style="margin:0; display:inline;">
-              <select name="sys_role" onchange="this.form.submit()" style="font-size:11px;">
-                {% for r in sys_roles %}
-                  <option value="{{ r }}" {% if u.sys_role == r %}selected{% endif %}>{{ r }}</option>
-                {% endfor %}
-              </select>
-            </form>
-          {% else %}
-            <span style="font-size:11px;">{{ u.sys_role }}</span>
-          {% endif %}
-        {% else %}
-          —
-        {% endif %}
-      </td>
-      <td>{{ "Yes" if u.is_active else "No" }}</td>
-      <td>{{ u.created_at }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-
-<br />
-
-{% endfor %} {% endblock %}
+{% endblock %}
