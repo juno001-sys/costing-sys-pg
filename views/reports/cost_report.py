@@ -27,16 +27,14 @@ def cost_report():
     # mst_stores list
     mst_stores = get_accessible_stores()
 
-    # store filter (optional)
+    # store filter (required — see order-support pattern below)
     selected_store_id = normalize_accessible_store_id(
-    request.args.get("store_id")
+        request.args.get("store_id")
     )
-    store_id = str(selected_store_id) if selected_store_id else ""
+    if not selected_store_id and len(mst_stores) == 1:
+        selected_store_id = mst_stores[0]["id"]
 
-    # None means "all accessible stores"
-    store_id_param = None if selected_store_id is None else selected_store_id
-
-    # last 13 months
+    # last 13 months (computed up front so empty-state template has headers)
     today = datetime.now().date()
     y, m = today.year, today.month
 
@@ -49,6 +47,29 @@ def cost_report():
             y -= 1
     month_keys = list(reversed(month_keys))
 
+    # Order-support pattern: require an explicit store selection.
+    if not selected_store_id:
+        empty_by_month = {ym: 0 for ym in month_keys}
+        return render_template(
+            "inv/cost_report.html",
+            mst_stores=mst_stores,
+            stores=mst_stores,
+            selected_store_id=None,
+            month_keys=month_keys,
+            purchases_by_month=empty_by_month,
+            beg_inv_by_month=empty_by_month,
+            end_inv_by_month=empty_by_month,
+            cogs_by_month=empty_by_month,
+            purchases_total=0,
+            beg_inv_total=0,
+            end_inv_total=0,
+            cogs_total=0,
+            profit_ym=None,
+            profit_setting_row=None,
+            profit_est=None,
+            no_store_selected=True,
+        )
+
     # date range [start_date, end_date)
     start_date = month_keys[0] + "-01"
     end_last = month_keys[-1]
@@ -60,8 +81,11 @@ def cost_report():
         em += 1
     end_date = f"{ey:04d}-{em:02d}-01"
 
+    company_id = getattr(g, "current_company_id", None)
+
     # 1) Purchases amount per month
-    sql_pur = """
+    pur_rows = db.execute(
+        """
         SELECT
           TO_CHAR(p.delivery_date, 'YYYY-MM') AS ym,
           SUM(p.amount) AS total_amount
@@ -70,15 +94,11 @@ def cost_report():
         WHERE p.delivery_date >= %s
           AND p.delivery_date < %s
           AND p.is_deleted = 0
-          AND ( %s IS NULL OR p.store_id = %s )
+          AND p.store_id = %s
           AND st.company_id = %s
         GROUP BY ym
-    """
-    company_id = getattr(g, "current_company_id", None)
-
-    pur_rows = db.execute(
-        sql_pur,
-        [start_date, end_date, store_id_param, store_id_param, company_id],
+        """,
+        [start_date, end_date, selected_store_id, company_id],
     ).fetchall()
 
 
@@ -106,7 +126,7 @@ def cost_report():
             LEFT JOIN mst_stores st ON sc.store_id = st.id
             WHERE sc.count_date >= %s
               AND sc.count_date < %s
-              AND ( %s IS NULL OR sc.store_id = %s )
+              AND sc.store_id = %s
               AND st.company_id = %s
         ),
         end_stock AS (
@@ -174,7 +194,7 @@ def cost_report():
     """
     inv_rows = db.execute(
         sql_inv_fifo,
-        [start_date, end_date, store_id_param, store_id_param, company_id, company_id],
+        [start_date, end_date, selected_store_id, company_id, company_id],
     ).fetchall()
 
     end_inv_by_month = {ym: 0.0 for ym in month_keys}
@@ -362,4 +382,5 @@ def cost_report():
         profit_ym=profit_ym,
         profit_setting_row=profit_setting_row,
         profit_est=profit_est,
+        no_store_selected=False,
     )

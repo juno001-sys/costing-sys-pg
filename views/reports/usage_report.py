@@ -22,17 +22,43 @@ def usage_report():
     selected_store_id = normalize_accessible_store_id(
         request.args.get("store_id")
     )
-    store_id = str(selected_store_id) if selected_store_id else ""
+    if not selected_store_id and len(mst_stores) == 1:
+        selected_store_id = mst_stores[0]["id"]
 
     supplier_id = request.args.get("supplier_id") or ""
     selected_supplier_id = int(supplier_id) if supplier_id else None
 
-
-    # Suppliers (dropdown)
     company_id = getattr(g, "current_company_id", None)
 
-    if selected_store_id:
-     suppliers = db.execute(
+    # Last 13 months (computed up front so the empty-state template still
+    # has column headers to render.)
+    today = datetime.now().date()
+    y, m = today.year, today.month
+
+    month_keys = []
+    for _ in range(13):
+        month_keys.append(f"{y:04d}-{m:02d}")
+        m -= 1
+        if m == 0:
+            m = 12
+            y -= 1
+    month_keys = list(reversed(month_keys))
+
+    # Order-support pattern: require a store selection before fetching data.
+    if not selected_store_id:
+        return render_template(
+            "inv/usage_report.html",
+            mst_stores=mst_stores,
+            selected_store_id=None,
+            suppliers=[],
+            selected_supplier_id=selected_supplier_id,
+            month_keys=month_keys,
+            item_rows=[],
+            no_store_selected=True,
+        )
+
+    # Suppliers (dropdown) — scoped to the selected store
+    suppliers = db.execute(
         """
         SELECT s.id, s.name, s.code
         FROM pur_suppliers s
@@ -45,33 +71,7 @@ def usage_report():
         ORDER BY s.code
         """,
         (selected_store_id, company_id),
-        ).fetchall()
-    else:
-        suppliers = []
-
-    # Query params
-    selected_store_id = normalize_accessible_store_id(
-    request.args.get("store_id")
-    )
-    store_id = str(selected_store_id) if selected_store_id else ""
-
-
-    supplier_id = request.args.get("supplier_id") or ""
-
-    selected_supplier_id = int(supplier_id) if supplier_id else None
-
-    # Last 13 months
-    today = datetime.now().date()
-    y, m = today.year, today.month
-
-    month_keys = []
-    for _ in range(13):
-        month_keys.append(f"{y:04d}-{m:02d}")
-        m -= 1
-        if m == 0:
-            m = 12
-            y -= 1
-    month_keys = list(reversed(month_keys))
+    ).fetchall()
 
     start_date = month_keys[0] + "-01"
     ey, em = map(int, month_keys[-1].split("-"))
@@ -87,17 +87,10 @@ def usage_report():
         "p.delivery_date >= %s",
         "p.delivery_date < %s",
         "p.is_deleted = 0",
+        "st.company_id = %s",
+        "p.store_id = %s",
     ]
-    params_pur: list[object] = [start_date, end_date]
-
-    company_id = getattr(g, "current_company_id", None)
-    if company_id:
-        where_pur.append("st.company_id = %s")
-        params_pur.append(company_id)
-
-    if store_id:
-        where_pur.append("p.store_id = %s")
-        params_pur.append(int(store_id))
+    params_pur: list[object] = [start_date, end_date, company_id, selected_store_id]
 
     if supplier_id:
         where_pur.append("p.supplier_id = %s")
@@ -127,16 +120,10 @@ def usage_report():
     where_inv = [
         "sc.count_date >= %s",
         "sc.count_date < %s",
+        "st.company_id = %s",
+        "sc.store_id = %s",
     ]
-    params_inv: list[object] = [start_date, end_date]
-
-    if company_id:
-        where_inv.append("st.company_id = %s")
-        params_inv.append(company_id)
-
-    if store_id:
-        where_inv.append("sc.store_id = %s")
-        params_inv.append(int(store_id))
+    params_inv: list[object] = [start_date, end_date, company_id, selected_store_id]
 
     sql_inv = f"""
         WITH last_counts AS (
@@ -254,4 +241,5 @@ def usage_report():
         selected_supplier_id=selected_supplier_id,
         month_keys=month_keys,
         item_rows=item_rows,
+        no_store_selected=False,
     )

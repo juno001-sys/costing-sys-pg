@@ -67,6 +67,9 @@ def purchase_dashboard():
     selected_store_id = normalize_accessible_store_id(
         request.args.get("store_id")
     )
+    # Auto-select when the user has access to exactly one store.
+    if not selected_store_id and len(mst_stores) == 1:
+        selected_store_id = mst_stores[0]["id"]
     store_id = str(selected_store_id) if selected_store_id else ""
 
     # Date range (default: current month)
@@ -79,8 +82,32 @@ def purchase_dashboard():
         to_date_default = f"{y}-{m + 1:02d}-01"
     to_date = request.args.get("to_date") or to_date_default
 
+    # Order-support pattern: require an explicit store selection before
+    # running any aggregate queries. Prevents leaking data across the
+    # user's accessible stores when no filter is chosen.
+    if not selected_store_id:
+        return render_template(
+            "pur/purchase_dashboard.html",
+            mst_stores=mst_stores,
+            selected_store_id="",
+            from_date=from_date,
+            to_date=to_date,
+            supplier_labels=json.dumps([], ensure_ascii=False),
+            supplier_values=json.dumps([]),
+            category_labels=json.dumps([], ensure_ascii=False),
+            category_values=json.dumps([]),
+            grand_total=0,
+            top_items=[],
+            process_labels=json.dumps([], ensure_ascii=False),
+            process_values=json.dumps([]),
+            dead_stock_items=[],
+            deadstock_threshold_tiers=_grouped_threshold_tiers(),
+            no_store_selected=True,
+        )
+
     # ── Pie Chart 1: by supplier ─────────────────────────────────
-    supplier_sql = """
+    supplier_data = db.execute(
+        """
         SELECT s.name AS label, SUM(p.amount) AS total
         FROM purchases p
         JOIN pur_suppliers s ON p.supplier_id = s.id
@@ -89,19 +116,16 @@ def purchase_dashboard():
           AND p.delivery_date >= %s
           AND p.delivery_date < %s
           AND st.company_id = %s
-    """
-    supplier_params = [from_date, to_date, company_id]
-
-    if selected_store_id:
-        supplier_sql += " AND p.store_id = %s"
-        supplier_params.append(selected_store_id)
-
-    supplier_sql += " GROUP BY s.id, s.name ORDER BY total DESC"
-
-    supplier_data = db.execute(supplier_sql, supplier_params).fetchall()
+          AND p.store_id = %s
+        GROUP BY s.id, s.name
+        ORDER BY total DESC
+        """,
+        [from_date, to_date, company_id, selected_store_id],
+    ).fetchall()
 
     # ── Pie Chart 2: by category ─────────────────────────────────
-    category_sql = """
+    category_data = db.execute(
+        """
         SELECT COALESCE(i.category, '未分類') AS label, SUM(p.amount) AS total
         FROM purchases p
         JOIN mst_items i ON p.item_id = i.id
@@ -110,19 +134,16 @@ def purchase_dashboard():
           AND p.delivery_date >= %s
           AND p.delivery_date < %s
           AND st.company_id = %s
-    """
-    category_params = [from_date, to_date, company_id]
-
-    if selected_store_id:
-        category_sql += " AND p.store_id = %s"
-        category_params.append(selected_store_id)
-
-    category_sql += " GROUP BY label ORDER BY total DESC"
-
-    category_data = db.execute(category_sql, category_params).fetchall()
+          AND p.store_id = %s
+        GROUP BY label
+        ORDER BY total DESC
+        """,
+        [from_date, to_date, company_id, selected_store_id],
+    ).fetchall()
 
     # ── Pie Chart 3: by process level ───────────────────────────
-    process_sql = """
+    process_data = db.execute(
+        """
         SELECT COALESCE(i.process_level, '未設定') AS label, SUM(p.amount) AS total
         FROM purchases p
         JOIN mst_items i ON p.item_id = i.id
@@ -131,22 +152,19 @@ def purchase_dashboard():
           AND p.delivery_date >= %s
           AND p.delivery_date < %s
           AND st.company_id = %s
-    """
-    process_params = [from_date, to_date, company_id]
-
-    if selected_store_id:
-        process_sql += " AND p.store_id = %s"
-        process_params.append(selected_store_id)
-
-    process_sql += " GROUP BY label ORDER BY total DESC"
-
-    process_data = db.execute(process_sql, process_params).fetchall()
+          AND p.store_id = %s
+        GROUP BY label
+        ORDER BY total DESC
+        """,
+        [from_date, to_date, company_id, selected_store_id],
+    ).fetchall()
 
     # ── Summary totals ───────────────────────────────────────────
     grand_total = sum(r["total"] for r in supplier_data) if supplier_data else 0
 
     # ── Top items by amount ──────────────────────────────────────
-    top_items_sql = """
+    top_items = db.execute(
+        """
         SELECT i.code, i.name, s.name AS supplier_name,
                i.category,
                SUM(p.quantity) AS total_qty,
@@ -159,27 +177,18 @@ def purchase_dashboard():
           AND p.delivery_date >= %s
           AND p.delivery_date < %s
           AND st.company_id = %s
-    """
-    top_items_params = [from_date, to_date, company_id]
-
-    if selected_store_id:
-        top_items_sql += " AND p.store_id = %s"
-        top_items_params.append(selected_store_id)
-
-    top_items_sql += """
+          AND p.store_id = %s
         GROUP BY i.id, i.code, i.name, s.name, i.category
         ORDER BY total_amount DESC
         LIMIT 20
-    """
-
-    top_items = db.execute(top_items_sql, top_items_params).fetchall()
+        """,
+        [from_date, to_date, company_id, selected_store_id],
+    ).fetchall()
 
     # ── Dead stock (per-category threshold) ─────────────────────────────
-    # Each category has its own "ideal duration" before stock is considered
-    # stale (see CATEGORY_DEADSTOCK_DAYS at module top). Uncategorized items
-    # use threshold = 0 so they surface as a data-quality nudge.
     threshold_case = _build_threshold_case_sql()
-    dead_stock_sql = f"""
+    dead_stock_items = db.execute(
+        f"""
         WITH latest_stock AS (
           SELECT DISTINCT ON (sc.store_id, sc.item_id)
             sc.store_id, sc.item_id, sc.counted_qty, sc.count_date
@@ -236,16 +245,12 @@ def purchase_dashboard():
           (days_since_purchase - threshold_days) AS days_over
         FROM scored
         WHERE days_since_purchase >= threshold_days
-    """
-    dead_stock_params = [company_id]
-    if selected_store_id:
-        dead_stock_sql += " AND store_id = %s"
-        dead_stock_params.append(selected_store_id)
-    dead_stock_sql += """
+          AND store_id = %s
         ORDER BY days_over DESC, estimated_value DESC NULLS LAST
         LIMIT 50
-    """
-    dead_stock_items = db.execute(dead_stock_sql, dead_stock_params).fetchall()
+        """,
+        [company_id, selected_store_id],
+    ).fetchall()
 
     return render_template(
         "pur/purchase_dashboard.html",
@@ -263,4 +268,5 @@ def purchase_dashboard():
         process_values=json.dumps([int(r["total"]) for r in process_data]),
         dead_stock_items=dead_stock_items,
         deadstock_threshold_tiers=_grouped_threshold_tiers(),
+        no_store_selected=False,
     )

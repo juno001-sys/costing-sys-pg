@@ -9,6 +9,11 @@
   </span>
 </div>
 
+{% if not selected_store_id %}
+<div style="padding:14px 18px; margin:10px 0; background:#fff8e1; border:1px solid #f0c14b; border-radius:6px; color:#7a5a00;">
+  {{ t("common.select_store_prompt") }}
+</div>
+{% endif %}
 
 <form method="get" style="margin-bottom: 12px">
 

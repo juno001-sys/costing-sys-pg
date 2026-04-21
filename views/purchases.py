@@ -36,39 +36,38 @@ def init_purchase_views(app, get_db, log_purchase_change):
     def new_purchase():
         db = get_db()
     
-        # --- 1) store_id を GET から取得して先に selected_store_id を定義 ---
+        # --- 2) 店舗一覧 ---
+        mst_stores = get_accessible_stores()
+        accessible_store_ids = get_accessible_store_ids()
+
+        # --- 1) store_id を GET から取得して selected_store_id を決定 ---
         selected_store_id = normalize_accessible_store_id(
             request.args.get("store_id")
         )
-    
-        # --- 2) 店舗一覧（固定） ---
-        mst_stores = get_accessible_stores()
-        accessible_store_ids = get_accessible_store_ids()
-    
-        # --- 3) 店舗に応じて仕入先を絞る ---
-        mst_stores = get_accessible_stores()
-        accessible_store_ids = get_accessible_store_ids()
+        # Auto-select when the user has exactly one accessible store.
+        if not selected_store_id and len(mst_stores) == 1:
+            selected_store_id = mst_stores[0]["id"]
 
         company_id = getattr(g, "current_company_id", None)
 
 
         if selected_store_id:
-             suppliers = db.execute(
-            """
-            SELECT s.id, s.code, s.name
-            FROM pur_suppliers s
-            JOIN pur_store_suppliers ss
-            ON s.id = ss.supplier_id
-            AND ss.store_id = %s
-            AND ss.is_active = 1
-            WHERE s.is_active = 1
-            AND s.company_id = %s
-            ORDER BY s.code
+            suppliers = db.execute(
+                """
+                SELECT s.id, s.code, s.name
+                FROM pur_suppliers s
+                JOIN pur_store_suppliers ss
+                  ON s.id = ss.supplier_id
+                 AND ss.store_id = %s
+                 AND ss.is_active = 1
+                WHERE s.is_active = 1
+                  AND s.company_id = %s
+                ORDER BY s.code
                 """,
-            (selected_store_id, company_id),
+                (selected_store_id, company_id),
             ).fetchall()
         else:
-            suppliers = []        
+            suppliers = []
 
         # ----------------------------------------------------
         # POST: 登録（新規 INSERT）処理
@@ -185,10 +184,8 @@ def init_purchase_views(app, get_db, log_purchase_change):
 
         # ----------------------------------------------------
         # GET: 画面表示（フォーム + 検索付き直近50件）
+        # selected_store_id は上部で正規化・自動選択済み。
         # ----------------------------------------------------
-        selected_store_id = normalize_accessible_store_id(
-            request.args.get("store_id")
-        )
         store_id = str(selected_store_id) if selected_store_id else ""
 
         supplier_id = request.args.get("supplier_id") or ""
@@ -218,57 +215,61 @@ def init_purchase_views(app, get_db, log_purchase_change):
 
             from_date = first_day.isoformat()
             to_date = (next_month_first - timedelta(days=1)).isoformat()
-            
-        where_clauses = ["p.is_deleted = 0"]
-        params = []
 
-        company_id = getattr(g, "current_company_id", None)
-        if company_id:
-            where_clauses.append("st.company_id = %s")
-            params.append(company_id)
+        # Order-support pattern: no store selected → no recent-purchases list.
+        # Prevents leaking other stores' data to operators whose grant
+        # covers only a subset of the company.
+        if not selected_store_id:
+            purchases = []
+        else:
+            where_clauses = [
+                "p.is_deleted = 0",
+                "p.store_id = %s",
+            ]
+            params = [selected_store_id]
 
-        if store_id:
-            where_clauses.append("p.store_id = %s")
-            params.append(store_id)
+            company_id = getattr(g, "current_company_id", None)
+            if company_id:
+                where_clauses.append("st.company_id = %s")
+                params.append(company_id)
 
-        if supplier_id:
-            where_clauses.append("p.supplier_id = %s")
-            params.append(supplier_id)
+            if supplier_id:
+                where_clauses.append("p.supplier_id = %s")
+                params.append(supplier_id)
 
-        if from_date:
-            where_clauses.append("p.delivery_date >= %s")
-            params.append(from_date)
+            if from_date:
+                where_clauses.append("p.delivery_date >= %s")
+                params.append(from_date)
 
-        if to_date:
-            where_clauses.append("p.delivery_date <= %s")
-            params.append(to_date)
+            if to_date:
+                where_clauses.append("p.delivery_date <= %s")
+                params.append(to_date)
 
-        if search_q:
-            where_clauses.append("(i.name LIKE %s OR s.name LIKE %s OR i.code LIKE %s)")
-            like = f"%{search_q}%"
-            params.extend([like, like, like])
+            if search_q:
+                where_clauses.append("(i.name LIKE %s OR s.name LIKE %s OR i.code LIKE %s)")
+                like = f"%{search_q}%"
+                params.extend([like, like, like])
 
-        where_sql = "WHERE " + " AND ".join(where_clauses)
+            where_sql = "WHERE " + " AND ".join(where_clauses)
 
-        sql = f"""
-            SELECT
-                p.id,
-                p.delivery_date,
-                st.name AS store_name,
-                s.name  AS supplier_name,
-                i.name  AS item_name,
-                p.quantity,
-                p.unit_price,
-                p.amount
-            FROM purchases p
-            LEFT JOIN pur_suppliers   s  ON p.supplier_id = s.id
-            LEFT JOIN mst_items   i  ON p.item_id     = i.id
-            LEFT JOIN mst_stores  st ON p.store_id    = st.id
-            {where_sql}
-            ORDER BY p.delivery_date DESC, p.id DESC
-           
-        """
-        purchases = db.execute(sql, params).fetchall()
+            sql = f"""
+                SELECT
+                    p.id,
+                    p.delivery_date,
+                    st.name AS store_name,
+                    s.name  AS supplier_name,
+                    i.name  AS item_name,
+                    p.quantity,
+                    p.unit_price,
+                    p.amount
+                FROM purchases p
+                LEFT JOIN pur_suppliers   s  ON p.supplier_id = s.id
+                LEFT JOIN mst_items   i  ON p.item_id     = i.id
+                LEFT JOIN mst_stores  st ON p.store_id    = st.id
+                {where_sql}
+                ORDER BY p.delivery_date DESC, p.id DESC
+            """
+            purchases = db.execute(sql, params).fetchall()
 
         return render_template(
             "pur/purchase_form.html",
