@@ -18,11 +18,10 @@ def purchase_report():
     mst_stores = get_accessible_stores()
 
     selected_store_id = normalize_accessible_store_id(
-    request.args.get("store_id")
+        request.args.get("store_id")
     )
-    store_id = str(selected_store_id) if selected_store_id else ""
 
-    # last 13 months
+    # last 13 months (computed regardless so the template still renders headers)
     today = datetime.now().date()
     year, month = today.year, today.month
 
@@ -35,27 +34,26 @@ def purchase_report():
             year -= 1
     month_keys.reverse()
 
+    # Order-support pattern: empty state until a store is picked.
+    if not selected_store_id:
+        return render_template(
+            "pur/purchase_report.html",
+            mst_stores=mst_stores,
+            selected_store_id=None,
+            rows=[],
+            month_keys=month_keys,
+            month_totals=[0] * len(month_keys),
+            no_store_selected=True,
+        )
+
     start_date = month_keys[0] + "-01"
     ey, em = map(int, month_keys[-1].split("-"))
     end_date = f"{ey + (em == 12):04d}-{1 if em == 12 else em + 1:02d}-01"
 
-    where = [
-        "p.is_deleted = 0",
-        "p.delivery_date >= %s",
-        "p.delivery_date < %s",
-    ]
-    params: list[object] = [start_date, end_date]
-
     company_id = getattr(g, "current_company_id", None)
-    if company_id:
-        where.append("st.company_id = %s")
-        params.append(company_id)
 
-    if store_id:
-        where.append("p.store_id = %s")
-        params.append(int(store_id))
-
-    sql = f"""
+    rows_raw = db.execute(
+        """
         SELECT
             s.id AS supplier_id,
             s.name AS supplier_name,
@@ -65,12 +63,16 @@ def purchase_report():
         LEFT JOIN mst_items i ON p.item_id = i.id
         LEFT JOIN pur_suppliers s ON i.supplier_id = s.id
         LEFT JOIN mst_stores st ON p.store_id = st.id
-        WHERE {' AND '.join(where)}
+        WHERE p.is_deleted = 0
+          AND p.delivery_date >= %s
+          AND p.delivery_date < %s
+          AND st.company_id = %s
+          AND p.store_id = %s
         GROUP BY s.id, s.name, ym
         ORDER BY s.id, ym
-    """
-
-    rows_raw = db.execute(sql, params).fetchall()
+        """,
+        [start_date, end_date, company_id, selected_store_id],
+    ).fetchall()
 
     supplier_map = {}
     for r in rows_raw:
@@ -103,4 +105,5 @@ def purchase_report():
         rows=rows,
         month_keys=month_keys,
         month_totals=month_totals,
+        no_store_selected=False,
     )

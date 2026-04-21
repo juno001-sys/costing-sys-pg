@@ -18,7 +18,7 @@ tr.cogs-row td {
   <label>
     {{ t("form.store") }}：
     <select name="store_id">
-      <option value="">{{ t("common.all") }}</option>
+      <option value="">{{ t("common.select_store_option") }}</option>
       {% for s in stores %}
         <option value="{{ s.id }}" {% if selected_store_id == s.id %}selected{% endif %}>
           {{ s.name }}

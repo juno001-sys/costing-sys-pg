@@ -7,7 +7,7 @@
   <form method="get">
     <label>{{ t("form.store") }}：</label>
     <select name="store_id" onchange="this.form.submit()">
-      <option value="">{{ t("common.all") }}</option>
+      <option value="">{{ t("common.select_store_option") }}</option>
       {% for s in stores %}
         <option value="{{ s.id }}" {% if selected_store_id == s.id %}selected{% endif %}>
           {{ s.name }}

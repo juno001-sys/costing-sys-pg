@@ -18,11 +18,9 @@ def get_accessible_stores():
     Phase B semantics:
       - Function role = baseline (1 per user per company), set in
         sys_user_companies.role
-      - sys_user_store_grants overlays additional stores (or elevates the
-        role on stores already accessible via the company)
-      - Result = union of: all stores in the user's current company
-        (filtered by function role's company-wide scope) + all stores
-        explicitly granted to the user
+      - 'admin' function role → all active stores in the current company
+      - 'operator' / 'auditor' → only stores explicitly granted via
+        sys_user_store_grants (OR-overlay; no company-wide store scope)
 
     Falls back to legacy "all company stores" behavior if
     sys_user_store_grants table does not exist (pre-migration).
@@ -35,7 +33,7 @@ def get_accessible_stores():
         return []
 
     db = get_db()
-    rows = db.execute(
+    all_rows = db.execute(
         """
         SELECT id, code, name
         FROM mst_stores
@@ -46,6 +44,26 @@ def get_accessible_stores():
         (company_id,),
     ).fetchall()
 
+    role = getattr(g, "current_role", None)
+    if role == "admin":
+        g._stores_cache = all_rows
+        return all_rows
+
+    user_id = (getattr(g, "current_user", {}) or {}).get("id")
+    grant_rows = _safe_query_or_none(db, """
+        SELECT store_id
+        FROM sys_user_store_grants
+        WHERE user_id = %s AND company_id = %s AND is_active = 1
+          AND revoked_at IS NULL
+    """, (user_id, company_id))
+
+    if grant_rows is None:
+        # Legacy fallback: grants table missing (pre-migration).
+        g._stores_cache = all_rows
+        return all_rows
+
+    granted_ids = {r["store_id"] for r in grant_rows}
+    rows = [r for r in all_rows if r["id"] in granted_ids]
     g._stores_cache = rows
     return rows
 
@@ -79,6 +97,19 @@ def _safe_query(db, sql, params=()):
         except Exception:
             pass
         return []
+
+
+def _safe_query_or_none(db, sql, params=()):
+    """Like _safe_query but returns None on error so callers can distinguish
+    'query failed / table missing' from 'query succeeded with zero rows'."""
+    try:
+        return db.execute(sql, params).fetchall()
+    except Exception:
+        try:
+            db.connection.rollback()
+        except Exception:
+            pass
+        return None
 
 
 def get_user_store_grants(user_id, company_id):
@@ -128,6 +159,121 @@ def get_effective_role_on_store(store_id, user_id=None, company_id=None,
         if rank == effective_rank:
             return role_name
     return None
+
+
+# ----------------------------------------------------------------------
+# Per-company nav visibility policy
+# ----------------------------------------------------------------------
+# Nav items that can be toggled per (company, role). The key is used in
+# both the sys_company_nav_policies table and the Jinja template guards
+# (`{% if nav_allowed('items_master') %}`).
+NAV_KEYS = [
+    "dashboard",
+    "order_support",
+    "purchase_form",
+    "inventory_count",
+    "inventory_count_smart",
+    "purchase_report",
+    "usage_report",
+    "cost_report",
+    "integrated_report",
+    "suppliers_master",
+    "items_master",
+    "stores_master",
+    "help",
+    "work_logs",
+]
+
+# Default visibility when no policy row exists. Master data is hidden
+# from operators/auditors by default — typical expectation for a
+# restaurant operator who should not be editing supplier/item/store
+# definitions. Company admins can flip these on explicitly.
+NAV_DEFAULT_VISIBILITY = {
+    "operator": {
+        "dashboard": True,
+        "order_support": True,
+        "purchase_form": True,
+        "inventory_count": True,
+        "inventory_count_smart": True,
+        "purchase_report": True,
+        "usage_report": True,
+        "cost_report": True,
+        "integrated_report": True,
+        "suppliers_master": False,
+        "items_master": False,
+        "stores_master": False,
+        "help": True,
+        "work_logs": True,
+    },
+    "auditor": {
+        "dashboard": True,
+        "order_support": True,
+        "purchase_form": True,
+        "inventory_count": True,
+        "inventory_count_smart": True,
+        "purchase_report": True,
+        "usage_report": True,
+        "cost_report": True,
+        "integrated_report": True,
+        "suppliers_master": False,
+        "items_master": False,
+        "stores_master": False,
+        "help": True,
+        "work_logs": True,
+    },
+}
+
+
+def get_company_nav_policy(company_id, role):
+    """Return {nav_key: visible} for (company, role). Cached on `g`.
+
+    Missing table or missing row → empty dict; callers should fall back
+    to NAV_DEFAULT_VISIBILITY.
+    """
+    cache_key = f"_nav_policy_{company_id}_{role}"
+    cached = getattr(g, cache_key, None)
+    if cached is not None:
+        return cached
+
+    if not company_id or not role:
+        setattr(g, cache_key, {})
+        return {}
+
+    db = get_db()
+    rows = _safe_query(db, """
+        SELECT nav_key, visible
+        FROM sys_company_nav_policies
+        WHERE company_id = %s AND role = %s
+    """, (company_id, role))
+    policy = {r["nav_key"]: bool(r["visible"]) for r in rows}
+    setattr(g, cache_key, policy)
+    return policy
+
+
+def nav_allowed(nav_key):
+    """Template helper: should this nav item be shown to the current user?
+
+    Rules:
+      - admin function role → always visible (feature-flag gates still
+        apply separately in the template).
+      - operator / auditor → look up the per-company policy; fall back
+        to NAV_DEFAULT_VISIBILITY when no row exists.
+      - no role / no company → hide (defensive).
+    """
+    role = getattr(g, "current_role", None)
+    if role == "admin":
+        return True
+    if role not in NAV_DEFAULT_VISIBILITY:
+        return False
+
+    company_id = getattr(g, "current_company_id", None)
+    if not company_id:
+        return False
+
+    policy = get_company_nav_policy(company_id, role)
+    if nav_key in policy:
+        return policy[nav_key]
+    return NAV_DEFAULT_VISIBILITY[role].get(nav_key, True)
 
 
 def is_chief_admin(user_id=None, company_id=None):
