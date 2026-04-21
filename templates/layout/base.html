@@ -449,6 +449,13 @@
               📋 {{ t("nav.inventory_count") }}</a>
           </li>
           {% endif %}
+          {% if feature_enabled('inventory_count') and nav_allowed('inventory_count_smart') %}
+          <li>
+            <a href="{{ url_for('inventory_count_v3') }}"
+              class="{% if request.endpoint == 'inventory_count_v3' %}active{% endif %}">
+              ✨ {{ t("nav.inventory_count_smart") }}</a>
+          </li>
+          {% endif %}
           <li class="nav-sep"></li>
           {% if feature_enabled('report_purchase_supplier') and nav_allowed('purchase_report') %}
           <li>

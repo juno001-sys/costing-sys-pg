@@ -1,0 +1,201 @@
+{% extends "layout/base.html" %}
+
+{% block title %}{{ t("inventory.smart.title") }}{% endblock %}
+
+{% block content %}
+
+<div style="display:flex; justify-content:space-between; align-items:center;">
+  <h2>{{ t("inventory.smart.title") }}
+    <span style="color:#2a5aa0; font-size:0.7em; font-weight:normal;">（差分のみ保存）</span>
+  </h2>
+
+  <div>
+    <a href="{{ url_for('inventory_locations', store_id=selected_store_id) }}">
+      {{ t("inventory.locations_view") }}
+    </a>
+    <a href="{{ url_for('inventory_count_sp_v3', store_id=selected_store_id, count_date=count_date) }}"
+       style="margin-left:12px; font-size:13px;">📱 スマホ版</a>
+  </div>
+</div>
+
+<form method="get" style="margin-bottom: 12px;">
+  <label style="margin-right: 16px;">
+    {{ t("inventory.count_date") }}：
+    <input type="date" name="count_date" value="{{ count_date }}">
+  </label>
+  <label style="margin-right: 16px;">
+    {{ t("form.store") }}：
+    <select name="store_id" id="store_id">
+      <option value="">{{ t("common.select_store_option") }}</option>
+      {% for s in stores %}
+        <option value="{{ s.id }}"
+                {% if selected_store_id == s.id %}selected{% endif %}>
+          {{ s.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </label>
+  <button type="submit">{{ t("form.show") }}</button>
+</form>
+
+{% if selected_store_id %}
+  {% if latest_dates %}
+    <p>
+      {{ t("inventory.latest_count_dates") }}：
+      {% for d in latest_dates %}
+        <a href="{{ url_for('inventory_count_v3',
+                            store_id=selected_store_id,
+                            count_date=d) }}">{{ d }}</a>{% if not loop.last %} / {% endif %}
+      {% endfor %}
+    </p>
+  {% endif %}
+{% endif %}
+
+{% if not selected_store_id %}
+  <p>{{ t("inventory.hint_select_store") }}</p>
+{% endif %}
+
+{% if items %}
+<p id="smart-note" style="padding:10px 14px; background:#f0f7ff; border:1px solid #c5def5;
+                          border-radius:4px; color:#2a5aa0; margin-bottom:14px;">
+  {{ t("inventory.smart.hint") }}
+  <span id="change-counter" style="margin-left:12px; font-weight:600;"></span>
+</p>
+
+<form method="post" id="inventory-form">
+  <input type="hidden" name="store_id" value="{{ selected_store_id }}">
+  <input type="hidden" name="count_date" value="{{ count_date }}">
+  <input type="hidden" name="row_count" id="row_count" value="{{ items|length }}">
+
+  {% set ns = namespace(row_index=0) %}
+
+  <table class="monthly-table">
+    <thead>
+      <tr>
+        <th>{{ t("inventory.temp_zone") }}</th>
+        <th>{{ t("masters.area") }}</th>
+        <th>{{ t("inventory.shelf") }}</th>
+        <th>{{ t("inventory.item_name") }}</th>
+        <th class="num">{{ t("inventory.system_qty") }}</th>
+        <th class="num">{{ t("inventory.unit_price") }}</th>
+        <th class="num">{{ t("inventory.stock_amount") }}</th>
+        <th class="num">{{ t("inventory.count_qty_input") }}</th>
+        <th>{{ t("inventory.smart.last_count") }}</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for it in items %}
+      {% set ns.row_index = ns.row_index + 1 %}
+      {% set original_qty = it.counted_qty if it.counted_qty is not none else '' %}
+      <tr data-item-row>
+        <td>{{ it.temp_zone }}</td>
+        <td>{{ it.area_name }}</td>
+        <td>{{ it.shelf_label }}</td>
+        <td>{{ it.item_name }}</td>
+        <td class="num">
+          {{ "{:,}".format(it.system_qty) }}
+          <input type="hidden" name="item_id_{{ ns.row_index }}" value="{{ it.item_id }}">
+          <input type="hidden" name="system_qty_{{ ns.row_index }}" value="{{ it.system_qty }}">
+        </td>
+        <td class="num">{{ "{:,.0f}".format(it.unit_price) if it.unit_price else "" }}</td>
+        <td class="num">{{ "{:,.0f}".format(it.stock_amount) if it.stock_amount else "" }}</td>
+        <td class="num">
+          <input
+            type="text"
+            name="count_qty_{{ ns.row_index }}"
+            value="{{ original_qty }}"
+            data-original="{{ original_qty }}"
+            class="num count-input"
+            data-row="{{ ns.row_index }}"
+            data-col="0"
+            style="width:80px; text-align:right;"
+          >
+        </td>
+        <td style="color:#666; font-size:0.85em; white-space:nowrap;">
+          {% if it.last_ever_at %}
+            {{ it.last_ever_at.strftime("%Y-%m-%d %H:%M") if it.last_ever_at.strftime is defined else it.last_ever_at }}
+          {% else %}
+            <span style="color:#c0392b;">{{ t("report.integrated.no_count") }}</span>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <div style="margin-top:16px; position:sticky; bottom:10px; background:#fff;
+              padding:10px; border-top:1px solid #ddd;">
+    <button type="submit" id="save-btn">
+      {{ t("inventory.smart.save") }}
+      <span id="save-btn-count" style="margin-left:6px;"></span>
+    </button>
+  </div>
+</form>
+{% endif %}
+
+{% endblock %}
+
+{% block body_extra %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("inventory-form");
+  if (!form) {
+    const storeSelect = document.getElementById("store_id");
+    if (storeSelect) storeSelect.focus();
+    return;
+  }
+
+  const inputs = Array.from(document.querySelectorAll(".count-input"));
+  const changeCounter = document.getElementById("change-counter");
+  const saveBtnCount = document.getElementById("save-btn-count");
+
+  function countChanges() {
+    let n = 0;
+    inputs.forEach(inp => {
+      if ((inp.value || "") !== (inp.dataset.original || "")) n++;
+    });
+    if (changeCounter) {
+      changeCounter.textContent = n > 0 ? `（変更: ${n}件）` : "";
+    }
+    if (saveBtnCount) {
+      saveBtnCount.textContent = n > 0 ? `(${n})` : "";
+    }
+    return n;
+  }
+  countChanges();
+
+  inputs.forEach(input => {
+    input.addEventListener("input", countChanges);
+    input.addEventListener("keydown", function (e) {
+      const idx = inputs.indexOf(this);
+      if (e.key === "Enter" || e.key === "ArrowDown") {
+        e.preventDefault();
+        if (inputs[idx + 1]) inputs[idx + 1].focus();
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (inputs[idx - 1]) inputs[idx - 1].focus();
+      }
+    });
+  });
+
+  // Before submit: disable unchanged count inputs so the browser doesn't
+  // send them. The server loops item_id_1..N but skips any row whose
+  // count_qty_i is missing/empty, so disabled = naturally skipped.
+  form.addEventListener("submit", function (e) {
+    const changed = countChanges();
+    if (changed === 0) {
+      e.preventDefault();
+      alert("変更された項目はありません。");
+      return;
+    }
+    inputs.forEach(inp => {
+      if ((inp.value || "") === (inp.dataset.original || "")) {
+        inp.disabled = true;
+      }
+    });
+  });
+
+  if (inputs.length > 0) inputs[0].focus();
+});
+</script>
+{% endblock %}

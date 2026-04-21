@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>{{ t("inventory.smart.sp_title") }}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans",
+                   "Noto Sans JP", sans-serif;
+      background: #f0f2f5;
+      color: #1a1a1a;
+      padding-bottom: 80px;
+      min-height: 100vh;
+    }
+    .topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: #2a5aa0; color: white;
+      padding: 10px 14px;
+      display: flex; justify-content: space-between; align-items: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,.3);
+    }
+    .topbar-left  { font-size: 15px; font-weight: 600; }
+    .topbar-left small { display: block; font-size: 11px; font-weight: 400;
+                         opacity: .8; margin-top: 1px; }
+    .topbar-right { text-align: right; font-size: 12px; }
+    .change-count { font-weight: 700; font-size: 14px; }
+
+    .flash-ok  { background: #d4edda; color: #155724;
+                 padding: 10px 14px; font-size: 13px; }
+    .flash-err { background: #f8d7da; color: #721c24;
+                 padding: 10px 14px; font-size: 13px; }
+
+    .selector-panel {
+      background: white; padding: 14px; margin: 8px;
+      border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.1);
+    }
+    .selector-panel label { display: block; font-size: 12px;
+                            color: #888; margin-bottom: 3px; }
+    .selector-panel select,
+    .selector-panel input[type=date] {
+      width: 100%; padding: 10px; font-size: 15px;
+      border: 1px solid #ddd; border-radius: 8px;
+      background: #fafafa; margin-bottom: 10px;
+      -webkit-appearance: none; appearance: none;
+    }
+    .prev-dates { font-size: 12px; color: #888; margin-top: 2px; }
+    .prev-dates a { color: #2a5aa0; text-decoration: none; margin-right: 8px; }
+
+    .hint-banner {
+      background: #eef5ff; color: #2a5aa0; padding: 10px 14px;
+      font-size: 13px; border-top: 1px solid #c5def5; border-bottom: 1px solid #c5def5;
+    }
+
+    .empty-state { text-align: center; padding: 48px 24px; color: #999; }
+    .empty-state .icon { font-size: 40px; }
+    .empty-state p { font-size: 14px; margin-top: 8px; }
+
+    .zone-section { margin: 8px 8px 0; }
+    .zone-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 14px; border-radius: 10px 10px 0 0;
+      font-size: 14px; font-weight: 700; color: white;
+      cursor: pointer; user-select: none;
+    }
+    .zone-count   { font-size: 12px; font-weight: 400; opacity: .85; }
+    .zone-chevron { font-size: 12px; transition: transform .2s; }
+    .zone-header.collapsed .zone-chevron { transform: rotate(-90deg); }
+    .zone-freeze  { background: #1a6db5; }
+    .zone-chill   { background: #0097a7; }
+    .zone-ambient { background: #2e7d32; }
+    .zone-other   { background: #546e7a; }
+    .zone-body { background: #e8ecf0; border-radius: 0 0 10px 10px;
+                 padding: 4px 0 6px; }
+    .zone-body.hidden { display: none; }
+
+    .item-card {
+      background: white; margin: 3px 6px;
+      border-radius: 8px; padding: 8px 10px;
+      display: flex; align-items: flex-start; gap: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08);
+      border-left: 4px solid transparent;
+      transition: border-color .15s, background .15s;
+    }
+    .item-card.changed { border-left-color: #f0ad4e; background: #fffaf0; }
+
+    .item-info { flex: 1; min-width: 0; }
+    .item-name  { font-size: 15px; font-weight: 600;
+                  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .item-meta  { font-size: 11px; color: #888; margin-top: 2px; }
+    .system-qty { font-size: 12px; color: #aaa; margin-top: 3px; }
+    .last-count { font-size: 11px; color: #666; margin-top: 1px; }
+    .last-count.stale { color: #c0392b; }
+
+    .count-wrap {
+      flex-shrink: 0;
+      display: flex; flex-direction: row; align-items: center; gap: 4px;
+    }
+    .count-input {
+      width: 76px; height: 48px;
+      text-align: center; font-size: 22px; font-weight: 700;
+      border: 2px solid #ddd; border-radius: 8px;
+      background: #fafafa; color: #1a1a1a;
+      -webkit-appearance: none; appearance: none;
+      outline: none; padding: 0;
+    }
+    .count-input:focus { outline: none; border-color: #2a5aa0; background: #fff; }
+    .count-input.changed { border-color: #f0ad4e; background: #fffaf0; }
+
+    .save-bar {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+      background: white; padding: 10px 14px;
+      border-top: 1px solid #ddd;
+      box-shadow: 0 -2px 8px rgba(0,0,0,.1);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .btn-save {
+      flex: 1; padding: 13px; font-size: 16px; font-weight: 700;
+      background: #2a5aa0; color: white; border: none;
+      border-radius: 10px; cursor: pointer;
+    }
+    .btn-save:active { background: #1f4478; }
+    .btn-save:disabled { background: #bbb; }
+    .btn-desktop {
+      padding: 13px 14px; font-size: 13px;
+      background: #ecf0f1; color: #555; border: none;
+      border-radius: 10px; cursor: pointer; white-space: nowrap;
+      text-decoration: none; display: inline-block; text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in msgs %}
+    <div class="{{ 'flash-ok' if cat == 'message' else 'flash-err' }}">{{ msg }}</div>
+  {% endfor %}
+{% endwith %}
+
+<div class="topbar">
+  <div class="topbar-left">
+    {{ t("inventory.smart.sp_title") }}
+    <small>
+      {% if selected_store_id %}
+        {% for s in stores %}{% if s.id == selected_store_id %}{{ s.name }}{% endif %}{% endfor %}
+        &nbsp;{{ count_date }}
+      {% else %}
+        {{ t("inventory.sp.select_store_date") }}
+      {% endif %}
+    </small>
+  </div>
+  <div class="topbar-right">
+    <span class="change-count" id="change-count">0</span> 件
+    <br>変更
+  </div>
+</div>
+
+<form method="get" id="filter-form">
+  <div class="selector-panel">
+    <label>{{ t("form.store") }}</label>
+    <select name="store_id" onchange="this.form.submit()">
+      <option value="">{{ t("common.select_store_option") }}</option>
+      {% for s in stores %}
+        <option value="{{ s.id }}" {{ 'selected' if selected_store_id == s.id }}>
+          {{ s.name }}
+        </option>
+      {% endfor %}
+    </select>
+    <label>{{ t("inventory.count_date") }}</label>
+    <input type="date" name="count_date" value="{{ count_date }}"
+           onchange="this.form.submit()">
+    <label>{{ t("items.frequency.label") }}</label>
+    <select name="freq" onchange="this.form.submit()">
+      <option value=""           {{ 'selected' if not freq_filter }}>{{ t("items.frequency.all") }}</option>
+      <option value="very_high"  {{ 'selected' if freq_filter == 'very_high' }}>{{ t("items.frequency.very_high") }}</option>
+      <option value="high"       {{ 'selected' if freq_filter == 'high' }}>{{ t("items.frequency.high") }}</option>
+      <option value="low"        {{ 'selected' if freq_filter == 'low' }}>{{ t("items.frequency.low") }}</option>
+      <option value="none"       {{ 'selected' if freq_filter == 'none' }}>{{ t("items.frequency.none") }}</option>
+    </select>
+    {% if latest_dates %}
+    <div class="prev-dates">
+      {{ t("inventory.sp.past") }}：
+      {% for d in latest_dates %}
+        <a href="?store_id={{ selected_store_id }}&count_date={{ d }}">{{ d }}</a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</form>
+
+{% if selected_store_id and items %}
+<div class="hint-banner">{{ t("inventory.smart.hint") }}</div>
+
+<form method="post" id="count-form">
+  <input type="hidden" name="store_id"   value="{{ selected_store_id }}">
+  <input type="hidden" name="count_date" value="{{ count_date }}">
+  <input type="hidden" name="row_count"  value="{{ items|length }}">
+
+  {% for item in items %}
+    <input type="hidden" name="item_id_{{ loop.index }}"    value="{{ item.item_id }}">
+    <input type="hidden" name="system_qty_{{ loop.index }}" value="{{ item.system_qty }}">
+  {% endfor %}
+
+  {% set zone_cls  = {"冷凍":"zone-freeze","冷蔵":"zone-chill","常温":"zone-ambient","その他":"zone-other"} %}
+  {% set zone_icon = {"冷凍":"❄️","冷蔵":"🧊","常温":"🌿","その他":"📦"} %}
+
+  {% for zone_name, zone_items in zones.items() %}
+  <div class="zone-section">
+    <div class="zone-header {{ zone_cls.get(zone_name,'zone-other') }}"
+         onclick="toggleZone(this)">
+      <span>{{ zone_icon.get(zone_name,'📦') }} {{ zone_name }}</span>
+      <span>
+        <span class="zone-count">{{ zone_items|length }}件</span>
+        &nbsp;<span class="zone-chevron">▼</span>
+      </span>
+    </div>
+
+    <div class="zone-body">
+      {% for item in zone_items %}
+        {% set ns = namespace(row_idx=0) %}
+        {% for gi in items %}
+          {% if gi.item_id == item.item_id %}{% set ns.row_idx = loop.index %}{% endif %}
+        {% endfor %}
+        {% set original_qty = item.counted_qty if item.counted_qty is not none else '' %}
+
+        <div class="item-card" id="card-{{ ns.row_idx }}">
+          <div class="item-info">
+            <div class="item-name" title="{{ item.item_name }}">{{ item.item_name }}</div>
+            <div class="item-meta">{{ item.area_name }} / {{ item.shelf_label }}</div>
+            <div class="system-qty">{{ t("inventory.sp.system_qty") }}：{{ item.system_qty }}</div>
+            {% if item.last_ever_at %}
+              <div class="last-count">
+                {{ t("inventory.smart.last_count") }}：{{ item.last_ever_at.strftime("%Y-%m-%d %H:%M") if item.last_ever_at.strftime is defined else item.last_ever_at }}
+              </div>
+            {% else %}
+              <div class="last-count stale">{{ t("report.integrated.no_count") }}</div>
+            {% endif %}
+          </div>
+          <div class="count-wrap">
+            <input type="number"
+                   class="count-input"
+                   name="count_qty_{{ ns.row_idx }}"
+                   id="inp-{{ ns.row_idx }}"
+                   value="{{ original_qty }}"
+                   data-original="{{ original_qty }}"
+                   data-idx="{{ ns.row_idx }}"
+                   min="0" step="1" inputmode="numeric"
+                   oninput="onCountInput(this)">
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <div class="save-bar">
+    <button type="submit" class="btn-save" id="save-btn">
+      {{ t("inventory.smart.save") }} <span id="save-btn-count"></span>
+    </button>
+    <a href="{{ url_for('inventory_count_v3', store_id=selected_store_id, count_date=count_date) }}"
+       class="btn-desktop">{{ t("common.desktop_version") }}</a>
+  </div>
+</form>
+
+{% elif selected_store_id %}
+<div class="empty-state">
+  <div class="icon">📋</div>
+  <p>{{ t("inventory.sp.no_items") }}<br>{{ t("inventory.sp.check_masters") }}</p>
+</div>
+
+{% else %}
+<div class="empty-state">
+  <div class="icon">🏪</div>
+  <p>{{ t("inventory.sp.select_store_prompt") }}</p>
+</div>
+{% endif %}
+
+<script>
+function toggleZone(header) {
+  const body = header.nextElementSibling;
+  body.classList.toggle('hidden');
+  header.classList.toggle('collapsed');
+}
+
+function countChanges() {
+  let n = 0;
+  document.querySelectorAll('.count-input').forEach(inp => {
+    if ((inp.value || '') !== (inp.dataset.original || '')) n++;
+  });
+  const ccEl = document.getElementById('change-count');
+  if (ccEl) ccEl.textContent = n;
+  const btnEl = document.getElementById('save-btn-count');
+  if (btnEl) btnEl.textContent = n > 0 ? `(${n})` : '';
+  const saveBtn = document.getElementById('save-btn');
+  if (saveBtn) saveBtn.disabled = (n === 0);
+  return n;
+}
+
+function onCountInput(inp) {
+  const isChanged = (inp.value || '') !== (inp.dataset.original || '');
+  inp.classList.toggle('changed', isChanged);
+  const card = document.getElementById('card-' + inp.dataset.idx);
+  if (card) card.classList.toggle('changed', isChanged);
+  countChanges();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('count-form');
+  if (!form) return;
+
+  // Mark any pre-existing changes on load (e.g. partially entered data).
+  document.querySelectorAll('.count-input').forEach(inp => onCountInput(inp));
+
+  // On submit: disable unchanged inputs so the server only sees the changes.
+  form.addEventListener('submit', (e) => {
+    const changed = countChanges();
+    if (changed === 0) {
+      e.preventDefault();
+      alert('変更された項目はありません。');
+      return;
+    }
+    document.querySelectorAll('.count-input').forEach(inp => {
+      if ((inp.value || '') === (inp.dataset.original || '')) {
+        inp.disabled = true;
+      }
+    });
+  });
+});
+</script>
+</body>
+</html>
