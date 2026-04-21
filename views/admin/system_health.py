@@ -40,7 +40,11 @@ def init_admin_system_health_views(app, get_db):
     @sys_role_required("sales", "engineer")
     def admin_system_health_overview():
         db = get_db()
-        companies = list_companies_with_health(db)
+
+        # Default: client companies only. Toggle ?include_internal=1 to also
+        # see Kurajika's house account (useful when smoke-testing).
+        include_internal = request.args.get("include_internal") == "1"
+        companies = list_companies_with_health(db, include_internal=include_internal)
 
         # Status filter
         status_filter = request.args.get("status") or "all"
@@ -60,6 +64,7 @@ def init_admin_system_health_views(app, get_db):
             status_counts=status_counts,
             status_filter=status_filter,
             total_companies=len(companies),
+            include_internal=include_internal,
         )
 
     @app.get("/admin/system/health/<int:company_id>")

@@ -16,7 +16,7 @@ def init_admin_system_home_views(app, get_db):
         # Pull current contract via LATERAL so missing contracts (pre-Phase A
         # companies, or where the migration hasn't run yet) don't break the
         # JOIN. Wrap in try/except for first-load before sys_company_contracts
-        # exists.
+        # exists. Also pulls is_internal (falls back to FALSE if pre-migration).
         try:
             companies = db.execute(
                 """
@@ -25,6 +25,7 @@ def init_admin_system_home_views(app, get_db):
                   c.code,
                   c.name,
                   c.created_at,
+                  COALESCE(c.is_internal, FALSE) AS is_internal,
                   COUNT(DISTINCT u.id) AS user_count,
                   COUNT(DISTINCT s.id) AS store_count,
                   cc.tier            AS tier,
@@ -42,8 +43,9 @@ def init_admin_system_home_views(app, get_db):
                   ORDER BY effective_from DESC, id DESC
                   LIMIT 1
                 ) cc ON true
-                GROUP BY c.id, c.code, c.name, c.created_at, cc.tier, cc.trial_ends_at
-                ORDER BY c.id
+                GROUP BY c.id, c.code, c.name, c.created_at, c.is_internal,
+                         cc.tier, cc.trial_ends_at
+                ORDER BY c.is_internal, c.id
                 """
             ).fetchall()
         except Exception:
@@ -51,65 +53,45 @@ def init_admin_system_home_views(app, get_db):
             companies = db.execute(
                 """
                 SELECT
-                  c.id,
-                  c.code,
-                  c.name,
-                  c.created_at,
+                  c.id, c.code, c.name, c.created_at,
+                  FALSE AS is_internal,
                   COUNT(DISTINCT u.id) AS user_count,
                   COUNT(DISTINCT s.id) AS store_count,
-                  NULL::text AS tier,
-                  NULL::date AS trial_ends_at
+                  NULL::text AS tier, NULL::date AS trial_ends_at
                 FROM mst_companies c
-                LEFT JOIN sys_users u
-                  ON u.company_id = c.id
+                LEFT JOIN sys_users u ON u.company_id = c.id
                 LEFT JOIN mst_stores s
-                  ON s.company_id = c.id
-                 AND COALESCE(s.is_active, 1) = 1
+                  ON s.company_id = c.id AND COALESCE(s.is_active, 1) = 1
                 GROUP BY c.id, c.code, c.name, c.created_at
                 ORDER BY c.id
                 """
             ).fetchall()
 
-        # Pull users with sys_role too. Fall back if migration not applied.
+        # Split companies: client (paying/trial) vs internal (Kurajika house)
+        client_companies = [c for c in companies if not c["is_internal"]]
+        internal_companies = [c for c in companies if c["is_internal"]]
+
+        # Load sys admins (is_system_admin=TRUE) — independent of company membership
         try:
-            users = db.execute(
+            sys_admins = db.execute(
                 """
                 SELECT
-                  u.id,
-                  u.company_id,
-                  c.name AS company_name,
-                  u.email,
-                  u.name,
-                  u.role,
-                  u.is_system_admin,
-                  u.is_active,
-                  u.created_at,
+                  u.id, u.email, u.name, u.is_active, u.created_at,
                   COALESCE(u.sys_role, 'super_admin') AS sys_role
                 FROM sys_users u
-                LEFT JOIN mst_companies c
-                  ON c.id = u.company_id
-                ORDER BY u.company_id, u.id
+                WHERE u.is_system_admin = TRUE
+                ORDER BY u.id
                 """
             ).fetchall()
         except Exception:
             db.connection.rollback()
-            users = db.execute(
-                """
-                SELECT
-                  u.id, u.company_id, c.name AS company_name,
-                  u.email, u.name, u.role, u.is_system_admin,
-                  u.is_active, u.created_at,
-                  'super_admin' AS sys_role
-                FROM sys_users u
-                LEFT JOIN mst_companies c ON c.id = u.company_id
-                ORDER BY u.company_id, u.id
-                """
-            ).fetchall()
+            sys_admins = []
 
         return render_template(
             "admin/system_home.html",
-            companies=companies,
-            users=users,
+            client_companies=client_companies,
+            internal_companies=internal_companies,
+            sys_admins=sys_admins,
             sys_roles=SYS_ROLES,
         )
 
