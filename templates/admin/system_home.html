@@ -87,7 +87,8 @@
       <th>Email</th>
       <th>Name</th>
       <th>Role</th>
-      <th>System Admin</th>
+      <th>Sys Admin</th>
+      <th>Sys Role</th>
       <th>Active</th>
       <th>Created</th>
     </tr>
@@ -101,6 +102,26 @@
       <td>{{ u.name or "" }}</td>
       <td>{{ u.role }}</td>
       <td>{{ "Yes" if u.is_system_admin else "No" }}</td>
+      <td>
+        {% if u.is_system_admin %}
+          {% if g.current_sys_role == 'super_admin' %}
+            {# Super admin can change other sys-admins' roles #}
+            <form method="post"
+                  action="{{ url_for('admin_system_assign_sys_role', user_id=u.id) }}"
+                  style="margin:0; display:inline;">
+              <select name="sys_role" onchange="this.form.submit()" style="font-size:11px;">
+                {% for r in sys_roles %}
+                  <option value="{{ r }}" {% if u.sys_role == r %}selected{% endif %}>{{ r }}</option>
+                {% endfor %}
+              </select>
+            </form>
+          {% else %}
+            <span style="font-size:11px;">{{ u.sys_role }}</span>
+          {% endif %}
+        {% else %}
+          —
+        {% endif %}
+      </td>
       <td>{{ "Yes" if u.is_active else "No" }}</td>
       <td>{{ u.created_at }}</td>
     </tr>

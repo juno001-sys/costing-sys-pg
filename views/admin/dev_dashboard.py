@@ -1,23 +1,13 @@
 # views/admin/dev_dashboard.py
 from flask import render_template, redirect, url_for, flash, g, request
-from functools import wraps
+
+from utils.sys_roles import sys_role_required
 
 
 def init_dev_dashboard_views(app, get_db):
 
-    def system_admin_required(fn):
-        @wraps(fn)
-        def wrapper(*args, **kwargs):
-            if getattr(g, "current_user", None) is None:
-                return redirect(url_for("login", next=request.full_path))
-            if not getattr(g, "is_system_admin", False):
-                flash("System admin only.")
-                return redirect(url_for("index"))
-            return fn(*args, **kwargs)
-        return wrapper
-
     @app.get("/dashboard/dev")
-    @system_admin_required
+    @sys_role_required("engineer")
     def dev_dashboard():
         db = get_db()
         days = request.args.get("days", 7, type=int)

@@ -73,28 +73,60 @@ def init_auth_login_views(app, get_db):
             return
 
         db = get_db()
-        row = db.execute(
-            """
-            SELECT
-              s.id AS session_id,
-              s.user_id,
-              s.company_id,
-              s.expires_at,
-              s.last_seen_at,
-              s.is_active,
-              u.email,
-              u.name,
-              u.is_active AS user_active,
-              uc.role,
-              uc.is_active AS membership_active
-            FROM sys_sessions s
-            JOIN sys_users u ON u.id = s.user_id
-            JOIN sys_user_companies uc
-              ON uc.user_id = s.user_id AND uc.company_id = s.company_id
-            WHERE s.id = %s
-            """,
-            (token,),
-        ).fetchone()
+        # Pull is_system_admin and sys_role from sys_users so the values
+        # always come from the DB (not from a stale session cookie).
+        # COALESCE on sys_role keeps things safe BEFORE the migration runs.
+        try:
+            row = db.execute(
+                """
+                SELECT
+                  s.id AS session_id,
+                  s.user_id,
+                  s.company_id,
+                  s.expires_at,
+                  s.last_seen_at,
+                  s.is_active,
+                  u.email,
+                  u.name,
+                  u.is_active AS user_active,
+                  u.is_system_admin,
+                  COALESCE(u.sys_role, 'super_admin') AS sys_role,
+                  uc.role,
+                  uc.is_active AS membership_active
+                FROM sys_sessions s
+                JOIN sys_users u ON u.id = s.user_id
+                JOIN sys_user_companies uc
+                  ON uc.user_id = s.user_id AND uc.company_id = s.company_id
+                WHERE s.id = %s
+                """,
+                (token,),
+            ).fetchone()
+        except Exception:
+            db.connection.rollback()
+            row = db.execute(
+                """
+                SELECT
+                  s.id AS session_id,
+                  s.user_id,
+                  s.company_id,
+                  s.expires_at,
+                  s.last_seen_at,
+                  s.is_active,
+                  u.email,
+                  u.name,
+                  u.is_active AS user_active,
+                  u.is_system_admin,
+                  'super_admin' AS sys_role,
+                  uc.role,
+                  uc.is_active AS membership_active
+                FROM sys_sessions s
+                JOIN sys_users u ON u.id = s.user_id
+                JOIN sys_user_companies uc
+                  ON uc.user_id = s.user_id AND uc.company_id = s.company_id
+                WHERE s.id = %s
+                """,
+                (token,),
+            ).fetchone()
 
         if not row:
             session.pop("session_token", None)
@@ -144,10 +176,14 @@ def init_auth_login_views(app, get_db):
             "id": row["user_id"],
             "email": row["email"],
             "name": row["name"],
+            "is_system_admin": bool(row["is_system_admin"]),
+            "sys_role": row["sys_role"],
         }
         g.current_company_id = row["company_id"]
         g.current_role = row["role"]
-        g.is_system_admin = session.get("is_system_admin", False)
+        # Trust the DB over the session cookie (session cookie is just a hint).
+        g.is_system_admin = bool(row["is_system_admin"])
+        g.current_sys_role = row["sys_role"]
 
         # refresh last_seen (cheap)
         try:

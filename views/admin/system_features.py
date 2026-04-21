@@ -25,6 +25,7 @@ from utils.feature_gate import (
     get_company_feature_map,
     get_current_contract,
 )
+from utils.sys_roles import sys_role_required
 from views.reports.audit_log import log_event
 
 
@@ -33,19 +34,9 @@ VALID_PAYMENT_METHODS = ("invoice", "credit_card", "bank_transfer")
 
 
 def init_admin_system_features_views(app, get_db):
-    def system_admin_required(fn):
-        @wraps(fn)
-        def wrapper(*args, **kwargs):
-            if getattr(g, "current_user", None) is None:
-                return redirect(url_for("login", next=request.full_path))
-            if not getattr(g, "is_system_admin", False):
-                flash("System admin only.")
-                return redirect(url_for("index"))
-            return fn(*args, **kwargs)
-        return wrapper
 
     @app.get("/admin/system/companies/<int:company_id>/features")
-    @system_admin_required
+    @sys_role_required("sales")
     def admin_system_company_features(company_id):
         db = get_db()
         company = db.execute(
@@ -76,7 +67,7 @@ def init_admin_system_features_views(app, get_db):
         )
 
     @app.post("/admin/system/companies/<int:company_id>/features")
-    @system_admin_required
+    @sys_role_required("sales")
     def admin_system_company_features_save(company_id):
         db = get_db()
 
