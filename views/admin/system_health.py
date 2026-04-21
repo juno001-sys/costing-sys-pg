@@ -31,22 +31,13 @@ from utils.health_metrics import (
     get_store_monthly_trend,
     list_companies_with_health,
 )
+from utils.sys_roles import sys_role_required
 
 
 def init_admin_system_health_views(app, get_db):
-    def system_admin_required(fn):
-        @wraps(fn)
-        def wrapper(*args, **kwargs):
-            if getattr(g, "current_user", None) is None:
-                return redirect(url_for("login", next=request.full_path))
-            if not getattr(g, "is_system_admin", False):
-                flash("System admin only.")
-                return redirect(url_for("index"))
-            return fn(*args, **kwargs)
-        return wrapper
 
     @app.get("/admin/system/health")
-    @system_admin_required
+    @sys_role_required("sales", "engineer")
     def admin_system_health_overview():
         db = get_db()
         companies = list_companies_with_health(db)
@@ -72,7 +63,7 @@ def init_admin_system_health_views(app, get_db):
         )
 
     @app.get("/admin/system/health/<int:company_id>")
-    @system_admin_required
+    @sys_role_required("sales", "engineer")
     def admin_system_health_company(company_id):
         db = get_db()
         kpis = get_company_kpis(db, company_id)
@@ -99,7 +90,7 @@ def init_admin_system_health_views(app, get_db):
         )
 
     @app.get("/admin/system/health/<int:company_id>/store/<int:store_id>")
-    @system_admin_required
+    @sys_role_required("sales", "engineer")
     def admin_system_health_store(company_id, store_id):
         db = get_db()
         store = get_store_kpis(db, store_id)

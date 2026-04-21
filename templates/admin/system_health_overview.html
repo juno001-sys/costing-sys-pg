@@ -1,5 +1,5 @@
 {% extends "layout/base.html" %}
-{% block title %}Customer Health{% endblock %}
+{% block title %}Client Health{% endblock %}
 {% block nav %}{% if not g.is_system_admin %}{{ super() }}{% endif %}{% endblock %}
 {% block content %}
 
@@ -47,7 +47,7 @@
 </style>
 
 <div class="health-page">
-  <h2 style="margin-bottom:6px;">Customer Health</h2>
+  <h2 style="margin-bottom:6px;">Client Health</h2>
   <p style="color:#666; font-size:12px; margin-top:0;">
     Past 30 days activity per company. Click a row for the company detail.
   </p>
