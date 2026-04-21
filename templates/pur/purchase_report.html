@@ -38,6 +38,14 @@
                                 store_id=selected_store_id) }}">
               {{ r.supplier_name }}
             </a>
+            <a href="{{ url_for('reports.integrated_supplier',
+                                supplier_id=r.supplier_id,
+                                store_id=selected_store_id) }}"
+               style="margin-left:8px; padding:1px 6px; font-size:0.8em;
+                      background:#eef5ff; border:1px solid #b8d4f5;
+                      border-radius:3px; color:#2a5aa0; text-decoration:none;">
+              📊 {{ t("report.integrated.view_link") }}
+            </a>
           </td>
           {% for ym in month_keys %}
             <td style="text-align:right;">
