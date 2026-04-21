@@ -70,12 +70,20 @@ def _safe_query(db, sql: str, params: tuple = ()):
         return []
 
 
-def get_current_contract(company_id: int) -> Optional[dict]:
-    """Return the currently-active contract row, or None."""
-    if not company_id:
-        return None
+def _load_company_bundle(company_id: int) -> dict:
+    """Fetch contract + feature catalog + per-company overrides in ONE request.
+
+    Cached on flask.g so a single page render only pays the DB cost once,
+    no matter how many feature_enabled() calls the nav / template makes.
+    """
+    cache_attr = f"_fg_bundle_{company_id}"
+    cached = getattr(g, cache_attr, None)
+    if cached is not None:
+        return cached
+
     db = get_db()
-    rows = _safe_query(db, """
+
+    contract_rows = _safe_query(db, """
         SELECT id, company_id, tier, effective_from, effective_to,
                trial_ends_at, monthly_fee, currency, payment_method
         FROM sys_company_contracts
@@ -84,7 +92,36 @@ def get_current_contract(company_id: int) -> Optional[dict]:
         ORDER BY effective_from DESC, id DESC
         LIMIT 1
     """, (company_id,))
-    return rows[0] if rows else None
+    contract = contract_rows[0] if contract_rows else None
+
+    feat_rows = _safe_query(db, """
+        SELECT feature_key, default_tier
+        FROM sys_features
+        WHERE is_active = 1
+    """)
+    feature_tier = {r["feature_key"]: (r.get("default_tier") or "always_on") for r in feat_rows}
+
+    override_rows = _safe_query(db, """
+        SELECT feature_key, enabled
+        FROM sys_company_features
+        WHERE company_id = %s
+    """, (company_id,))
+    overrides = {r["feature_key"]: bool(r.get("enabled")) for r in override_rows}
+
+    bundle = {
+        "contract": contract,
+        "feature_tier": feature_tier,   # catalog-wide tier-by-key
+        "overrides": overrides,         # per-company explicit flags
+    }
+    setattr(g, cache_attr, bundle)
+    return bundle
+
+
+def get_current_contract(company_id: int) -> Optional[dict]:
+    """Return the currently-active contract row, or None."""
+    if not company_id:
+        return None
+    return _load_company_bundle(company_id)["contract"]
 
 
 def get_current_tier(company_id: int) -> str:
@@ -104,29 +141,17 @@ def feature_enabled(feature_key: str, company_id: Optional[int] = None) -> bool:
     if not company_id:
         return True  # no company context — let it through; callers handle auth separately
 
-    db = get_db()
+    bundle = _load_company_bundle(company_id)
 
     # 1. Explicit per-company override wins
-    rows = _safe_query(db, """
-        SELECT enabled
-        FROM sys_company_features
-        WHERE company_id = %s AND feature_key = %s
-        LIMIT 1
-    """, (company_id, feature_key))
-    if rows:
-        return bool(rows[0].get("enabled"))
+    if feature_key in bundle["overrides"]:
+        return bundle["overrides"][feature_key]
 
-    # 2. Tier-based default: read feature's required tier and compare
-    feat_rows = _safe_query(db, """
-        SELECT default_tier FROM sys_features
-        WHERE feature_key = %s AND is_active = 1
-        LIMIT 1
-    """, (feature_key,))
-    if not feat_rows:
+    # 2. Tier-based default from catalog
+    required_tier = bundle["feature_tier"].get(feature_key)
+    if required_tier is None:
         # Feature not in catalog -> assume always-on (safe default for unmigrated DB)
         return True
-
-    required_tier = feat_rows[0].get("default_tier") or "always_on"
     if required_tier == "always_on":
         return True
 
@@ -208,21 +233,30 @@ def get_lifecycle_state(company_id: int) -> dict:
         days_left:   days until next critical event (trial end / due date)
         next_event:  human-readable label for what's about to happen
     """
+    cache_attr = f"_fg_lifecycle_{company_id}"
+    cached = getattr(g, cache_attr, None)
+    if cached is not None:
+        return cached
+
     contract = get_current_contract(company_id)
     if contract is None:
-        return {"state": "no_contract", "days_left": None, "next_event": None}
+        result = {"state": "no_contract", "days_left": None, "next_event": None}
+        setattr(g, cache_attr, result)
+        return result
 
     today = date.today()
 
     # Trial active?
     trial_ends = contract.get("trial_ends_at")
     if trial_ends and trial_ends >= today:
-        return {
+        result = {
             "state": "trial",
             "days_left": (trial_ends - today).days,
             "next_event": "trial_ends",
             "trial_ends_at": trial_ends,
         }
+        setattr(g, cache_attr, result)
+        return result
 
     # Check unpaid overdue invoices
     db = get_db()
@@ -241,14 +275,18 @@ def get_lifecycle_state(company_id: int) -> dict:
         days_overdue = overdue[0].get("days_overdue") or 0
         # Per design: "prior alerts + immediate block at trigger".
         # Trigger fires when the invoice is overdue (any positive days).
-        return {
+        result = {
             "state": "overdue" if days_overdue < 30 else "blocked",
             "days_left": -days_overdue,
             "next_event": "invoice_overdue",
             "due_date": overdue[0].get("due_date"),
         }
+        setattr(g, cache_attr, result)
+        return result
 
-    return {"state": "active", "days_left": None, "next_event": None}
+    result = {"state": "active", "days_left": None, "next_event": None}
+    setattr(g, cache_attr, result)
+    return result
 
 
 def is_company_blocked(company_id: Optional[int] = None) -> bool:

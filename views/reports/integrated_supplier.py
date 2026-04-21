@@ -155,7 +155,9 @@ def integrated_report():
     pur_sql += " GROUP BY p.item_id, ym"
     pur_rows = db.execute(pur_sql, pur_params).fetchall()
 
-    # --- 2) Month-end stock counts per item ---
+    # --- 2) Month-end stock counts per item, joined with the latest purchase
+    #        unit price at-or-before the count date (used to value end stock).
+    #        One query via LATERAL join — avoids N+1. ---
     inv_sql = """
         WITH latest_in_month AS (
           SELECT
@@ -180,34 +182,27 @@ def integrated_report():
         inv_params.append(selected_supplier_id)
     inv_sql += """
         )
-        SELECT item_id, ym, count_date, counted_qty
-        FROM latest_in_month
-        WHERE rn = 1
+        SELECT
+          lim.item_id,
+          lim.ym,
+          lim.count_date,
+          lim.counted_qty,
+          lp.unit_price AS valuation_price
+        FROM latest_in_month lim
+        LEFT JOIN LATERAL (
+          SELECT p.unit_price
+          FROM purchases p
+          WHERE p.item_id = lim.item_id
+            AND p.store_id = %s
+            AND p.is_deleted = 0
+            AND p.delivery_date <= lim.count_date
+          ORDER BY p.delivery_date DESC, p.id DESC
+          LIMIT 1
+        ) lp ON TRUE
+        WHERE lim.rn = 1
     """
+    inv_params.append(selected_store_id)
     inv_rows = db.execute(inv_sql, inv_params).fetchall()
-
-    # --- 3) Per-count end valuation (latest purchase unit price at/before count_date) ---
-    end_valuation: dict[tuple[int, str], float] = {}
-    for r in inv_rows:
-        price_row = db.execute(
-            """
-            SELECT unit_price
-            FROM purchases
-            WHERE item_id = %s
-              AND store_id = %s
-              AND is_deleted = 0
-              AND delivery_date <= %s
-            ORDER BY delivery_date DESC, id DESC
-            LIMIT 1
-            """,
-            [r["item_id"], selected_store_id, r["count_date"]],
-        ).fetchone()
-        unit_price = (
-            float(price_row["unit_price"])
-            if price_row and price_row["unit_price"] is not None
-            else 0.0
-        )
-        end_valuation[(r["item_id"], r["ym"])] = unit_price
 
     # --- Item meta (+ supplier name) ---
     items_sql = """
@@ -282,7 +277,7 @@ def integrated_report():
         if iid in per_item and ym in per_item[iid]["months"]:
             mo = per_item[iid]["months"][ym]
             eq = float(r["counted_qty"] or 0)
-            up = end_valuation.get((iid, ym), 0.0)
+            up = float(r["valuation_price"]) if r["valuation_price"] is not None else 0.0
             mo["end_qty"] = eq
             mo["end_amount"] = eq * up
             mo["end_price"] = up if eq else None
