@@ -1,0 +1,108 @@
+{% extends "layout/base.html" %}
+{% block title %}Sys Admin References{% endblock %}
+{% block nav %}{% if not g.is_system_admin %}{{ super() }}{% endif %}{% endblock %}
+
+{% block content %}
+
+{% set active_tab = 'help' %}
+{% include "admin/_admin_tabs.html" %}
+
+<style>
+  .syshelp-wrap { display: flex; gap: 24px; max-width: 1200px; margin: 0 auto; }
+  .syshelp-toc {
+    flex: 0 0 240px; font-size: 13px;
+    background: #f7f9fb; border: 1px solid #e4e9ef; border-radius: 8px;
+    padding: 14px 10px; height: fit-content; position: sticky; top: 80px;
+  }
+  .syshelp-toc h4 { font-size: 13px; color: #555; margin: 10px 4px 4px; letter-spacing: .05em; }
+  .syshelp-toc ul { list-style: none; padding: 0; margin: 0; }
+  .syshelp-toc li { margin: 1px 0; }
+  .syshelp-toc a {
+    display: block; padding: 5px 8px; border-radius: 4px;
+    color: #333; text-decoration: none;
+  }
+  .syshelp-toc a:hover { background: #e8eef5; }
+  .syshelp-toc a.active { background: #5a8a5d; color: white; font-weight: 600; }
+
+  .syshelp-content { flex: 1; min-width: 0; max-width: 820px; }
+  .syshelp-content h1 { font-size: 24px; border-bottom: 2px solid #5a8a5d; padding-bottom: 6px; margin-bottom: 14px; }
+  .syshelp-content h2 { font-size: 18px; color: #3a6c3e; margin-top: 24px; margin-bottom: 8px; }
+  .syshelp-content h3 { font-size: 15px; color: #333; margin-top: 16px; margin-bottom: 6px; }
+  .syshelp-content p  { line-height: 1.7; margin: 8px 0; }
+  .syshelp-content ol, .syshelp-content ul { line-height: 1.7; margin: 8px 0; padding-left: 24px; }
+  .syshelp-content li { margin: 3px 0; }
+  .syshelp-content code {
+    background: #f3f4f6; padding: 1px 5px; border-radius: 3px; font-size: 90%;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  .syshelp-content pre {
+    background: #1e293b; color: #e2e8f0;
+    padding: 12px 16px; border-radius: 6px;
+    font-size: 12px; overflow-x: auto; line-height: 1.5;
+  }
+  .syshelp-content pre code { background: transparent; color: inherit; padding: 0; }
+
+  .callout {
+    border-left: 4px solid #5a8a5d; background: #f0f5ec;
+    padding: 10px 14px; margin: 12px 0; border-radius: 0 4px 4px 0;
+  }
+  .callout.warn { border-left-color: #d29a55; background: #fffbeb; }
+  .callout.tip  { border-left-color: #059669; background: #ecfdf5; }
+  .callout.danger { border-left-color: #c75a4a; background: #fbeae5; }
+
+  .syshelp-content table {
+    width: 100%; border-collapse: collapse; font-size: 13px; margin: 10px 0;
+  }
+  .syshelp-content table th, .syshelp-content table td {
+    border: 1px solid #e0e8db; padding: 6px 10px; text-align: left;
+    vertical-align: top;
+  }
+  .syshelp-content table thead { background: #f0f5ec; }
+  .syshelp-content table th { color: #3a6c3e; font-size: 12px; }
+
+  .role-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    color: white; font-size: 11px; font-weight: 600;
+  }
+  .role-badge.super_admin { background: #c75a4a; }
+  .role-badge.engineer    { background: #6a8caf; }
+  .role-badge.sales       { background: #5a8a5d; }
+  .role-badge.accounting  { background: #d29a55; }
+
+  @media (max-width: 800px) {
+    .syshelp-wrap { flex-direction: column; }
+    .syshelp-toc { position: static; flex: initial; }
+  }
+</style>
+
+<div class="syshelp-wrap">
+  <aside class="syshelp-toc">
+    <h4>📘 Intro</h4>
+    <ul>
+      {% for slug, title, group in chapters if group == 'intro' %}
+        <li><a href="{{ url_for('admin_system_help_index') if slug == 'index' else url_for('admin_system_help_topic', slug=slug) }}"
+               class="{{ 'active' if active == slug else '' }}">{{ title }}</a></li>
+      {% endfor %}
+    </ul>
+    <h4>🧭 Concepts</h4>
+    <ul>
+      {% for slug, title, group in chapters if group == 'concepts' %}
+        <li><a href="{{ url_for('admin_system_help_topic', slug=slug) }}"
+               class="{{ 'active' if active == slug else '' }}">{{ title }}</a></li>
+      {% endfor %}
+    </ul>
+    <h4>⚙️ Workflows</h4>
+    <ul>
+      {% for slug, title, group in chapters if group == 'workflows' %}
+        <li><a href="{{ url_for('admin_system_help_topic', slug=slug) }}"
+               class="{{ 'active' if active == slug else '' }}">{{ title }}</a></li>
+      {% endfor %}
+    </ul>
+  </aside>
+
+  <main class="syshelp-content">
+    {% block syshelp_body %}{% endblock %}
+  </main>
+</div>
+
+{% endblock %}

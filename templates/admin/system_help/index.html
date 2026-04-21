@@ -1,0 +1,60 @@
+{% extends "admin/system_help/_layout.html" %}
+{% block syshelp_body %}
+
+<h1>📘 Sys Admin References</h1>
+
+<p>
+  Internal runbooks and reference docs for Kurajika sys admins (engineering,
+  sales, accounting). Visible only to sys admins — operators in client
+  companies do not see this section.
+</p>
+
+<div class="callout">
+  <strong>Tip:</strong> bookmark the chapter you use most often. Each page is
+  self-contained, so you can hand the URL to a teammate without explaining the
+  context.
+</div>
+
+<h2>Chapters</h2>
+
+<ul>
+  {% for slug, title, group in chapters if slug != 'index' %}
+    <li>
+      <a href="{{ url_for('admin_system_help_topic', slug=slug) }}">
+        <strong>{{ title }}</strong>
+      </a>
+      <span style="color:#888; font-size:12px;">— {{ group }}</span>
+    </li>
+  {% endfor %}
+</ul>
+
+<h2>How this section is organized</h2>
+
+<table>
+  <thead>
+    <tr><th>Group</th><th>Purpose</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>🧭 Concepts</strong></td>
+      <td>Background reading: how things work, what badges/states mean.
+          Read once, refer back when something looks odd.</td>
+    </tr>
+    <tr>
+      <td><strong>⚙️ Workflows</strong></td>
+      <td>Step-by-step procedures: onboarding, deploys, etc. Use these
+          when you're actively doing the task — they are checklists.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Adding new chapters</h2>
+
+<p>
+  Edit <code>views/admin/system_help.py</code> — add a row to
+  <code>CHAPTERS</code> with <code>(slug, title, group)</code>. Then create
+  <code>templates/admin/system_help/&lt;slug&gt;.html</code> extending
+  <code>_layout.html</code>. The TOC sidebar updates automatically.
+</p>
+
+{% endblock %}

@@ -1,0 +1,129 @@
+{% extends "admin/system_help/_layout.html" %}
+{% block syshelp_body %}
+
+<h1>Client Health: Reading the Badges</h1>
+
+<p>
+  The <code>Client Health</code> overview shows one row per client company
+  with a status badge that summarizes how engaged they are. The badge logic
+  lives in <code>utils/health_metrics.py: _compute_status()</code>.
+</p>
+
+<h2>Badge meanings</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Badge</th>
+      <th>Trigger</th>
+      <th>What to do</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>🔴 <strong>critical</strong></td>
+      <td>
+        Overdue invoice <strong>OR</strong> ≥5 HTTP errors in last 7 days.<br>
+        <em>Wins over every other status.</em>
+      </td>
+      <td>
+        <strong>Same-day action.</strong>
+        For overdue invoice: contact accounting → confirm payment, then
+        mark paid in <code>/admin/system/invoices</code>. For error spike:
+        check <code>Developer Dashboard</code> for the failing endpoint.
+      </td>
+    </tr>
+    <tr>
+      <td>🟠 <strong>dormant</strong></td>
+      <td>No login in 30+ days.</td>
+      <td>
+        <strong>High churn risk.</strong> Sales should call within a week
+        — find out if they've stopped or are just busy. Often the trigger
+        for a recovery offer.
+      </td>
+    </tr>
+    <tr>
+      <td>🟡 <strong>quiet</strong></td>
+      <td>No login in 7–30 days.</td>
+      <td>
+        <strong>Light usage.</strong> Email a check-in. Common after staff
+        turnover at the client; might need re-onboarding.
+      </td>
+    </tr>
+    <tr>
+      <td>🟢 <strong>healthy</strong></td>
+      <td>Logged in within 7 days.</td>
+      <td>Normal. No action needed.</td>
+    </tr>
+    <tr>
+      <td>🔵 <strong>new</strong></td>
+      <td>Never logged in.</td>
+      <td>
+        Just signed up. If &gt;7 days since contract started without first
+        login, contact them — onboarding may be stuck.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Why critical can override healthy</h2>
+
+<p>
+  A client could be logging in daily AND have an overdue invoice — they're
+  using the system but not paying for it. The 🔴 wins so it's impossible
+  to overlook.
+</p>
+
+<div class="callout">
+  <strong>Practical:</strong> when triaging the overview, sort by status
+  first (critical → dormant → quiet → ...). Use the filter pills at the
+  top of the page to focus on one status at a time.
+</div>
+
+<h2>Why tier matters even on a "healthy" row</h2>
+
+<p>
+  The tier badge (Entry / Standard / Premium) is shown alongside the
+  status because <strong>same status = different urgency depending on
+  revenue</strong>. A 🟠 dormant Premium customer (¥120k/month at risk)
+  is roughly 8× more important than a dormant Entry customer (¥15k/month).
+  Use it to prioritize who to contact first.
+</p>
+
+<h2>Internal accounts (Kurajika's own)</h2>
+
+<p>
+  By default the overview hides Kurajika's own company (and any company
+  marked <code>is_internal = TRUE</code>). Use the <strong>"Include
+  internal"</strong> toggle next to the filter pills when smoke-testing
+  or checking your own engagement. Internal rows render with a yellow tint
+  and a 🏠 marker.
+</p>
+
+<h2>Drill-down: company &amp; store detail</h2>
+
+<p>
+  Click <strong>Detail →</strong> on any row to see:
+</p>
+
+<ul>
+  <li>4 KPI cards (active users, logins, purchases, stock counts — last 30d)</li>
+  <li>6-month bar chart trend</li>
+  <li>Feature usage table (which gated features they actually touched)</li>
+  <li>Per-user activity (last login, action count)</li>
+  <li>Per-store breakdown (with further drill-down)</li>
+  <li>🖨 Print button — uses CSS <code>@media print</code>; just press
+      OS Print → "Save as PDF" to email a snapshot to a client.</li>
+</ul>
+
+<h2>What's NOT shown (yet)</h2>
+
+<ul>
+  <li>Cross-tenant anonymized benchmarks ("your food cost is 2.3% better
+      than peers") — phase 2.</li>
+  <li>Auto-emailed monthly health PDF — needs an email provider; deferred.</li>
+  <li>"You saved X hours" calculation — not yet computed.</li>
+  <li>Period selector (currently fixed at 30d).</li>
+</ul>
+
+{% endblock %}

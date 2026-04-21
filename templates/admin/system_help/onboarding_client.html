@@ -1,0 +1,161 @@
+{% extends "admin/system_help/_layout.html" %}
+{% block syshelp_body %}
+
+<h1>Onboarding a New Client Company</h1>
+
+<p>
+  End-to-end checklist for setting up a new paying customer. Read top to
+  bottom — each step builds on the previous.
+</p>
+
+<div class="callout">
+  <strong>Time estimate:</strong> ~15 minutes for the technical setup,
+  plus an onboarding call/meeting with the client's Chief Admin.
+</div>
+
+<h2>Pre-flight: confirm the contract</h2>
+
+<p>Before touching the system, you should know:</p>
+
+<ul>
+  <li>Company legal name (in 漢字 / kana for Japan)</li>
+  <li>Number of stores they want to register</li>
+  <li>Tier they signed for: <strong>Entry / Standard / Premium</strong></li>
+  <li>Free trial period (defaults: Entry 1 month, Standard/Premium 3 months)</li>
+  <li>Email address of their <strong>Chief Admin</strong> (the person
+      legally responsible — usually F&amp;B manager or owner)</li>
+  <li>Whether they want a different start date than today</li>
+</ul>
+
+<h2>Step 1 — Register the client company</h2>
+
+<p>Sales role required.</p>
+
+<ol>
+  <li>Go to <code>/admin/system</code></li>
+  <li>Click <strong>+ Register New Client Company</strong></li>
+  <li>Fill in:
+    <ul>
+      <li>Company name (legal name in their language)</li>
+      <li>First admin's email — this becomes the Chief Admin</li>
+      <li>First admin's name</li>
+      <li><strong>Temporary password</strong> — generate something secure
+          (12+ chars, mixed); you'll send it via separate channel</li>
+    </ul>
+  </li>
+  <li>Submit. Audit log records <code>action='CREATE'</code> on
+      <code>mst_companies</code>.</li>
+</ol>
+
+<div class="callout warn">
+  <strong>Don't email the temporary password in the same message as the
+  username.</strong> Send the username/URL by email and the password via
+  LINE / phone / in-person. Standard security hygiene.
+</div>
+
+<h2>Step 2 — Set the contract tier &amp; trial</h2>
+
+<ol>
+  <li>Back at <code>/admin/system</code>, find the new company in the
+      <strong>🏢 Client Companies</strong> table</li>
+  <li>Click <strong>⚙ Features</strong></li>
+  <li>Pick the contracted tier from the dropdown
+      (Entry / Standard / Premium)</li>
+  <li>Set <strong>Trial Ends</strong> to the agreed date (e.g., today + 90
+      days for Standard/Premium). Leave blank if no trial.</li>
+  <li>Confirm the monthly fee (auto-fills from tier baseline; override
+      only if you negotiated a custom rate)</li>
+  <li>Payment method: <code>invoice</code> (only option for now)</li>
+  <li>Save. Audit log records <code>action='CONTRACT_CHANGE'</code>.</li>
+</ol>
+
+<p>
+  After save, the system creates a contract row in
+  <code>sys_company_contracts</code> and seeds
+  <code>sys_company_features</code> with that tier's defaults.
+</p>
+
+<h2>Step 3 — Create stores</h2>
+
+<p>This is done by the client's Chief Admin (NOT by us), but verify the
+flow works before handing off.</p>
+
+<ol>
+  <li>Log out of sys-admin. Log back in as the new Chief Admin (use the
+      temporary password).</li>
+  <li>Navigate to <code>店舗マスタ</code> (Stores Master)</li>
+  <li>Add at least one store — this lets you test that purchase entry,
+      stock count, and reports all work for the company</li>
+  <li>Log out.</li>
+</ol>
+
+<h2>Step 4 — Send onboarding email</h2>
+
+<p>Hand off to the client. Include:</p>
+
+<ul>
+  <li>Login URL (PROD URL)</li>
+  <li>Their email + temporary password (separate channel for the password)</li>
+  <li>Link to the in-app help: <code>/help/concept_authority</code> for
+      role basics, <code>/help/setup_suppliers</code> + related setup
+      chapters for first-week onboarding</li>
+  <li>Their trial end date (if applicable)</li>
+  <li>Your contact info as the assigned Customer Success owner</li>
+</ul>
+
+<h2>Step 5 — Verify on Client Health (next day or two)</h2>
+
+<p>Within 48 hours, check <code>/admin/system/health</code>:</p>
+
+<ul>
+  <li>The new company should appear (filter to 🔵 <strong>new</strong> if
+      they haven't logged in yet)</li>
+  <li>Once they log in, status flips to 🟢 <strong>healthy</strong></li>
+  <li>If still 🔵 after 7 days → onboarding stuck → reach out</li>
+</ul>
+
+<h2>Step 6 — Schedule the 30-day check-in</h2>
+
+<p>
+  Calendar reminder for ~30 days after start date. At that point you'd:
+</p>
+
+<ul>
+  <li>Open their Client Health detail page</li>
+  <li>Print it (🖨 Print button) → save as PDF → attach to the check-in email</li>
+  <li>Note which features they're using vs untouched</li>
+  <li>Suggest 1–2 features they're not using yet that would help them</li>
+</ul>
+
+<h2>Common gotchas</h2>
+
+<table>
+  <thead>
+    <tr><th>Symptom</th><th>Likely cause</th><th>Fix</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Client logs in but sees no menu items</td>
+      <td>Tier not set yet (defaults to Premium-permissive but if
+          contract was set to Entry, only Entry features show)</td>
+      <td>Verify on <code>⚙ Features</code> screen that tier matches
+          contract; ensure features marked enabled.</td>
+    </tr>
+    <tr>
+      <td>Lifecycle banner shows "trial ends in 0 days" immediately</td>
+      <td>Trial end date set to today by mistake</td>
+      <td>Edit on <code>⚙ Features</code> and push the date forward.</td>
+    </tr>
+    <tr>
+      <td>Client can't add an Admin user</td>
+      <td>Their first user is set as <code>admin</code> (correct), but
+          only Chief Admin can promote others to Admin. Did the first
+          user get the chief flag?</td>
+      <td>Check <code>sys_user_companies.is_chief_admin = TRUE</code>
+          for the first user. The migration backfill normally handles
+          this, but verify on PROD.</td>
+    </tr>
+  </tbody>
+</table>
+
+{% endblock %}
