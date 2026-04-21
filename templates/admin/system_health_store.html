@@ -1,0 +1,141 @@
+{% extends "layout/base.html" %}
+{% block title %}Store Health — {{ store.name }}{% endblock %}
+{% block nav %}{% if not g.is_system_admin %}{{ super() }}{% endif %}{% endblock %}
+{% block content %}
+
+{% include "admin/_admin_tabs.html" with context %}
+
+<style>
+  .health-page { max-width: 1000px; margin: 0 auto; }
+
+  .page-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 16px;
+  }
+  .page-header h2 { margin: 0; font-size: 20px; }
+  .page-meta { color: #666; font-size: 12px; margin-top: 4px; }
+
+  .print-btn {
+    padding: 6px 14px; background: #5a8a5d; color: white;
+    border: none; border-radius: 6px; cursor: pointer; font-size: 13px;
+  }
+  .print-btn:hover { background: #3a6c3e; }
+  @media print {
+    .print-btn, .breadcrumb-link, .admin-tabs { display: none; }
+    .health-page { max-width: 100%; }
+    body { background: white; }
+  }
+
+  .kpi-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+    margin-bottom: 20px;
+  }
+  .kpi {
+    background: white; border: 1px solid #e0e8db; border-radius: 10px;
+    padding: 14px; text-align: center;
+  }
+  .kpi .val { font-size: 26px; font-weight: 700; color: #3a6c3e; }
+  .kpi .lbl { font-size: 11px; color: #888; margin-top: 2px; }
+  @media (max-width: 600px) { .kpi-grid { grid-template-columns: 1fr; } }
+
+  .section { background: white; border: 1px solid #e0e8db; border-radius: 10px;
+             padding: 16px; margin-bottom: 16px; }
+  .section h3 { margin: 0 0 12px; font-size: 14px; color: #3a6c3e;
+                border-bottom: 1px solid #e0e8db; padding-bottom: 6px; }
+
+  .meta-table { width: 100%; font-size: 13px; }
+  .meta-table th { text-align: left; color: #888; font-weight: 400;
+                   padding: 4px 12px 4px 0; width: 160px; }
+  .meta-table td { padding: 4px 0; }
+
+  .chart-container { position: relative; height: 240px; }
+</style>
+
+<div class="health-page">
+  <p class="breadcrumb-link">
+    <a href="{{ url_for('admin_system_health_company', company_id=company_id) }}">
+      ← Back to {{ store.company_name }}
+    </a>
+  </p>
+
+  <div class="page-header">
+    <div>
+      <h2>{{ store.name }} <span style="color:#888; font-size:14px;">({{ store.code }})</span></h2>
+      <div class="page-meta">
+        Company: {{ store.company_name }} &nbsp;·&nbsp; Period: last 30 days
+      </div>
+    </div>
+    <button class="print-btn" onclick="window.print()">🖨 Print</button>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="val">{{ store.purchases_30d }}</div>
+      <div class="lbl">Purchases entered (30d)</div>
+    </div>
+    <div class="kpi">
+      <div class="val">{{ store.stock_counts_30d }}</div>
+      <div class="lbl">Stock counts (30d)</div>
+    </div>
+    <div class="kpi">
+      <div class="val">¥{{ "{:,}".format(store.purchase_amount_30d|int) }}</div>
+      <div class="lbl">Purchase amount (30d, by delivery)</div>
+    </div>
+  </div>
+
+  <!-- Trend chart -->
+  <div class="section">
+    <h3>📈 6-Month Trend</h3>
+    <div class="chart-container">
+      <canvas id="trendChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Last activity -->
+  <div class="section">
+    <h3>🕒 Last Activity</h3>
+    <table class="meta-table">
+      <tr>
+        <th>Last purchase entry</th>
+        <td>{% if store.last_purchase_at %}{{ store.last_purchase_at.strftime("%Y-%m-%d %H:%M") }} UTC{% else %}—{% endif %}</td>
+      </tr>
+      <tr>
+        <th>Last stock count</th>
+        <td>{% if store.last_count_at %}{{ store.last_count_at.strftime("%Y-%m-%d %H:%M") }} UTC{% else %}—{% endif %}</td>
+      </tr>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block body_extra %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: {{ trend_labels|safe }},
+      datasets: [
+        { label: 'Purchases',  data: {{ trend_purchases|safe }},
+          backgroundColor: '#d29a55', yAxisID: 'y' },
+        { label: 'Stock counts', data: {{ trend_counts|safe }},
+          backgroundColor: '#3a6c3e', yAxisID: 'y' },
+        { label: 'Purchase amount (¥)', data: {{ trend_amounts|safe }},
+          backgroundColor: '#5a8a5d', yAxisID: 'y1', type: 'line', borderColor: '#5a8a5d' },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y:  { beginAtZero: true, position: 'left',  title: { display: true, text: 'Count' } },
+        y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false },
+              title: { display: true, text: '¥' } },
+      },
+      plugins: { legend: { position: 'bottom' } },
+    },
+  });
+</script>
+{% endblock %}

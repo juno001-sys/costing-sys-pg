@@ -1,0 +1,136 @@
+{% extends "layout/base.html" %}
+{% block title %}Customer Health{% endblock %}
+{% block nav %}{% if not g.is_system_admin %}{{ super() }}{% endif %}{% endblock %}
+{% block content %}
+
+{% include "admin/_admin_tabs.html" with context %}
+
+<style>
+  .health-page { max-width: 1400px; margin: 0 auto; }
+  .filter-pills { margin-bottom: 16px; font-size: 13px; }
+  .filter-pills a {
+    display: inline-block; padding: 4px 12px; margin-right: 4px;
+    border-radius: 14px; text-decoration: none; color: #444;
+    background: #eee;
+  }
+  .filter-pills a.active { background: #5a8a5d; color: white; }
+
+  .health-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .health-table thead { background: #f0f5ec; }
+  .health-table th, .health-table td {
+    padding: 8px 10px; border-bottom: 1px solid #eee; text-align: left;
+  }
+  .health-table th { color: #3a6c3e; font-size: 12px; }
+  .health-table td.num { text-align: right; }
+  .health-table tr:hover { background: #fafbf8; }
+
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 11px; font-weight: 600; color: white; white-space: nowrap;
+  }
+  .badge.healthy  { background: #5a8a5d; }
+  .badge.quiet    { background: #d29a55; }
+  .badge.dormant  { background: #c08040; }
+  .badge.critical { background: #c75a4a; }
+  .badge.new      { background: #6a8caf; }
+
+  .tier-badge {
+    display: inline-block; padding: 1px 7px; border-radius: 10px;
+    font-size: 10px; font-weight: 700; color: white;
+  }
+  .tier-badge.entry    { background: #a0a0a0; }
+  .tier-badge.standard { background: #3a6c3e; }
+  .tier-badge.premium  { background: #5a8a5d; }
+  .tier-badge.none     { background: #ccc; color: #666; }
+
+  .relative-time { color: #888; font-size: 11px; }
+</style>
+
+<div class="health-page">
+  <h2 style="margin-bottom:6px;">Customer Health</h2>
+  <p style="color:#666; font-size:12px; margin-top:0;">
+    Past 30 days activity per company. Click a row for the company detail.
+  </p>
+
+  <div class="filter-pills">
+    {% set order = ['all', 'critical', 'dormant', 'quiet', 'healthy', 'new'] %}
+    {% for s in order %}
+      {% set count = total_companies if s == 'all' else status_counts.get(s, 0) %}
+      <a href="?status={{ s }}" class="{{ 'active' if status_filter == s else '' }}">
+        {% if s == 'critical' %}🔴 critical
+        {% elif s == 'dormant' %}🟠 dormant
+        {% elif s == 'quiet' %}🟡 quiet
+        {% elif s == 'healthy' %}🟢 healthy
+        {% elif s == 'new' %}🔵 new
+        {% else %}all{% endif %}
+        ({{ count }})
+      </a>
+    {% endfor %}
+  </div>
+
+  <table class="health-table">
+    <thead>
+      <tr>
+        <th style="width:60px;">Status</th>
+        <th>Company</th>
+        <th>Tier</th>
+        <th class="num">Active users<br>(30d)</th>
+        <th class="num">Logins<br>(30d)</th>
+        <th class="num">Purchases<br>(30d)</th>
+        <th class="num">Counts<br>(30d)</th>
+        <th class="num">Errors<br>(7d)</th>
+        <th>Last login</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in companies %}
+      <tr>
+        <td>
+          <span class="badge {{ c.status }}">
+            {% if c.status == 'critical' %}🔴
+            {% elif c.status == 'dormant' %}🟠
+            {% elif c.status == 'quiet' %}🟡
+            {% elif c.status == 'healthy' %}🟢
+            {% elif c.status == 'new' %}🔵{% endif %}
+            {{ c.status }}
+          </span>
+        </td>
+        <td>
+          <strong>{{ c.name }}</strong>
+          {% if c.has_overdue_invoice %}
+            <span style="color:#c75a4a; font-size:11px;">⚠ overdue invoice</span>
+          {% endif %}
+        </td>
+        <td>
+          <span class="tier-badge {{ c.tier or 'none' }}">{{ (c.tier or '—')|upper }}</span>
+        </td>
+        <td class="num">{{ c.active_users_30d }} / {{ c.total_users }}</td>
+        <td class="num">{{ c.logins_30d }}</td>
+        <td class="num">{{ c.purchases_30d }}</td>
+        <td class="num">{{ c.stock_counts_30d }}</td>
+        <td class="num" {% if c.errors_7d and c.errors_7d > 0 %}style="color:#c75a4a; font-weight:600;"{% endif %}>
+          {{ c.errors_7d }}
+        </td>
+        <td>
+          {% if c.last_login_at %}
+            <span style="font-size:12px;">{{ c.last_login_at.strftime("%Y-%m-%d %H:%M") }}</span>
+          {% else %}
+            <span class="relative-time">—</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="{{ url_for('admin_system_health_company', company_id=c.id) }}"
+             style="font-size:12px;">Detail →</a>
+        </td>
+      </tr>
+      {% else %}
+        <tr><td colspan="10" style="padding:20px; text-align:center; color:#888;">
+          No companies match this filter.
+        </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}
