@@ -45,5 +45,9 @@
      class="{{ 'active' if active == 'dev_dashboard' else '' }}">Developer Dashboard</a>
   {% endif %}
 
+  {# References — visible to all sys roles #}
+  <a href="{{ url_for('admin_system_help_index') }}"
+     class="{{ 'active' if active == 'help' else '' }}">📘 References</a>
+
   <span class="sys-role-badge">{{ _r }}</span>
 </div>

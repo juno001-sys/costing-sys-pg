@@ -1,0 +1,207 @@
+{% extends "admin/system_help/_layout.html" %}
+{% block syshelp_body %}
+
+<h1>Patch Deployment Workflow</h1>
+
+<p>
+  Standard procedure for shipping any code change to PROD. This workflow
+  was set as the team standard on 2026-04-20 — follow it for every change,
+  even "trivial" ones. The cost of an unnecessary 5-minute DEV check is
+  much lower than the cost of an unintended PROD bug.
+</p>
+
+<div class="callout danger">
+  <strong>Never push directly to <code>main</code> without DEV
+  verification.</strong> Even for one-line text changes. The discipline
+  matters more than any individual change.
+</div>
+
+<h2>Branch model</h2>
+
+<table>
+  <thead>
+    <tr><th>Branch</th><th>Environment</th><th>Auto-deploy</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>main</code></td>
+      <td><strong>PROD</strong> (real customers)</td>
+      <td>Railway → push to main triggers prod deploy</td>
+    </tr>
+    <tr>
+      <td><code>dev</code></td>
+      <td><strong>DEV</strong> (test-costing-sys.up.railway.app)</td>
+      <td>Railway → push to dev triggers dev deploy</td>
+    </tr>
+    <tr>
+      <td><code>claude/xxx</code> or feature branches</td>
+      <td>Local only (no auto-deploy)</td>
+      <td>—</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>The 5-step deploy procedure</h2>
+
+<h3>1. Make the change in a feature branch</h3>
+
+<p>
+  Work in a feature branch (or worktree). Commit small, atomic changes
+  with descriptive messages. Don't include unrelated changes in one commit.
+</p>
+
+<h3>2. Apply to LOCAL + DEV simultaneously</h3>
+
+<ul>
+  <li>Copy the changed files into the main repo path so user can test
+      at <code>localhost:5050</code></li>
+  <li>Push the changes to <code>dev</code> branch so Railway DEV picks
+      them up</li>
+</ul>
+
+<p>
+  These two should happen as one batch — don't make the user wait
+  between them. Local + DEV are both verification surfaces for the same
+  change.
+</p>
+
+<h3>3. Smoke-test on Kurajika internal company</h3>
+
+<p>
+  This is what makes <code>くらじか自然豊農</code> (the internal account)
+  valuable as a smoke-test customer. The breakfast staff use it daily,
+  so:
+</p>
+
+<ul>
+  <li>It always has fresh data</li>
+  <li>Real-world UX issues surface immediately (operators will complain)</li>
+  <li>Patches that break login, master data, or daily entry get caught
+      before they affect external customers</li>
+</ul>
+
+<p>
+  After pushing to DEV, log in to DEV as
+  <code>admin@example.com</code> (or any test account) and exercise the
+  feature you just changed. If you can't easily reach the feature in 30
+  seconds, your release-note email needs better instructions.
+</p>
+
+<h3>4. Wait for explicit "apply to PROD" approval</h3>
+
+<p>
+  Sys admin (super_admin role) reviews on DEV. <strong>Never assume
+  approval</strong> from a previous similar change.
+</p>
+
+<p>The trigger phrase to look for in conversation: "apply to PROD",
+"ship it", "looks good", "go for it" — explicit consent in the same
+session.</p>
+
+<h3>5. Merge to main and push</h3>
+
+<p>
+  After approval:
+</p>
+
+<pre><code>git checkout main
+git pull origin main
+git merge &lt;feature-branch&gt; --no-ff -m "merge: &lt;short description&gt;"
+git push origin main
+git checkout dev    # return to default branch</code></pre>
+
+<p>
+  Railway picks up the push to <code>main</code> within ~1 minute and
+  deploys to PROD.
+</p>
+
+<h2>What if a deploy needs a DB migration?</h2>
+
+<p>
+  Schema changes follow a slightly different rhythm because Railway
+  doesn't run migrations automatically.
+</p>
+
+<ol>
+  <li>Write the SQL in <code>init/migrate_YYYYMMDD_description.sql</code>
+      — force-add it past <code>.gitignore</code> with
+      <code>git add -f init/migrate_*.sql</code></li>
+  <li><strong>Apply to DEV first</strong> — use the saved DEV
+      <code>DATABASE_URL</code> (see
+      <code>~/.claude/.../reference_db_credentials.md</code>)</li>
+  <li>Test on DEV — verify the new code paths work, AND that existing
+      pages still render (additive migrations should never break
+      anything; if something breaks, the migration isn't truly additive)</li>
+  <li>On PROD approval: apply the same SQL file to PROD <strong>before
+      merging code to main</strong>. Order matters — code that depends
+      on a column will 500 if the column doesn't exist yet.</li>
+  <li>Then merge code to main as usual.</li>
+</ol>
+
+<div class="callout warn">
+  <strong>Migrations should be additive whenever possible.</strong> Adding
+  a column with a default, adding a table, adding an index — all safe
+  to apply with traffic running. Renames, drops, type changes need
+  more care (multi-step deploys: deploy code that handles both old +
+  new schema → migrate → deploy code that uses only new).
+</div>
+
+<h2>Rolling back if something breaks PROD</h2>
+
+<p>Quickest path:</p>
+
+<ol>
+  <li>Identify the bad commit on <code>main</code>:
+      <code>git log --oneline main</code></li>
+  <li>Create a revert commit:
+      <code>git revert &lt;sha&gt;</code></li>
+  <li>Push: <code>git push origin main</code></li>
+  <li>Railway redeploys with the revert in &lt;1 minute</li>
+</ol>
+
+<p>For DB migrations: write a reverse migration if needed. Don't
+manually <code>DROP COLUMN</code> on PROD without a migration file —
+audit trail matters.</p>
+
+<h2>PROD ↔ DEV data sync</h2>
+
+<p>
+  When DEV's data drifts too far from PROD (after weeks of test
+  pollution), refresh DEV from PROD.
+</p>
+
+<p>
+  <strong>Two scripts depending on whether we have paying customers:</strong>
+</p>
+
+<table>
+  <thead>
+    <tr><th>Stage</th><th>Use</th><th>Why</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Pre-customer</strong> (current state)</td>
+      <td>Full mirror via <code>pg_dump</code> + schema-drop</td>
+      <td>Only Kurajika data on PROD; safe to copy everything</td>
+    </tr>
+    <tr>
+      <td><strong>Post-customer</strong></td>
+      <td><code>init/sync_internal_data_to_dev.py --apply</code></td>
+      <td>Filters out customer data; <strong>deny-by-default</strong>
+          classification refuses to run if a new table is unclassified</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+  The filtered script is committed and ready. The day the first paying
+  customer's data lands on PROD, switch to it. See the script's docstring
+  for the full procedure.
+</p>
+
+<div class="callout danger">
+  <strong>Always delete the local pg_dump file</strong> after restore —
+  it contains real PROD user emails + password hashes.
+</div>
+
+{% endblock %}
