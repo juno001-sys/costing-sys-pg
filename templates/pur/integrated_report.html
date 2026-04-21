@@ -150,14 +150,7 @@
     </thead>
     <tbody>
       {% for item in item_rows %}
-      {# 4 sub-rows per item in the order from the spec image #}
-      {% set metrics = [
-        ('begin', 'metric-begin'),
-        ('pur',   'metric-pur'),
-        ('used',  'metric-used'),
-        ('end',   'metric-end'),
-      ] %}
-      {% for metric_key, metric_class in metrics %}
+      {% for metric_key, metric_class, cells in item.formatted %}
         <tr class="{{ metric_class }}{% if loop.first %} item-group-first{% endif %}">
           {% if loop.first %}
             <td class="col-item" rowspan="4">
@@ -178,20 +171,10 @@
             </td>
           {% endif %}
           <td class="col-metric">{{ t("report.integrated." ~ metric_key) }}</td>
-          {% for ym in month_keys %}
-            {% set mo = item.months[ym] %}
-            {% set price = mo[metric_key ~ "_price"] %}
-            {% set qty   = mo[metric_key ~ "_qty"] %}
-            {% set amt   = mo[metric_key ~ "_amount"] %}
-            <td class="{% if price is none %}missing{% else %}num{% endif %}">
-              {% if price is none %}—{% else %}¥{{ "{:,.0f}".format(price) }}{% endif %}
-            </td>
-            <td class="{% if qty is none %}missing{% else %}num{% endif %}">
-              {% if qty is none %}—{% else %}{{ "{:,.0f}".format(qty) }}{% endif %}
-            </td>
-            <td class="ym-group-end {% if amt is none %}missing{% else %}num{% endif %}">
-              {% if amt is none %}—{% else %}¥{{ "{:,.0f}".format(amt) }}{% endif %}
-            </td>
+          {% for c in cells %}
+            <td class="{% if c.price_missing %}missing{% else %}num{% endif %}">{{ c.price_text }}</td>
+            <td class="{% if c.qty_missing %}missing{% else %}num{% endif %}">{{ c.qty_text }}</td>
+            <td class="ym-group-end {% if c.amt_missing %}missing{% else %}num{% endif %}">{{ c.amt_text }}</td>
           {% endfor %}
         </tr>
       {% endfor %}

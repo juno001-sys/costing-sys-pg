@@ -211,15 +211,24 @@ def inject_current_company():
     if not company_id:
         return {"current_company_name": None}
 
+    # Cache per-request: context processors run on every template render,
+    # and this value never changes within a request.
+    cached = getattr(g, "_current_company_name_cache", None)
+    if cached is not None:
+        return {"current_company_name": cached if cached != "__none__" else None}
+
     try:
         db = get_db()
         row = db.execute(
             "SELECT name FROM mst_companies WHERE id = %s",
             (company_id,),
         ).fetchone()
-        return {"current_company_name": row["name"] if row else None}
+        name = row["name"] if row else None
     except Exception:
-        return {"current_company_name": None}
+        name = None
+
+    g._current_company_name_cache = name if name is not None else "__none__"
+    return {"current_company_name": name}
 
 
 @app.context_processor

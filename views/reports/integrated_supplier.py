@@ -305,6 +305,36 @@ def integrated_report():
 
     item_rows = sorted(per_item.values(), key=lambda x: (x["item_code"] or "", x["item_id"]))
 
+    # Pre-format all cells in Python — dramatically faster than doing the
+    # same conditional logic in Jinja per-cell (the full report renders
+    # ~37K cells; Python string formatting is ~5× faster than Jinja).
+    METRIC_GROUPS = [
+        ("begin", "metric-begin"),
+        ("pur",   "metric-pur"),
+        ("used",  "metric-used"),
+        ("end",   "metric-end"),
+    ]
+    for item in item_rows:
+        formatted = []
+        for metric_key, metric_class in METRIC_GROUPS:
+            cells = []
+            price_k = f"{metric_key}_price"
+            qty_k = f"{metric_key}_qty"
+            amt_k = f"{metric_key}_amount"
+            for ym in month_keys:
+                mo = item["months"][ym]
+                p, q, a = mo[price_k], mo[qty_k], mo[amt_k]
+                cells.append({
+                    "price_text": "—" if p is None else f"¥{p:,.0f}",
+                    "qty_text":   "—" if q is None else f"{q:,.0f}",
+                    "amt_text":   "—" if a is None else f"¥{a:,.0f}",
+                    "price_missing": p is None,
+                    "qty_missing":   q is None,
+                    "amt_missing":   a is None,
+                })
+            formatted.append((metric_key, metric_class, cells))
+        item["formatted"] = formatted
+
     return render_template(
         "pur/integrated_report.html",
         mst_stores=mst_stores,
