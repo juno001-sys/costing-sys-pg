@@ -9,7 +9,7 @@
   <label>
     <strong>{{ t("form.store") }}</strong>
     <select name="store_id" onchange="this.form.submit()">
-      <option value="">{{ t("common.all_stores") }}</option>
+      <option value="">{{ t("common.select_store_option") }}</option>
       {% for s in mst_stores %}
       <option value="{{ s.id }}" {% if s.id|string == selected_store_id|string %}selected{% endif %}>
         {{ s.name }}
@@ -30,12 +30,6 @@
 
   <button type="submit" style="padding:5px 16px;">{{ t("form.show") }}</button>
 </form>
-
-{% if no_store_selected %}
-<div style="padding:14px 18px; margin:10px 0 20px; background:#fff8e1; border:1px solid #f0c14b; border-radius:6px; color:#7a5a00;">
-  {{ t("common.select_store_prompt") }}
-</div>
-{% endif %}
 
 <!-- Grand total -->
 <div style="font-size:18px; font-weight:bold; margin-bottom:20px; color:#333;">

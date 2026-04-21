@@ -812,6 +812,7 @@
   "help.concept_order_support.q3": "est_order_qty is 0 or blank",
   "help.concept_order_support.a3": "Not enough purchase history in the last 90 days. Set manually on the item edit screen, or keep operating and request a recalculation.",
   "common.select_store_prompt": "Please select a store from the menu above.",
+  "common.select_store_option": "Please select",
   "admin.nav_policy.title": "Nav visibility settings",
   "admin.nav_policy.description": "Choose which navigation menu items are visible to operator and supervisor users. Unchecked items are hidden. Admin-role users always see everything.",
   "admin.nav_policy.col_nav_item": "Nav item",
