@@ -90,7 +90,10 @@ def init_auth_login_views(app, get_db):
                   u.name,
                   u.is_active AS user_active,
                   u.is_system_admin,
-                  COALESCE(u.sys_role, 'super_admin') AS sys_role,
+                  -- After the array migration, sys_role is TEXT[]. The driver
+                  -- returns Python list. utils.sys_roles._normalize_roles
+                  -- accepts list or string for transition safety.
+                  u.sys_role AS sys_role,
                   uc.role,
                   uc.is_active AS membership_active
                 FROM sys_sessions s
@@ -116,7 +119,7 @@ def init_auth_login_views(app, get_db):
                   u.name,
                   u.is_active AS user_active,
                   u.is_system_admin,
-                  'super_admin' AS sys_role,
+                  ARRAY['super_admin']::text[] AS sys_role,
                   uc.role,
                   uc.is_active AS membership_active
                 FROM sys_sessions s
@@ -172,18 +175,24 @@ def init_auth_login_views(app, get_db):
             return
 
         # mark current
+        from utils.sys_roles import _normalize_roles
+        roles = _normalize_roles(row.get("sys_role"))
         g.current_user = {
             "id": row["user_id"],
             "email": row["email"],
             "name": row["name"],
             "is_system_admin": bool(row["is_system_admin"]),
-            "sys_role": row["sys_role"],
+            "sys_role": roles,        # always a list now
+            "sys_roles": roles,       # alias for clarity
         }
         g.current_company_id = row["company_id"]
         g.current_role = row["role"]
         # Trust the DB over the session cookie (session cookie is just a hint).
         g.is_system_admin = bool(row["is_system_admin"])
-        g.current_sys_role = row["sys_role"]
+        g.current_sys_roles = roles
+        # Backward-compat: existing templates use g.current_sys_role
+        # (singular) — keep it pointing at the first role.
+        g.current_sys_role = roles[0] if roles else None
 
         # refresh last_seen (cheap)
         try:
