@@ -17,6 +17,8 @@
       padding-bottom: 80px;
       min-height: 100vh;
     }
+
+    /* ── Sticky top bar ─────────────────────────────────────────── */
     .topbar {
       position: sticky; top: 0; z-index: 100;
       background: #2a5aa0; color: white;
@@ -27,14 +29,22 @@
     .topbar-left  { font-size: 15px; font-weight: 600; }
     .topbar-left small { display: block; font-size: 11px; font-weight: 400;
                          opacity: .8; margin-top: 1px; }
-    .topbar-right { text-align: right; font-size: 12px; }
-    .change-count { font-weight: 700; font-size: 14px; }
+    .topbar-right { text-align: right; font-size: 11px; }
+    .change-badge {
+      display: inline-block; padding: 2px 10px;
+      background: rgba(255,255,255,.2); color: white;
+      border-radius: 12px; font-size: 13px; font-weight: 700;
+    }
+    .change-badge.has-changes { background: #f0ad4e; color: #1a1a1a; }
+    .prog-text { font-size: 11px; color: rgba(255,255,255,.85); margin-top:3px; }
 
+    /* ── Flash messages ─────────────────────────────────────────── */
     .flash-ok  { background: #d4edda; color: #155724;
                  padding: 10px 14px; font-size: 13px; }
     .flash-err { background: #f8d7da; color: #721c24;
                  padding: 10px 14px; font-size: 13px; }
 
+    /* ── Selector panel ─────────────────────────────────────────── */
     .selector-panel {
       background: white; padding: 14px; margin: 8px;
       border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.1);
@@ -53,13 +63,15 @@
 
     .hint-banner {
       background: #eef5ff; color: #2a5aa0; padding: 10px 14px;
-      font-size: 13px; border-top: 1px solid #c5def5; border-bottom: 1px solid #c5def5;
+      font-size: 12.5px; border-top: 1px solid #c5def5; border-bottom: 1px solid #c5def5;
     }
 
+    /* ── Empty state ────────────────────────────────────────────── */
     .empty-state { text-align: center; padding: 48px 24px; color: #999; }
     .empty-state .icon { font-size: 40px; }
     .empty-state p { font-size: 14px; margin-top: 8px; }
 
+    /* ── Zone section ───────────────────────────────────────────── */
     .zone-section { margin: 8px 8px 0; }
     .zone-header {
       display: flex; justify-content: space-between; align-items: center;
@@ -70,23 +82,29 @@
     .zone-count   { font-size: 12px; font-weight: 400; opacity: .85; }
     .zone-chevron { font-size: 12px; transition: transform .2s; }
     .zone-header.collapsed .zone-chevron { transform: rotate(-90deg); }
+
     .zone-freeze  { background: #1a6db5; }
     .zone-chill   { background: #0097a7; }
     .zone-ambient { background: #2e7d32; }
     .zone-other   { background: #546e7a; }
+
     .zone-body { background: #e8ecf0; border-radius: 0 0 10px 10px;
                  padding: 4px 0 6px; }
     .zone-body.hidden { display: none; }
 
+    /* ── Item card ──────────────────────────────────────────────── */
     .item-card {
       background: white; margin: 3px 6px;
       border-radius: 8px; padding: 8px 10px;
       display: flex; align-items: flex-start; gap: 10px;
       box-shadow: 0 1px 3px rgba(0,0,0,.08);
       border-left: 4px solid transparent;
+      cursor: pointer;
       transition: border-color .15s, background .15s;
     }
-    .item-card.changed { border-left-color: #f0ad4e; background: #fffaf0; }
+    .item-card.changed  { border-left-color: #f0ad4e; background: #fffaf0; }
+    .item-card.selected { border-left-color: #2a5aa0; background: #eef5ff; }
+    .item-card.selected.changed { border-left-color: #2a5aa0; }
 
     .item-info { flex: 1; min-width: 0; }
     .item-name  { font-size: 15px; font-weight: 600;
@@ -96,21 +114,57 @@
     .last-count { font-size: 11px; color: #666; margin-top: 1px; }
     .last-count.stale { color: #c0392b; }
 
+    /* ── Frequency badges ───────────────────────────────────────── */
+    .freq-badge {
+      display: inline-block; font-size: 10px; font-weight: 600;
+      padding: 1px 6px; border-radius: 10px; margin-left: 4px;
+      vertical-align: middle; line-height: 1.4;
+    }
+    .freq-very_high { background: #fde2e2; color: #9b3f2d; }
+    .freq-high      { background: #fff3cd; color: #856404; }
+    .freq-low       { background: #e8eaed; color: #5f6368; }
+    .freq-none      { background: #f5f5f5; color: #bbb; }
+
+    /* ── Count controls ─────────────────────────────────────────── */
     .count-wrap {
       flex-shrink: 0;
       display: flex; flex-direction: row; align-items: center; gap: 4px;
     }
+
     .count-input {
-      width: 76px; height: 48px;
+      width: 60px; height: 48px;
       text-align: center; font-size: 22px; font-weight: 700;
       border: 2px solid #ddd; border-radius: 8px;
       background: #fafafa; color: #1a1a1a;
       -webkit-appearance: none; appearance: none;
       outline: none; padding: 0;
+      pointer-events: none; user-select: none; caret-color: transparent;
     }
-    .count-input:focus { outline: none; border-color: #2a5aa0; background: #fff; }
+    .count-input:focus { outline: none; }
     .count-input.changed { border-color: #f0ad4e; background: #fffaf0; }
 
+    /* Buttons: always visible */
+    .btn-minus, .btn-plus {
+      border: none; border-radius: 8px; height: 48px;
+      font-weight: 800; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      user-select: none; -webkit-tap-highlight-color: transparent;
+      line-height: 1;
+    }
+    /* － BIG red: primary action */
+    .btn-minus {
+      width: 48px; font-size: 26px;
+      background: #fdecea; color: #c75a4a;
+    }
+    .btn-minus:active { background: #f9c0bb; }
+    /* ＋ small gray: correction */
+    .btn-plus {
+      width: 34px; font-size: 18px;
+      background: #f0f0f0; color: #aaa;
+    }
+    .btn-plus:active { background: #ddd; }
+
+    /* ── Sticky save bar ────────────────────────────────────────── */
     .save-bar {
       position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
       background: white; padding: 10px 14px;
@@ -154,8 +208,8 @@
     </small>
   </div>
   <div class="topbar-right">
-    <span class="change-count" id="change-count">0</span> 件
-    <br>変更
+    <span class="change-badge" id="change-badge">0 件</span>
+    <div class="prog-text">変更数</div>
   </div>
 </div>
 
@@ -170,9 +224,11 @@
         </option>
       {% endfor %}
     </select>
+
     <label>{{ t("inventory.count_date") }}</label>
     <input type="date" name="count_date" value="{{ count_date }}"
            onchange="this.form.submit()">
+
     <label>{{ t("items.frequency.label") }}</label>
     <select name="freq" onchange="this.form.submit()">
       <option value=""           {{ 'selected' if not freq_filter }}>{{ t("items.frequency.all") }}</option>
@@ -181,6 +237,7 @@
       <option value="low"        {{ 'selected' if freq_filter == 'low' }}>{{ t("items.frequency.low") }}</option>
       <option value="none"       {{ 'selected' if freq_filter == 'none' }}>{{ t("items.frequency.none") }}</option>
     </select>
+
     {% if latest_dates %}
     <div class="prev-dates">
       {{ t("inventory.sp.past") }}：
@@ -214,22 +271,44 @@
          onclick="toggleZone(this)">
       <span>{{ zone_icon.get(zone_name,'📦') }} {{ zone_name }}</span>
       <span>
-        <span class="zone-count">{{ zone_items|length }}件</span>
+        <span class="zone-count" id="zcnt-{{ loop.index }}">
+          0/{{ zone_items|length }}件
+        </span>
         &nbsp;<span class="zone-chevron">▼</span>
       </span>
     </div>
 
-    <div class="zone-body">
+    <div class="zone-body" id="zbody-{{ loop.index }}">
       {% for item in zone_items %}
         {% set ns = namespace(row_idx=0) %}
         {% for gi in items %}
           {% if gi.item_id == item.item_id %}{% set ns.row_idx = loop.index %}{% endif %}
         {% endfor %}
-        {% set original_qty = item.counted_qty if item.counted_qty is not none else '' %}
 
-        <div class="item-card" id="card-{{ ns.row_idx }}">
+        {# For smart-save:
+           - data-original = previously-saved counted_qty (empty if never counted)
+           - value / display_val = counted_qty if exists, else system_qty (as a
+             starting point for the stepper).
+           - data-touched is set to "1" the first time the operator taps a
+             stepper. Only touched + value-differs rows count as "changed". #}
+        {% set is_counted = item.counted_qty is not none %}
+        {% set original_qty = item.counted_qty if is_counted else '' %}
+        {% set display_val = item.counted_qty if is_counted else item.system_qty %}
+
+        <div class="item-card" id="card-{{ ns.row_idx }}"
+             onclick="selectRow(this)">
           <div class="item-info">
-            <div class="item-name" title="{{ item.item_name }}">{{ item.item_name }}</div>
+            <div class="item-name" title="{{ item.item_name }}">
+              {{ item.item_name }}
+              {% if item.frequency and item.frequency.bucket and item.frequency.bucket != 'none' %}
+                <span class="freq-badge freq-{{ item.frequency.bucket }}">
+                  {% if item.frequency.rate_scale == 'per_week' %}{{ t("items.frequency.rate.per_week")|replace("{n}", item.frequency.rate_n|string) }}
+                  {%- elif item.frequency.rate_scale == 'per_month' %}{{ t("items.frequency.rate.per_month")|replace("{n}", item.frequency.rate_n|string) }}
+                  {%- elif item.frequency.rate_scale == 'less_than_month' %}{{ t("items.frequency.rate.less_than_month") }}
+                  {%- else %}{{ t("items.frequency.rate.none") }}{% endif %}
+                </span>
+              {% endif %}
+            </div>
             <div class="item-meta">{{ item.area_name }} / {{ item.shelf_label }}</div>
             <div class="system-qty">{{ t("inventory.sp.system_qty") }}：{{ item.system_qty }}</div>
             {% if item.last_ever_at %}
@@ -240,16 +319,21 @@
               <div class="last-count stale">{{ t("report.integrated.no_count") }}</div>
             {% endif %}
           </div>
-          <div class="count-wrap">
+          <div class="count-wrap" id="wrap-{{ ns.row_idx }}">
+            <button type="button" class="btn-minus"
+                    onclick="stepCount(this, -1); event.stopPropagation()">－</button>
             <input type="number"
                    class="count-input"
                    name="count_qty_{{ ns.row_idx }}"
                    id="inp-{{ ns.row_idx }}"
-                   value="{{ original_qty }}"
+                   value="{{ display_val }}"
                    data-original="{{ original_qty }}"
+                   data-system="{{ item.system_qty }}"
                    data-idx="{{ ns.row_idx }}"
-                   min="0" step="1" inputmode="numeric"
-                   oninput="onCountInput(this)">
+                   data-zone="{{ loop.index0 }}"
+                   min="0" step="1" inputmode="numeric">
+            <button type="button" class="btn-plus"
+                    onclick="stepCount(this, +1); event.stopPropagation()">＋</button>
           </div>
         </div>
       {% endfor %}
@@ -258,7 +342,8 @@
   {% endfor %}
 
   <div class="save-bar">
-    <button type="submit" class="btn-save" id="save-btn">
+    <button type="submit" class="btn-save" id="save-btn"
+            onclick="return confirmSave()">
       {{ t("inventory.smart.save") }} <span id="save-btn-count"></span>
     </button>
     <a href="{{ url_for('inventory_count_v3', store_id=selected_store_id, count_date=count_date) }}"
@@ -266,10 +351,23 @@
   </div>
 </form>
 
+<script>
+  const I18N_OUTLIER = {
+    intro:   {{ t("inventory.sp.outlier.intro") | tojson }},
+    system:  {{ t("inventory.sp.outlier.system_label") | tojson }},
+    entered: {{ t("inventory.sp.outlier.entered_label") | tojson }},
+    confirm: {{ t("inventory.sp.outlier.confirm") | tojson }},
+  };
+</script>
+
 {% elif selected_store_id %}
 <div class="empty-state">
   <div class="icon">📋</div>
   <p>{{ t("inventory.sp.no_items") }}<br>{{ t("inventory.sp.check_masters") }}</p>
+</div>
+<div class="save-bar">
+  <a href="{{ url_for('inventory_count_v3', store_id=selected_store_id) }}"
+     class="btn-desktop" style="flex:1; text-align:center;">{{ t("common.switch_to_desktop") }}</a>
 </div>
 
 {% else %}
@@ -280,56 +378,118 @@
 {% endif %}
 
 <script>
+const TOTAL = {{ items|length if items else 0 }};
+
+// ── Row selection ─────────────────────────────────────────────────────────
+function selectRow(card) {
+  document.querySelectorAll('.item-card.selected').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// ── Stepper buttons ───────────────────────────────────────────────────────
+function stepCount(btn, delta) {
+  const wrap = btn.closest('.count-wrap');
+  const inp  = wrap.querySelector('.count-input');
+  const cur  = inp.value === '' ? 0 : (parseInt(inp.value) || 0);
+  inp.value  = Math.max(0, cur + delta);
+  // Mark as touched — operator has engaged with this row.
+  inp.dataset.touched = "1";
+  afterChange(inp);
+}
+
+// ── Unified update after any value change ─────────────────────────────────
+function afterChange(inp) {
+  const card = document.getElementById('card-' + inp.dataset.idx);
+  const touched  = inp.dataset.touched === "1";
+  const changed  = touched && (inp.value || '') !== (inp.dataset.original || '');
+  inp.classList.toggle('changed', changed);
+  if (card) card.classList.toggle('changed', changed);
+  updateCounters();
+}
+
+// ── Counters (top badge + per-zone) ───────────────────────────────────────
+function updateCounters() {
+  let total = 0;
+  document.querySelectorAll('.count-input').forEach(inp => {
+    const touched = inp.dataset.touched === "1";
+    const changed = touched && (inp.value || '') !== (inp.dataset.original || '');
+    if (changed) total += 1;
+  });
+  const badge = document.getElementById('change-badge');
+  if (badge) {
+    badge.textContent = total + ' 件';
+    badge.classList.toggle('has-changes', total > 0);
+  }
+  const btnCount = document.getElementById('save-btn-count');
+  if (btnCount) btnCount.textContent = total > 0 ? `(${total})` : '';
+  const saveBtn = document.getElementById('save-btn');
+  if (saveBtn) saveBtn.disabled = (total === 0);
+
+  // Per-zone counts (changed / total in that zone)
+  document.querySelectorAll('.zone-section').forEach((sec, i) => {
+    const el    = document.getElementById('zcnt-' + (i + 1));
+    if (!el) return;
+    const all   = sec.querySelectorAll('.count-input').length;
+    const done  = sec.querySelectorAll('.count-input.changed').length;
+    el.textContent = done + '/' + all + '件';
+  });
+}
+
+// ── Zone collapse ─────────────────────────────────────────────────────────
 function toggleZone(header) {
   const body = header.nextElementSibling;
   body.classList.toggle('hidden');
   header.classList.toggle('collapsed');
 }
 
-function countChanges() {
-  let n = 0;
-  document.querySelectorAll('.count-input').forEach(inp => {
-    if ((inp.value || '') !== (inp.dataset.original || '')) n++;
-  });
-  const ccEl = document.getElementById('change-count');
-  if (ccEl) ccEl.textContent = n;
-  const btnEl = document.getElementById('save-btn-count');
-  if (btnEl) btnEl.textContent = n > 0 ? `(${n})` : '';
-  const saveBtn = document.getElementById('save-btn');
-  if (saveBtn) saveBtn.disabled = (n === 0);
-  return n;
-}
-
-function onCountInput(inp) {
-  const isChanged = (inp.value || '') !== (inp.dataset.original || '');
-  inp.classList.toggle('changed', isChanged);
-  const card = document.getElementById('card-' + inp.dataset.idx);
-  if (card) card.classList.toggle('changed', isChanged);
-  countChanges();
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('count-form');
-  if (!form) return;
-
-  // Mark any pre-existing changes on load (e.g. partially entered data).
-  document.querySelectorAll('.count-input').forEach(inp => onCountInput(inp));
-
-  // On submit: disable unchanged inputs so the server only sees the changes.
-  form.addEventListener('submit', (e) => {
-    const changed = countChanges();
-    if (changed === 0) {
-      e.preventDefault();
-      alert('変更された項目はありません。');
-      return;
+// ── Sanity check on save (outliers) + disable unchanged inputs ────────────
+function confirmSave() {
+  // Outlier scan — same logic as original SP, but only on changed rows.
+  const outliers = [];
+  document.querySelectorAll('.count-input.changed').forEach(inp => {
+    const sys = parseInt(inp.dataset.system) || 0;
+    const val = parseInt(inp.value);
+    if (isNaN(val)) return;
+    const muchHigher = val >= 10 && val > Math.max(sys * 5, sys + 10);
+    const muchLower  = sys >= 10 && val < sys * 0.2;
+    if (muchHigher || muchLower) {
+      const card = inp.closest('.item-card');
+      const name = card.querySelector('.item-name').childNodes[0].nodeValue.trim();
+      outliers.push({ name, sys, val });
     }
-    document.querySelectorAll('.count-input').forEach(inp => {
-      if ((inp.value || '') === (inp.dataset.original || '')) {
-        inp.disabled = true;
-      }
-    });
   });
-});
+  if (outliers.length > 0) {
+    let msg = I18N_OUTLIER.intro + "\n\n";
+    outliers.forEach(o => {
+      msg += `• ${o.name}\n  ${I18N_OUTLIER.system}: ${o.sys}  →  ${I18N_OUTLIER.entered}: ${o.val}\n\n`;
+    });
+    msg += I18N_OUTLIER.confirm;
+    if (!confirm(msg)) return false;
+  }
+
+  // Disable all untouched / unchanged inputs so the browser only submits
+  // the ones the operator actually changed. Server skips rows with empty
+  // count_qty_i, so this gives us item-by-item save semantics for free.
+  let submitCount = 0;
+  document.querySelectorAll('.count-input').forEach(inp => {
+    const touched = inp.dataset.touched === "1";
+    const changed = touched && (inp.value || '') !== (inp.dataset.original || '');
+    if (!changed) {
+      inp.disabled = true;
+    } else {
+      submitCount += 1;
+    }
+  });
+  if (submitCount === 0) {
+    alert('変更された項目はありません。');
+    return false;
+  }
+  return true;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+updateCounters();
 </script>
 </body>
 </html>
