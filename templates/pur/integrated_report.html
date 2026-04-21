@@ -1,0 +1,204 @@
+{% extends "layout/base.html" %}
+
+{% block title %}{{ t("report.integrated.title") }}{% endblock %}
+
+{% block content %}
+<style>
+  .int-wrap {
+    overflow: auto;
+    max-height: calc(100vh - 180px);
+    border: 1px solid #ccc;
+    background: #fff;
+    position: relative;
+  }
+  .int-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+    min-width: 100%;
+  }
+  .int-table th, .int-table td {
+    border-right: 1px solid #e0e0e0;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 4px 8px;
+    white-space: nowrap;
+  }
+  .int-table thead th {
+    position: sticky;
+    background: #f4f4f4;
+    z-index: 2;
+  }
+  .int-table thead tr:nth-child(1) th { top: 0; }
+  .int-table thead tr:nth-child(2) th {
+    top: 29px;           /* row 1 height */
+    background: #ececec;
+    font-weight: normal;
+    color: #555;
+    border-bottom: 2px solid #999;
+  }
+  .int-table .col-item {
+    position: sticky;
+    left: 0;
+    background: #fff;
+    z-index: 1;
+    min-width: 200px;
+    max-width: 260px;
+    border-right: 2px solid #aaa;
+    vertical-align: top;
+    white-space: normal;
+  }
+  .int-table .col-metric {
+    position: sticky;
+    left: 200px;
+    background: #fff;
+    z-index: 1;
+    min-width: 64px;
+    color: #555;
+    border-right: 2px solid #aaa;
+    text-align: center;
+  }
+  .int-table thead th.col-item,
+  .int-table thead th.col-metric {
+    z-index: 3;
+  }
+  .int-table td.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .int-table td.missing {
+    color: #bbb;
+    text-align: right;
+  }
+  .item-group-first td, .item-group-first th {
+    border-top: 2px solid #888;
+  }
+  .metric-begin td.col-metric { background: #f6f9ff; }
+  .metric-pur   td.col-metric { background: #f0fff3; }
+  .metric-used  td.col-metric { background: #fff7f0; }
+  .metric-end   td.col-metric { background: #faf3ff; }
+  .ym-group-end { border-right: 2px solid #aaa !important; }
+  .item-title { font-weight: 600; }
+  .item-code  { color: #888; font-size: 0.85em; margin-top: 2px; }
+  .last-count { color: #666; font-size: 0.8em; margin-top: 4px; }
+  .last-count.stale { color: #c0392b; }
+  .item-supplier { color: #888; font-size: 0.8em; margin-top: 2px; }
+
+  .filter-bar { display: flex; gap: 16px; align-items: end; flex-wrap: wrap; margin-bottom: 12px; }
+  .filter-bar label { display: flex; flex-direction: column; font-size: 0.9em; }
+</style>
+
+<h2>{{ t("report.integrated.title") }}</h2>
+
+<form method="get" class="filter-bar">
+  <label>
+    <strong>{{ t("form.store") }}</strong>
+    <select name="store_id" onchange="this.form.submit()">
+      <option value="">{{ t("common.select_store_option") }}</option>
+      {% for s in mst_stores %}
+        <option value="{{ s.id }}"
+                {% if selected_store_id == s.id %}selected{% endif %}>
+          {{ s.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>
+    <strong>{{ t("form.supplier") }}</strong>
+    <select name="supplier_id">
+      <option value="">{{ t("report.integrated.all_suppliers") }}</option>
+      {% for sp in suppliers %}
+        <option value="{{ sp.id }}"
+                {% if selected_supplier_id == sp.id %}selected{% endif %}>
+          {{ sp.name }}
+        </option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>
+    <strong>{{ t("report.integrated.from_ym") }}</strong>
+    <input type="month" name="from_ym" value="{{ from_ym }}">
+  </label>
+  <label>
+    <strong>{{ t("report.integrated.to_ym") }}</strong>
+    <input type="month" name="to_ym" value="{{ to_ym }}">
+  </label>
+  <button type="submit">{{ t("form.show") }}</button>
+</form>
+
+{% if not selected_store_id %}
+  {# empty-state: store dropdown above is self-explanatory #}
+{% elif not item_rows %}
+  <p style="color:#666;">{{ t("common.no_data") }}</p>
+{% else %}
+<div class="int-wrap">
+  <table class="int-table">
+    <thead>
+      <tr>
+        <th class="col-item" rowspan="2">{{ t("usage.item") }}</th>
+        <th class="col-metric" rowspan="2">{{ t("report.integrated.metric") }}</th>
+        {% for ym in month_keys %}
+          <th colspan="3" class="ym-group-end">{{ ym }}</th>
+        {% endfor %}
+      </tr>
+      <tr>
+        {% for ym in month_keys %}
+          <th>{{ t("report.integrated.price") }}</th>
+          <th>{{ t("report.integrated.qty") }}</th>
+          <th class="ym-group-end">{{ t("report.integrated.amount") }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in item_rows %}
+      {# 4 sub-rows per item in the order from the spec image #}
+      {% set metrics = [
+        ('begin', 'metric-begin'),
+        ('pur',   'metric-pur'),
+        ('used',  'metric-used'),
+        ('end',   'metric-end'),
+      ] %}
+      {% for metric_key, metric_class in metrics %}
+        <tr class="{{ metric_class }}{% if loop.first %} item-group-first{% endif %}">
+          {% if loop.first %}
+            <td class="col-item" rowspan="4">
+              <div class="item-title">{{ item.item_name }}</div>
+              <div class="item-code">{{ item.item_code }}</div>
+              {% if item.supplier_name and not selected_supplier_id %}
+                <div class="item-supplier">{{ item.supplier_name }}</div>
+              {% endif %}
+              {% if item.last_count_date %}
+                <div class="last-count">
+                  {{ t("report.integrated.last_count") }}：{{ item.last_count_date }}
+                </div>
+              {% else %}
+                <div class="last-count stale">
+                  {{ t("report.integrated.no_count") }}
+                </div>
+              {% endif %}
+            </td>
+          {% endif %}
+          <td class="col-metric">{{ t("report.integrated." ~ metric_key) }}</td>
+          {% for ym in month_keys %}
+            {% set mo = item.months[ym] %}
+            {% set price = mo[metric_key ~ "_price"] %}
+            {% set qty   = mo[metric_key ~ "_qty"] %}
+            {% set amt   = mo[metric_key ~ "_amount"] %}
+            <td class="{% if price is none %}missing{% else %}num{% endif %}">
+              {% if price is none %}—{% else %}¥{{ "{:,.0f}".format(price) }}{% endif %}
+            </td>
+            <td class="{% if qty is none %}missing{% else %}num{% endif %}">
+              {% if qty is none %}—{% else %}{{ "{:,.0f}".format(qty) }}{% endif %}
+            </td>
+            <td class="ym-group-end {% if amt is none %}missing{% else %}num{% endif %}">
+              {% if amt is none %}—{% else %}¥{{ "{:,.0f}".format(amt) }}{% endif %}
+            </td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% endblock %}

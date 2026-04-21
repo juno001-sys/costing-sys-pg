@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from flask import redirect, render_template, request, url_for, g
+from flask import render_template, request, g
 from utils.access_scope import (
     get_accessible_stores,
     normalize_accessible_store_id,
@@ -27,7 +27,6 @@ def _parse_ym(raw: str | None, fallback: str) -> str:
 
 
 def _ym_range(from_ym: str, to_ym: str) -> list[str]:
-    """Inclusive month list between from_ym and to_ym (hard-capped at 60)."""
     y1, m1 = map(int, from_ym.split("-"))
     y2, m2 = map(int, to_ym.split("-"))
     out: list[str] = []
@@ -56,13 +55,14 @@ def _ym_next_first(ym: str) -> str:
     return f"{y:04d}-{m:02d}-01"
 
 
-@reports_bp.route("/supplier/<int:supplier_id>/integrated", methods=["GET"])
-def integrated_supplier(supplier_id: int):
-    """Integrated purchase + usage drill-down for one supplier.
+@reports_bp.route("/integrated", methods=["GET"])
+def integrated_report():
+    """Integrated purchase + usage per item per month.
 
-    Per item, per month: shows 期首・仕入・使用・期末 (begin / purchase
-    / used / end), each with 数量 / 金額 / 平均単価. Default window is
-    the last 12 months; the user can widen it to look at past data.
+    Each item shows 4 sub-rows (期首・仕入・使用・繰越); each month
+    column contains 3 sub-cells (単価・数量・金額). Default window
+    is the last 12 months; operator can widen via 開始月/終了月.
+    Store filter is required; supplier filter is optional.
     """
     db = get_db()
 
@@ -88,36 +88,52 @@ def integrated_supplier(supplier_id: int):
         from_ym, to_ym = to_ym, from_ym
     month_keys = _ym_range(from_ym, to_ym)
 
-    # --- Supplier name ---
-    supplier_row = db.execute(
-        "SELECT id, code, name FROM pur_suppliers WHERE id = %s",
-        [supplier_id],
-    ).fetchone()
-    if supplier_row is None:
-        return redirect(url_for("reports.purchase_report"))
-    supplier_name = supplier_row["name"]
+    company_id = getattr(g, "current_company_id", None)
+
+    # --- Supplier filter (optional) ---
+    supplier_id_raw = (request.args.get("supplier_id") or "").strip()
+    try:
+        selected_supplier_id: int | None = int(supplier_id_raw) if supplier_id_raw else None
+    except ValueError:
+        selected_supplier_id = None
+
+    # --- Suppliers list for the filter dropdown (scoped to selected store) ---
+    suppliers: list = []
+    if selected_store_id:
+        suppliers = db.execute(
+            """
+            SELECT s.id, s.code, s.name
+            FROM pur_suppliers s
+            JOIN pur_store_suppliers ss
+              ON s.id = ss.supplier_id
+             AND ss.store_id = %s
+             AND ss.is_active = 1
+            WHERE s.is_active = 1
+              AND s.company_id = %s
+            ORDER BY s.code
+            """,
+            (selected_store_id, company_id),
+        ).fetchall()
 
     # --- Empty state: no store selected ---
     if not selected_store_id:
         return render_template(
-            "pur/purchase_report_supplier_integrated.html",
+            "pur/integrated_report.html",
             mst_stores=mst_stores,
             selected_store_id=None,
-            supplier_id=supplier_id,
-            supplier_name=supplier_name,
+            suppliers=suppliers,
+            selected_supplier_id=selected_supplier_id,
             month_keys=month_keys,
             from_ym=from_ym,
             to_ym=to_ym,
             item_rows=[],
         )
 
-    company_id = getattr(g, "current_company_id", None)
     start_date = _ym_first_day(from_ym)
     end_date = _ym_next_first(to_ym)
 
-    # --- 1) Purchases per item per month ---
-    pur_rows = db.execute(
-        """
+    # --- 1) Purchases per item per month (optionally supplier-filtered) ---
+    pur_sql = """
         SELECT
             p.item_id,
             TO_CHAR(p.delivery_date, 'YYYY-MM') AS ym,
@@ -131,15 +147,16 @@ def integrated_supplier(supplier_id: int):
           AND p.delivery_date < %s
           AND p.store_id = %s
           AND st.company_id = %s
-          AND i.supplier_id = %s
-        GROUP BY p.item_id, ym
-        """,
-        [start_date, end_date, selected_store_id, company_id, supplier_id],
-    ).fetchall()
+    """
+    pur_params: list = [start_date, end_date, selected_store_id, company_id]
+    if selected_supplier_id:
+        pur_sql += " AND i.supplier_id = %s"
+        pur_params.append(selected_supplier_id)
+    pur_sql += " GROUP BY p.item_id, ym"
+    pur_rows = db.execute(pur_sql, pur_params).fetchall()
 
-    # --- 2) Month-end stock count per item per month (latest count in month) ---
-    inv_rows = db.execute(
-        """
+    # --- 2) Month-end stock counts per item ---
+    inv_sql = """
         WITH latest_in_month AS (
           SELECT
             sc.item_id,
@@ -155,24 +172,23 @@ def integrated_supplier(supplier_id: int):
           WHERE sc.count_date >= %s
             AND sc.count_date < %s
             AND sc.store_id = %s
-            AND i.supplier_id = %s
             AND i.company_id = %s
+    """
+    inv_params: list = [start_date, end_date, selected_store_id, company_id]
+    if selected_supplier_id:
+        inv_sql += " AND i.supplier_id = %s"
+        inv_params.append(selected_supplier_id)
+    inv_sql += """
         )
         SELECT item_id, ym, count_date, counted_qty
         FROM latest_in_month
         WHERE rn = 1
-        """,
-        [start_date, end_date, selected_store_id, supplier_id, company_id],
-    ).fetchall()
+    """
+    inv_rows = db.execute(inv_sql, inv_params).fetchall()
 
-    # --- 3) Per-count latest purchase unit price at-or-before count_date.
-    #        Used to value end-of-month stock. ---
-    # Simple approach: for each (item, count_date) find the latest purchase
-    # unit_price at or before that date for the same store.
+    # --- 3) Per-count end valuation (latest purchase unit price at/before count_date) ---
     end_valuation: dict[tuple[int, str], float] = {}
     for r in inv_rows:
-        iid = r["item_id"]
-        cd = r["count_date"]
         price_row = db.execute(
             """
             SELECT unit_price
@@ -184,39 +200,47 @@ def integrated_supplier(supplier_id: int):
             ORDER BY delivery_date DESC, id DESC
             LIMIT 1
             """,
-            [iid, selected_store_id, cd],
+            [r["item_id"], selected_store_id, r["count_date"]],
         ).fetchone()
-        unit_price = float(price_row["unit_price"]) if price_row and price_row["unit_price"] is not None else 0.0
-        end_valuation[(iid, r["ym"])] = unit_price
+        unit_price = (
+            float(price_row["unit_price"])
+            if price_row and price_row["unit_price"] is not None
+            else 0.0
+        )
+        end_valuation[(r["item_id"], r["ym"])] = unit_price
 
-    # --- Item meta ---
-    items_meta = db.execute(
-        """
-        SELECT id, code, name
-        FROM mst_items
-        WHERE supplier_id = %s
-          AND company_id = %s
-        """,
-        [supplier_id, company_id],
-    ).fetchall()
-    item_meta = {r["id"]: r for r in items_meta}
+    # --- Item meta (+ supplier name) ---
+    items_sql = """
+        SELECT i.id, i.code, i.name, i.supplier_id, s.name AS supplier_name
+        FROM mst_items i
+        LEFT JOIN pur_suppliers s ON i.supplier_id = s.id
+        WHERE i.company_id = %s
+          AND i.is_active = 1
+    """
+    items_params: list = [company_id]
+    if selected_supplier_id:
+        items_sql += " AND i.supplier_id = %s"
+        items_params.append(selected_supplier_id)
+    items_meta_rows = db.execute(items_sql, items_params).fetchall()
+    item_meta = {r["id"]: r for r in items_meta_rows}
 
-    # --- Latest stock count date per item (any date, for freshness hint) ---
-    last_count_rows = db.execute(
-        """
+    # --- Latest stock-count date per item (freshness hint) ---
+    last_count_sql = """
         SELECT sc.item_id, MAX(sc.count_date) AS last_date
         FROM stock_counts sc
         JOIN mst_items i ON sc.item_id = i.id
         WHERE sc.store_id = %s
-          AND i.supplier_id = %s
           AND i.company_id = %s
-        GROUP BY sc.item_id
-        """,
-        [selected_store_id, supplier_id, company_id],
-    ).fetchall()
+    """
+    last_params: list = [selected_store_id, company_id]
+    if selected_supplier_id:
+        last_count_sql += " AND i.supplier_id = %s"
+        last_params.append(selected_supplier_id)
+    last_count_sql += " GROUP BY sc.item_id"
+    last_count_rows = db.execute(last_count_sql, last_params).fetchall()
     last_count_by_item = {r["item_id"]: r["last_date"] for r in last_count_rows}
 
-    # --- Collect items with any activity in the window ---
+    # --- Active items (anything with either purchases or counts in window) ---
     active_ids: set[int] = set()
     for r in pur_rows:
         active_ids.add(r["item_id"])
@@ -240,11 +264,11 @@ def integrated_supplier(supplier_id: int):
             "item_id": iid,
             "item_code": meta["code"] or "",
             "item_name": meta["name"] or "",
+            "supplier_name": meta.get("supplier_name") if hasattr(meta, "get") else meta["supplier_name"],
             "last_count_date": last_count_by_item.get(iid),
             "months": {ym: _blank_month_cell() for ym in month_keys},
         }
 
-    # Fill purchases
     for r in pur_rows:
         iid, ym = r["item_id"], r["ym"]
         if iid in per_item and ym in per_item[iid]["months"]:
@@ -253,7 +277,6 @@ def integrated_supplier(supplier_id: int):
             mo["pur_amount"] = float(r["amount"] or 0)
             mo["pur_price"] = (mo["pur_amount"] / mo["pur_qty"]) if mo["pur_qty"] else None
 
-    # Fill end-of-month counts
     for r in inv_rows:
         iid, ym = r["item_id"], r["ym"]
         if iid in per_item and ym in per_item[iid]["months"]:
@@ -264,7 +287,7 @@ def integrated_supplier(supplier_id: int):
             mo["end_amount"] = eq * up
             mo["end_price"] = up if eq else None
 
-    # Derive begin (from prev month end) and used (= begin + pur − end)
+    # Derive 期首 (from prev month 繰越) and 使用 (= begin + pur − end)
     for item in per_item.values():
         prev_end_qty: float | None = None
         prev_end_amount: float | None = None
@@ -285,14 +308,14 @@ def integrated_supplier(supplier_id: int):
                 prev_end_amount = mo["end_amount"]
                 prev_end_price = mo["end_price"]
 
-    item_rows = sorted(per_item.values(), key=lambda x: x["item_code"] or "")
+    item_rows = sorted(per_item.values(), key=lambda x: (x["item_code"] or "", x["item_id"]))
 
     return render_template(
-        "pur/purchase_report_supplier_integrated.html",
+        "pur/integrated_report.html",
         mst_stores=mst_stores,
         selected_store_id=selected_store_id,
-        supplier_id=supplier_id,
-        supplier_name=supplier_name,
+        suppliers=suppliers,
+        selected_supplier_id=selected_supplier_id,
         month_keys=month_keys,
         from_ym=from_ym,
         to_ym=to_ym,

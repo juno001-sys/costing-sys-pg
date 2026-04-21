@@ -471,6 +471,13 @@
               💰 {{ t("nav.cost_report") }}</a>
           </li>
           {% endif %}
+          {% if nav_allowed('integrated_report') %}
+          <li>
+            <a href="{{ url_for('reports.integrated_report') }}"
+              class="{% if request.endpoint == 'reports.integrated_report' %}active{% endif %}">
+              🧮 {{ t("nav.integrated_report") }}</a>
+          </li>
+          {% endif %}
           <li class="nav-sep"></li>
           {% if nav_allowed('suppliers_master') %}
           <li>
