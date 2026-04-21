@@ -1,127 +1,262 @@
-{% extends "layout/base.html" %} {% block nav %} {% if not g.is_system_admin %}
-{{ super() }} {% endif %} {% endblock %} {% block content %}
+{% extends "layout/base.html" %}
+{% block title %}System Admin{% endblock %}
+{% block nav %}{% if not g.is_system_admin %}{{ super() }}{% endif %}{% endblock %}
+{% block content %}
+
+{% set active = 'system_admin' %}
+{% include "admin/_admin_tabs.html" %}
 
 <style>
-  .admin-tabs { display:flex; gap:0; margin-bottom:24px; border-bottom:2px solid #ddd; }
-  .admin-tabs a {
-    padding:10px 20px; text-decoration:none; font-size:14px; font-weight:600;
-    color:#555; border:1px solid #ddd; border-bottom:none;
-    background:#f5f5f5; margin-right:4px; border-radius:6px 6px 0 0;
+  .section { margin-top: 22px; }
+  .section h3 {
+    margin: 0 0 8px 0; font-size: 16px; color: #3a6c3e;
+    border-bottom: 2px solid #d4e0cc; padding-bottom: 4px;
+    display: flex; align-items: center; gap: 8px;
   }
-  .admin-tabs a.active { background:#fff; color:#5a8a5d; border-bottom:2px solid #fff; margin-bottom:-2px; }
-  .admin-tabs a:hover:not(.active) { background:#eee; }
+  .section h3 small { color: #888; font-weight: 400; font-size: 11px; }
+
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px;
+                background: white; }
+  .data-table thead { background: #f0f5ec; }
+  .data-table th, .data-table td {
+    padding: 8px 10px; border: 1px solid #e0e8db; text-align: left;
+  }
+  .data-table th { color: #3a6c3e; font-size: 12px; }
+  .data-table td.num { text-align: right; }
+  .data-table tr:hover { background: #fafbf8; }
+
+  .tier-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    color: white; font-size: 11px; font-weight: 700;
+  }
+  .tier-badge.entry    { background: #a0a0a0; }
+  .tier-badge.standard { background: #3a6c3e; }
+  .tier-badge.premium  { background: #5a8a5d; }
+  .tier-badge.none     { background: #ccc; color: #666; }
+
+  .sys-role-pill {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 11px; font-weight: 600; color: white;
+  }
+  .sys-role-pill.super_admin { background: #c75a4a; }
+  .sys-role-pill.engineer    { background: #6a8caf; }
+  .sys-role-pill.sales       { background: #5a8a5d; }
+  .sys-role-pill.accounting  { background: #d29a55; }
+
+  .empty-row { color: #888; padding: 16px; text-align: center; }
+
+  .action-btn {
+    display: inline-block; padding: 4px 10px; font-size: 11px;
+    background: #5a8a5d; color: white; text-decoration: none;
+    border-radius: 4px; margin-right: 6px;
+  }
+  .action-btn:hover { background: #3a6c3e; }
+  .action-btn.secondary { background: #eee; color: #444; }
+  .action-btn.secondary:hover { background: #ddd; }
 </style>
 
-<div class="admin-tabs">
-  <a href="{{ url_for('admin_system_home') }}" class="active">System Admin</a>
-  <a href="{{ url_for('admin_system_invoices') }}">Invoices</a>
-  <a href="{{ url_for('dev_dashboard') }}">Developer Dashboard</a>
-</div>
-
-<div style="margin-bottom: 16px">
-  <a
-    href="{{ url_for('admin_system_company_new') }}"
-    style="
-      display: inline-block;
-      padding: 8px 12px;
-      border: 1px solid #ccc;
-      text-decoration: none;
-      border-radius: 6px;
-      margin-right: 8px;
-      background: #f5f5f5;
-    "
-  >
-    + Register New Company
+<div style="margin-bottom: 8px; display: flex; gap: 10px;">
+  <a class="action-btn" href="{{ url_for('admin_system_company_new') }}">
+    + Register New Client Company
   </a>
 </div>
 
-<hr />
+<!-- ──────────────── Client Companies (paying / trial) ──────────────── -->
+<div class="section">
+  <h3>🏢 Client Companies <small>(paying or in trial)</small></h3>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Code</th>
+        <th>Name</th>
+        <th>Created</th>
+        <th class="num">Users</th>
+        <th class="num">Stores</th>
+        <th>Tier</th>
+        <th>Trial Ends</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in client_companies %}
+        <tr>
+          <td>{{ c.id }}</td>
+          <td>{{ c.code or "" }}</td>
+          <td><strong>{{ c.name }}</strong></td>
+          <td style="font-size:11px;">{{ c.created_at.strftime("%Y-%m-%d") if c.created_at else "" }}</td>
+          <td class="num">{{ c.user_count }}</td>
+          <td class="num">{{ c.store_count }}</td>
+          <td>
+            {% if c.tier %}
+              <span class="tier-badge {{ c.tier }}">{{ c.tier|upper }}</span>
+            {% else %}
+              <span class="tier-badge none">—</span>
+            {% endif %}
+          </td>
+          <td style="font-size:11px;">{{ c.trial_ends_at or "" }}</td>
+          <td>
+            <a href="{{ url_for('admin_system_health_company', company_id=c.id) }}"
+               class="action-btn secondary">👤 Users</a>
+            <a href="{{ url_for('admin_system_company_features', company_id=c.id) }}"
+               class="action-btn">⚙ Features</a>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="9" class="empty-row">No client companies yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
-<h3>Companies</h3>
+<!-- ──────────────── Internal accounts (Kurajika own) ──────────────── -->
+{% if internal_companies %}
+<div class="section">
+  <h3>🏠 Internal Accounts <small>(Kurajika's own — used for breakfast staff & smoke testing)</small></h3>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Code</th>
+        <th>Name</th>
+        <th class="num">Users</th>
+        <th class="num">Stores</th>
+        <th>Tier</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in internal_companies %}
+        <tr style="background:#fbf4e6;">
+          <td>{{ c.id }}</td>
+          <td>{{ c.code or "" }}</td>
+          <td><strong>{{ c.name }}</strong>
+            <span style="color:#8a6a32; font-size:11px;">(internal)</span></td>
+          <td class="num">{{ c.user_count }}</td>
+          <td class="num">{{ c.store_count }}</td>
+          <td>
+            {% if c.tier %}
+              <span class="tier-badge {{ c.tier }}">{{ c.tier|upper }}</span>
+            {% else %}
+              <span class="tier-badge none">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('admin_system_health_company', company_id=c.id) }}"
+               class="action-btn secondary">👤 Users</a>
+            <a href="{{ url_for('admin_system_company_features', company_id=c.id) }}"
+               class="action-btn">⚙ Features</a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
 
-<table border="1" cellpadding="6" cellspacing="0">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Code</th>
-      <th>Name</th>
-      <th>Created</th>
-      <th>Users</th>
-      <th>Stores</th>
-      <th>Tier</th>
-      <th>Trial Ends</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
+<!-- ──────────────── Sys Admins (Kurajika staff) ──────────────── -->
+{% set is_super = 'super_admin' in (g.current_sys_roles or []) %}
+<div class="section">
+  <h3>🛡 Sys Admins <small>(Kurajika staff — independent of client companies)</small></h3>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Email</th>
+        <th>Name</th>
+        <th style="min-width:280px;">Sys Roles</th>
+        <th>Active</th>
+        <th>Created</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in sys_admins %}
+        <tr>
+          <td>{{ u.id }}</td>
+          <td>{{ u.email }}</td>
+          <td>{{ u.name or "" }}</td>
+          <td>
+            {% if is_super %}
+              <form method="post"
+                    action="{{ url_for('admin_system_assign_sys_role', user_id=u.id) }}"
+                    style="margin:0; display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                {% for r in sys_roles %}
+                  <label style="font-size:11px; display:inline-flex; align-items:center; gap:3px;">
+                    <input type="checkbox" name="sys_role" value="{{ r }}"
+                           {% if r in u.sys_role_list %}checked{% endif %}>
+                    <span class="sys-role-pill {{ r }}">{{ r }}</span>
+                  </label>
+                {% endfor %}
+                <button type="submit" style="font-size:11px; padding:3px 8px;
+                        background:#5a8a5d; color:white; border:none; border-radius:4px;
+                        cursor:pointer;">Save</button>
+              </form>
+            {% else %}
+              {% for r in u.sys_role_list %}
+                <span class="sys-role-pill {{ r }}" style="margin-right:3px;">{{ r }}</span>
+              {% endfor %}
+            {% endif %}
+          </td>
+          <td>{{ "✓" if u.is_active else "—" }}</td>
+          <td style="font-size:11px;">{{ u.created_at.strftime("%Y-%m-%d") if u.created_at else "" }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="empty-row">No sys admins.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
 
-  <tbody>
-    {% for c in companies %}
-    <tr>
-      <td>{{ c.id }}</td>
-      <td>{{ c.code or "" }}</td>
-      <td>{{ c.name }}</td>
-      <td>{{ c.created_at }}</td>
-      <td>{{ c.user_count }}</td>
-      <td>{{ c.store_count }}</td>
-      <td>
-        {% if c.tier %}
-          <span style="display:inline-block; padding:2px 8px; border-radius:10px;
-                       background:{% if c.tier == 'premium' %}#5a8a5d{% elif c.tier == 'standard' %}#3a6c3e{% else %}#a0a0a0{% endif %};
-                       color:white; font-size:11px;">
-            {{ c.tier|upper }}
-          </span>
-        {% else %}
-          <span style="color:#c75a4a; font-size:11px;">—</span>
-        {% endif %}
-      </td>
-      <td style="font-size:11px;">{{ c.trial_ends_at or "" }}</td>
-      <td>
-        <a href="{{ url_for('admin_system_company_features', company_id=c.id) }}"
-           style="font-size:12px;">⚙ Manage Features</a>
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+  {% if is_super %}
+    <!-- Register-new-sys-admin form (super_admin only) -->
+    <details style="margin-top:14px; padding:10px; border:1px solid #d4e0cc;
+                    border-radius:6px; background:#f0f5ec;">
+      <summary style="cursor:pointer; font-weight:600; color:#3a6c3e;">
+        + Register New Sys Admin
+      </summary>
+      <form method="post" action="{{ url_for('admin_system_sys_admin_new') }}"
+            style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:10px; max-width:680px;">
+        <div>
+          <label style="font-size:11px; color:#555;">Email *</label>
+          <input name="email" type="email" required
+                 style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px;">
+        </div>
+        <div>
+          <label style="font-size:11px; color:#555;">Name</label>
+          <input name="name"
+                 style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px;">
+        </div>
+        <div>
+          <label style="font-size:11px; color:#555;">Initial password *</label>
+          <input name="password" type="password" required
+                 style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px;">
+        </div>
+        <div>
+          <label style="font-size:11px; color:#555;">Sys Roles * (pick at least one)</label>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; padding:4px;">
+            {% for r in sys_roles %}
+              <label style="font-size:11px; display:inline-flex; align-items:center; gap:3px;">
+                <input type="checkbox" name="sys_role" value="{{ r }}"
+                       {% if r != 'super_admin' %}checked{% endif %}>
+                <span class="sys-role-pill {{ r }}">{{ r }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </div>
+        <div style="grid-column: 1 / -1; display:flex; justify-content:flex-end; gap:8px;">
+          <button type="submit"
+                  style="padding:6px 14px; background:#5a8a5d; color:white;
+                         border:none; border-radius:4px; cursor:pointer; font-size:13px;">
+            Create Sys Admin
+          </button>
+        </div>
+      </form>
+      <p style="font-size:11px; color:#666; margin-top:8px;">
+        New sys admin will be added to Kurajika's internal company (<code>id=1</code>)
+        as <code>admin</code> for session purposes. They log in via the
+        <strong>System Admin</strong> form on the login page.
+      </p>
+    </details>
+  {% endif %}
+</div>
 
-<br />
-<hr />
-<br />
-
-<h3>Users by Company</h3>
-
-{% for c in companies %}
-
-<h4>{{ c.name }} (ID: {{ c.id }})</h4>
-
-<table border="1" cellpadding="6" cellspacing="0">
-  <thead>
-    <tr>
-      <th>User ID</th>
-      <th>Email</th>
-      <th>Name</th>
-      <th>Role</th>
-      <th>System Admin</th>
-      <th>Active</th>
-      <th>Created</th>
-    </tr>
-  </thead>
-
-  <tbody>
-    {% for u in users if u.company_id == c.id %}
-    <tr>
-      <td>{{ u.id }}</td>
-      <td>{{ u.email }}</td>
-      <td>{{ u.name or "" }}</td>
-      <td>{{ u.role }}</td>
-      <td>{{ "Yes" if u.is_system_admin else "No" }}</td>
-      <td>{{ "Yes" if u.is_active else "No" }}</td>
-      <td>{{ u.created_at }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-
-<br />
-
-{% endfor %} {% endblock %}
+{% endblock %}

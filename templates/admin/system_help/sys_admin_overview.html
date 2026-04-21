@@ -1,0 +1,159 @@
+{% extends "admin/system_help/_layout.html" %}
+{% block syshelp_body %}
+
+<h1>Sys Admin Roles &amp; Permissions</h1>
+
+<p>
+  Every sys admin has one of four roles. Roles are stored in
+  <code>sys_users.sys_role</code> and gate access to specific screens.
+  All sys admins still see the <strong>System Admin</strong> tab (the home
+  with company list); the other tabs appear only for the relevant roles.
+</p>
+
+<div class="callout">
+  <strong>Default:</strong> when a new sys admin is created, they get
+  <code>sys_role = 'super_admin'</code> automatically. The current Super
+  Admin should change it to the appropriate function role afterwards.
+</div>
+
+<h2>The four roles</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th style="width:140px;">Role</th>
+      <th>Can access</th>
+      <th>Cannot access</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="role-badge super_admin">super_admin</span></td>
+      <td>
+        <strong>Everything.</strong> Plus: only role that can change other
+        sys admins' <code>sys_role</code>. The "founder" / "boss" role.
+      </td>
+      <td>—</td>
+    </tr>
+    <tr>
+      <td><span class="role-badge engineer">engineer</span></td>
+      <td>
+        <code>System Admin</code> home, <code>Client Health</code>
+        (technical signals: errors, slow requests),
+        <code>Developer Dashboard</code> (system-wide perf metrics).
+      </td>
+      <td>
+        Tier setting on companies, invoice management, sys-role assignment.
+      </td>
+    </tr>
+    <tr>
+      <td><span class="role-badge sales">sales</span></td>
+      <td>
+        <code>System Admin</code> home, <code>Client Health</code>
+        (engagement signals: logins, usage),
+        <code>Manage Features</code> on each client (set tier, override
+        feature toggles).
+      </td>
+      <td>
+        Invoice management, Developer Dashboard, sys-role assignment.
+      </td>
+    </tr>
+    <tr>
+      <td><span class="role-badge accounting">accounting</span></td>
+      <td>
+        <code>System Admin</code> home, <code>Invoices</code> (issue,
+        mark paid, generate monthly batch).
+      </td>
+      <td>
+        Client Health, tier setting, Developer Dashboard, sys-role
+        assignment.
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Per-screen access matrix</h2>
+
+<p>Defined in <code>utils/sys_roles.py: SCREEN_ROLES</code>. Edit there if
+you add a new sys-admin screen.</p>
+
+<table>
+  <thead>
+    <tr><th>Screen</th><th>Allowed sys roles</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>System Admin home (<code>/admin/system</code>)</td>
+      <td>super, engineer, sales, accounting</td>
+    </tr>
+    <tr>
+      <td>Manage Features (set tier, override toggles)</td>
+      <td>super, sales</td>
+    </tr>
+    <tr>
+      <td>Client Health (overview + drill-down)</td>
+      <td>super, sales, engineer</td>
+    </tr>
+    <tr>
+      <td>Invoices</td>
+      <td>super, accounting</td>
+    </tr>
+    <tr>
+      <td>Developer Dashboard (<code>/dashboard/dev</code>)</td>
+      <td>super, engineer</td>
+    </tr>
+    <tr>
+      <td>Assign sys role (this dropdown on home)</td>
+      <td>super only</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>How to change a sys admin's role</h2>
+
+<ol>
+  <li>Log in as a <code>super_admin</code>.</li>
+  <li>Open <code>/admin/system</code> → scroll to <strong>🛡 Sys Admins</strong>
+      section at the bottom.</li>
+  <li>Use the <strong>Sys Role</strong> dropdown next to the user's email.
+      Selecting a value submits immediately.</li>
+  <li>Change takes effect on the user's <em>next request</em> — no logout
+      required (we read <code>sys_role</code> from DB on every request).</li>
+  <li>Audit log records the change as
+      <code>action = 'SYS_ROLE_CHANGE'</code> in <code>sys_work_logs</code>.</li>
+</ol>
+
+<div class="callout warn">
+  <strong>Lockout safety:</strong> there's no DB constraint preventing the
+  last super_admin from demoting themselves. Be careful — if you do this and
+  no one else is super_admin, you'd need direct SQL access to recover.
+  Recommended: keep at least 2 super_admins.
+</div>
+
+<h2>Adding a new sys admin</h2>
+
+<p>
+  Currently no UI form for this — sys admins are created via direct DB
+  insert or by repurposing the operator-creation flow with
+  <code>is_system_admin = TRUE</code>. A dedicated "+ Add Sys Admin" form
+  is on the roadmap.
+</p>
+
+<p>SQL recipe (until the form ships):</p>
+
+<pre><code>-- 1. Create the user (use a real password hash — see werkzeug)
+INSERT INTO sys_users
+  (company_id, email, name, password_hash, role, is_active,
+   is_system_admin, sys_role, created_at, updated_at)
+VALUES
+  (1, 'newadmin@kurashima.asia', 'New Admin',
+   'pbkdf2:sha256:...', 'admin', 1,
+   TRUE, 'engineer',  -- pick: engineer / sales / accounting
+   now(), now())
+RETURNING id;
+
+-- 2. Membership in Kurajika's internal company (id=1)
+INSERT INTO sys_user_companies (user_id, company_id, role, is_active)
+VALUES (&lt;new_user_id&gt;, 1, 'admin', 1);</code></pre>
+
+{% endblock %}

@@ -1,6 +1,12 @@
-{% extends "layout/base_app.html" %} {% block title %}Create Company{% endblock
-%} {% block content %}
-<h2>Create Company + First Admin</h2>
+{% extends "layout/base.html" %}
+{% block title %}Register New Client Company{% endblock %}
+{% block nav %}{% if not g.is_system_admin %}{{ super() }}{% endif %}{% endblock %}
+{% block content %}
+
+{% set active = 'system_admin' %}
+{% include "admin/_admin_tabs.html" %}
+
+<h2>Register New Client Company + First Admin</h2>
 
 <form method="post">
   <div>

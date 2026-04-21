@@ -16,23 +16,14 @@ from functools import wraps
 
 from flask import flash, g, redirect, render_template, request, url_for
 
+from utils.sys_roles import sys_role_required
 from views.reports.audit_log import log_event
 
 
 def init_admin_system_invoices_views(app, get_db):
-    def system_admin_required(fn):
-        @wraps(fn)
-        def wrapper(*args, **kwargs):
-            if getattr(g, "current_user", None) is None:
-                return redirect(url_for("login", next=request.full_path))
-            if not getattr(g, "is_system_admin", False):
-                flash("System admin only.")
-                return redirect(url_for("index"))
-            return fn(*args, **kwargs)
-        return wrapper
 
     @app.get("/admin/system/invoices")
-    @system_admin_required
+    @sys_role_required("accounting")
     def admin_system_invoices():
         db = get_db()
         status_filter = request.args.get("status") or "all"
@@ -78,7 +69,7 @@ def init_admin_system_invoices_views(app, get_db):
         )
 
     @app.post("/admin/system/invoices/<int:invoice_id>/mark-paid")
-    @system_admin_required
+    @sys_role_required("accounting")
     def admin_system_invoice_mark_paid(invoice_id):
         db = get_db()
         actor_id = (getattr(g, "current_user", {}) or {}).get("id")
@@ -123,7 +114,7 @@ def init_admin_system_invoices_views(app, get_db):
         return redirect(url_for("admin_system_invoices"))
 
     @app.post("/admin/system/invoices/generate-month")
-    @system_admin_required
+    @sys_role_required("accounting")
     def admin_system_invoices_generate():
         """Manual trigger of the monthly invoice generator. In production
         this would be a cron job — for now sys admin clicks a button."""
