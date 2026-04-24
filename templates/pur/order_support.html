@@ -120,6 +120,7 @@
         <th style="text-align:right;">{{ t("order_support.current_stock") }}</th>
         <th style="text-align:center;">{{ t("inventory.sp.last_count") }}</th>
         <th style="text-align:right;">{{ t("order_support.est_qty") }}</th>
+        <th style="text-align:right; width:90px;">発注数</th>
         <th>{{ t("order_support.status") }}</th>
         <th style="text-align:center; width:60px;">発注対象外</th>
       </tr>
@@ -141,6 +142,15 @@
           {{ item.last_count_date or '—' }}
         </td>
         <td style="text-align:right;">{{ item.est_order_qty or '-' }}</td>
+        <td style="text-align:right;">
+          <input type="number" min="0" step="1"
+                 value="{{ item.draft_qty if item.draft_qty else '' }}"
+                 data-item-id="{{ item.id }}"
+                 data-supplier-id="{{ card.id }}"
+                 class="js-draft-qty"
+                 style="width:70px; text-align:right; padding:2px 4px;">
+          <span class="js-draft-status" style="font-size:10px; color:#888;"></span>
+        </td>
         <td style="text-align:center;">
           {% if item.status == 'shortage' %}
             <span style="color:#c75a4a; font-weight:600;">⚠ {{ t("order_support.status_shortage") }}</span>
@@ -182,5 +192,51 @@
 {% elif selected_store_id %}
 <p style="color:#888;">{{ t("common.no_data") }}</p>
 {% endif %}
+
+<script>
+(function () {
+  // Auto-save 発注数 on change. Each input is tagged with data-item-id and
+  // data-supplier-id; store_id comes from the page URL via the hidden filter form.
+  const storeId = {{ selected_store_id|tojson }};
+  if (!storeId) return;
+
+  const inputs = document.querySelectorAll("input.js-draft-qty");
+  inputs.forEach((el) => {
+    el.addEventListener("change", async (ev) => {
+      const raw = (el.value || "").trim();
+      const qty = raw === "" ? 0 : parseInt(raw, 10);
+      if (isNaN(qty) || qty < 0) {
+        el.value = "";
+        return;
+      }
+      const status = el.nextElementSibling;
+      if (status) status.textContent = "保存中…";
+      try {
+        const res = await fetch("{{ url_for('order_support_draft_save') }}", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({
+            store_id: storeId,
+            supplier_id: parseInt(el.dataset.supplierId, 10),
+            item_id: parseInt(el.dataset.itemId, 10),
+            quantity: qty,
+          }),
+        });
+        if (!res.ok) throw new Error("save failed");
+        if (status) {
+          status.textContent = "✓";
+          status.style.color = "#5a8a5d";
+          setTimeout(() => { status.textContent = ""; }, 1500);
+        }
+      } catch (err) {
+        if (status) {
+          status.textContent = "❌ 失敗";
+          status.style.color = "#c75a4a";
+        }
+      }
+    });
+  });
+})();
+</script>
 
 {% endblock %}

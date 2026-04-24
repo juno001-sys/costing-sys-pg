@@ -10,7 +10,7 @@ For each supplier, shows:
 
 import json
 from datetime import date, timedelta
-from flask import render_template, request, redirect, url_for, g
+from flask import render_template, request, redirect, url_for, g, jsonify
 
 from utils.access_scope import (
     get_accessible_stores,
@@ -215,6 +215,25 @@ def init_order_support_views(app, get_db):
                     for r in stock_rows
                 }
 
+            # ── Load today's draft order qtys (one query for the store) ──
+            # Key: (supplier_id, item_id) → quantity. Used to pre-fill the
+            # qty inputs on the items table.
+            today_date = date.today()
+            draft_rows = db.execute(
+                """
+                SELECT d.supplier_id, i.item_id, i.quantity
+                FROM pur_order_drafts d
+                JOIN pur_order_draft_items i ON i.order_draft_id = d.id
+                WHERE d.company_id = %s
+                  AND d.store_id = %s
+                  AND d.order_date = %s
+                """,
+                (company_id, selected_store_id, today_date),
+            ).fetchall()
+            draft_qty_map = {
+                (r["supplier_id"], r["item_id"]): r["quantity"] for r in draft_rows
+            }
+
             # ── Build supplier cards ─────────────────────────────────
             for supplier in suppliers:
                 sid = supplier["id"]
@@ -306,6 +325,7 @@ def init_order_support_views(app, get_db):
                         "last_count_date": last_count_date,
                         "est_order_qty": est_qty,
                         "status": status,
+                        "draft_qty": draft_qty_map.get((sid, item["id"]), 0),
                     })
 
                 # Sort: shortage first, then low, then ok
@@ -428,6 +448,80 @@ def init_order_support_views(app, get_db):
             pass
         db.commit()
         return _redirect_back_to_order_support()
+
+    @app.route("/order-support/draft/save", methods=["POST"])
+    def order_support_draft_save():
+        """Upsert a single (store, supplier, item, today) draft qty. JSON body:
+        {store_id, supplier_id, item_id, quantity}.
+        Quantity = 0 removes the row; header is kept (operator may add more
+        items later the same day)."""
+        db = get_db()
+        company_id = getattr(g, "current_company_id", None)
+        current_user = getattr(g, "current_user", None) or {}
+        operator_id = current_user.get("id")
+
+        payload = request.get_json(silent=True) or {}
+        try:
+            store_id = int(payload.get("store_id") or 0)
+            supplier_id = int(payload.get("supplier_id") or 0)
+            item_id = int(payload.get("item_id") or 0)
+            quantity = int(payload.get("quantity") or 0)
+        except (TypeError, ValueError):
+            return jsonify({"ok": False, "error": "invalid_payload"}), 400
+
+        if not (company_id and store_id and supplier_id and item_id):
+            return jsonify({"ok": False, "error": "missing_fields"}), 400
+        if quantity < 0:
+            return jsonify({"ok": False, "error": "negative_qty"}), 400
+
+        # Verify the item + supplier belong to the current company (defense in depth)
+        ok_row = db.execute(
+            """
+            SELECT 1
+            FROM mst_items i
+            JOIN pur_suppliers s ON s.id = %s AND s.company_id = i.company_id
+            WHERE i.id = %s AND i.company_id = %s
+            """,
+            (supplier_id, item_id, company_id),
+        ).fetchone()
+        if not ok_row:
+            return jsonify({"ok": False, "error": "not_found"}), 404
+
+        today_date = date.today()
+
+        # Upsert header
+        header_row = db.execute(
+            """
+            INSERT INTO pur_order_drafts
+              (company_id, store_id, supplier_id, order_date, operator_id, status, updated_at)
+            VALUES (%s, %s, %s, %s, %s, 'draft', NOW())
+            ON CONFLICT (company_id, store_id, supplier_id, order_date)
+            DO UPDATE SET operator_id = EXCLUDED.operator_id,
+                          updated_at  = NOW()
+            RETURNING id
+            """,
+            (company_id, store_id, supplier_id, today_date, operator_id),
+        ).fetchone()
+        header_id = header_row["id"]
+
+        if quantity == 0:
+            db.execute(
+                "DELETE FROM pur_order_draft_items WHERE order_draft_id = %s AND item_id = %s",
+                (header_id, item_id),
+            )
+        else:
+            db.execute(
+                """
+                INSERT INTO pur_order_draft_items (order_draft_id, item_id, quantity)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (order_draft_id, item_id)
+                DO UPDATE SET quantity = EXCLUDED.quantity
+                """,
+                (header_id, item_id, quantity),
+            )
+
+        db.commit()
+        return jsonify({"ok": True, "quantity": quantity})
 
     @app.route("/order-support/supplier/<int:supplier_id>/hide", methods=["POST"])
     def order_support_hide_supplier(supplier_id):
