@@ -1,0 +1,187 @@
+{% extends "layout/base.html" %}
+{% block title %}CSV取込プロファイル管理{% endblock %}
+{% block content %}
+
+<style>
+  .csv-matrix {
+    border-collapse: collapse;
+    width: 100%;
+    background: white;
+    border: 1px solid #ddd;
+    font-size: 13px;
+  }
+  .csv-matrix th, .csv-matrix td {
+    border: 1px solid #e0e0e0;
+    padding: 6px 10px;
+    vertical-align: middle;
+  }
+  .csv-matrix thead th {
+    background: #f4f4f4;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .csv-matrix th.field-col,
+  .csv-matrix td.field-col {
+    background: #fafafa;
+    font-weight: 600;
+    white-space: nowrap;
+    position: sticky;
+    left: 0;
+    z-index: 1;
+  }
+  .csv-matrix td input {
+    width: 100%;
+    border: 1px solid #ccc;
+    padding: 4px 6px;
+    border-radius: 3px;
+    font-size: 13px;
+    font-family: ui-monospace, Menlo, monospace;
+  }
+  .required-badge {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 0.75em;
+    padding: 1px 6px;
+    background: #fde2e2;
+    color: #9b3f2d;
+    border-radius: 8px;
+    font-weight: normal;
+  }
+  .profile-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    align-items: center;
+  }
+  .delete-profile-btn {
+    background: #ffe5e5;
+    color: #a33;
+    border: 1px solid #f0a0a0;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+    padding: 2px 8px;
+  }
+</style>
+
+<div style="max-width:1280px; margin:0 auto;">
+  <h2>CSV取込プロファイル管理
+    <span style="font-size:0.7em; color:#777;">（納品書CSVの列名マッピング）</span>
+  </h2>
+
+  <p style="color:#555; line-height:1.7; margin-bottom:18px;">
+    仕入先サイトごとに、CSVの列名（ヘッダー）をCMSの項目に対応付けます。<br>
+    納品書CSVをアップロードすると、ヘッダー行と一致率が最も高いプロファイルが自動選択されます。
+    対応するサイトが増えたら、右上の「＋ 新規プロファイル」から追加してください。
+  </p>
+
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for m in messages %}
+        <div class="flash">{{ m }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div style="display:flex; justify-content:space-between; align-items:center;
+              margin-bottom: 14px;">
+    <a href="{{ url_for('admin_users') }}" style="color:#555;">← ユーザー管理に戻る</a>
+
+    <form method="post" style="display:flex; gap:8px; align-items:center;">
+      <input type="hidden" name="action" value="create_profile">
+      <input type="text" name="name" required placeholder="例: 別の仕入先サイト"
+             style="padding:6px; border:1px solid #ccc; border-radius:3px;
+                    min-width: 180px;">
+      <input type="text" name="description" placeholder="説明（任意）"
+             style="padding:6px; border:1px solid #ccc; border-radius:3px;
+                    min-width: 220px;">
+      <button type="submit"
+              style="padding:6px 14px; background:#2a5aa0; color:white;
+                     border:none; border-radius:3px; cursor:pointer;">
+        ＋ 新規プロファイル
+      </button>
+    </form>
+  </div>
+
+  {% if not profiles %}
+    <div style="padding:28px; background:#fff; border:1px solid #ddd;
+                border-radius:6px; color:#888; text-align:center;">
+      まだプロファイルが登録されていません。右上の「＋ 新規プロファイル」から作成してください。
+    </div>
+  {% else %}
+    <form method="post">
+      <input type="hidden" name="action" value="save_mappings">
+
+      <table class="csv-matrix">
+        <thead>
+          <tr>
+            <th class="field-col" style="min-width:160px;">CMS項目</th>
+            {% for p in profiles %}
+              <th style="min-width:240px;">
+                <div class="profile-header">
+                  <div>
+                    <div>{{ p.name }}</div>
+                    {% if p.description %}
+                      <div style="font-size:11px; color:#777; font-weight:normal;">
+                        {{ p.description }}
+                      </div>
+                    {% endif %}
+                  </div>
+                  <form method="post" style="display:inline;"
+                        onsubmit="return confirm('プロファイル「{{ p.name }}」を削除します。よろしいですか？');">
+                    <input type="hidden" name="action" value="delete_profile">
+                    <input type="hidden" name="profile_id" value="{{ p.id }}">
+                    <button type="submit" class="delete-profile-btn">削除</button>
+                  </form>
+                </div>
+                <input type="hidden" name="profile_id" value="{{ p.id }}" form="csv-matrix-form">
+              </th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for field_key, field_label, required in cms_fields %}
+          <tr>
+            <td class="field-col">
+              {{ field_label }}
+              {% if required %}<span class="required-badge">必須</span>{% endif %}
+              <div style="font-size:10px; color:#aaa; font-family:ui-monospace,Menlo,monospace;">
+                {{ field_key }}
+              </div>
+            </td>
+            {% for p in profiles %}
+              {% set val = mappings_by_profile.get(p.id, {}).get(field_key, '') %}
+              <td>
+                <input type="text"
+                       name="map__{{ p.id }}__{{ field_key }}"
+                       value="{{ val }}"
+                       placeholder="CSVのヘッダー列名"
+                       form="csv-matrix-form">
+              </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <form id="csv-matrix-form" method="post">
+        <input type="hidden" name="action" value="save_mappings">
+        {% for p in profiles %}
+          <input type="hidden" name="profile_id" value="{{ p.id }}">
+        {% endfor %}
+        <div style="margin-top:16px;">
+          <button type="submit"
+                  style="padding:9px 26px; background:#5a8a5d; color:white;
+                         border:none; border-radius:4px; cursor:pointer; font-size:14px;">
+            💾 マッピングを保存
+          </button>
+          <span style="color:#888; font-size:12px; margin-left:10px;">
+            空欄にするとその項目はプロファイルから削除されます。
+          </span>
+        </div>
+      </form>
+    </form>
+  {% endif %}
+</div>
+
+{% endblock %}
