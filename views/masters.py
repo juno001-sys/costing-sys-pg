@@ -142,7 +142,8 @@ def init_master_views(app, get_db):
             """
             SELECT id, code, name, phone, email, address, is_active,
                    contact_person, contact_phone, company_phone, fax,
-                   order_method, order_url, delivery_schedule, order_notes, holidays_off
+                   order_method, order_url, delivery_schedule, order_notes, holidays_off,
+                   is_orderable
             FROM pur_suppliers
             WHERE id = %s
               AND company_id = %s
@@ -287,14 +288,15 @@ def init_master_views(app, get_db):
                       order_url         = %s,
                       delivery_schedule = %s,
                       order_notes       = %s,
-                      holidays_off      = %s
+                      holidays_off      = %s,
+                      is_orderable      = %s
                     WHERE id = %s
                      AND company_id = %s
                     """,
                      (code if code else None, name, phone, email, address,
                       contact_person or None, contact_phone or None, company_phone or None, fax or None,
                       order_method or None, order_url or None, delivery_schedule, order_notes or None,
-                      holidays_off, supplier_id, company_id,)
+                      holidays_off, is_orderable, supplier_id, company_id,)
                 )
                 # NEW: audit log (UPDATE supplier)
                 try:
@@ -586,7 +588,8 @@ def init_master_views(app, get_db):
               i.per_guest_rate,
               i.est_mu,
               i.est_sigma,
-              i.est_calc_at
+              i.est_calc_at,
+              i.is_orderable
             FROM mst_items i
             WHERE i.id = %s
             AND i.company_id = %s
@@ -688,6 +691,7 @@ def init_master_views(app, get_db):
             storage_cost = (request.form.get("storage_cost") or "").strip()
             # チェックボックス → 内製フラグ
             is_internal = 1 if request.form.get("is_internal") == "1" else 0
+            is_orderable = False if request.form.get("not_orderable") else True
 
             # ★ 追加：カテゴリ・加工レベル・発注目安数量
             category = (request.form.get("category") or "").strip() or None
@@ -750,7 +754,8 @@ def init_master_views(app, get_db):
                       storage_cost      = %s,
                       category          = %s,
                       process_level     = %s,
-                      est_order_qty     = %s
+                      est_order_qty     = %s,
+                      is_orderable      = %s
                     WHERE id = %s
                       AND company_id = %s
                     """,
@@ -767,6 +772,7 @@ def init_master_views(app, get_db):
                         category,
                         process_level,
                         est_order_qty,
+                        is_orderable,
                         item_id,
                         company_id,
                     ),

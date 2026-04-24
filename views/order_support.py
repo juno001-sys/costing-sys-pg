@@ -111,6 +111,8 @@ def init_order_support_views(app, get_db):
 
         if selected_store_id:
             # ── Get all active suppliers with their items ────────────
+            # is_orderable filter: operator can hide a supplier from this
+            # screen (auto-resets when a purchase is recorded).
             suppliers = db.execute(
                 """
                 SELECT DISTINCT s.id, s.code, s.name, s.order_method, s.order_url,
@@ -118,7 +120,9 @@ def init_order_support_views(app, get_db):
                 FROM pur_suppliers s
                 JOIN mst_items i ON i.supplier_id = s.id
                 WHERE s.is_active = 1 AND s.company_id = %s
+                  AND s.is_orderable = TRUE
                   AND i.is_active = 1 AND i.company_id = %s
+                  AND i.is_orderable = TRUE
                 ORDER BY s.code
                 """,
                 (company_id, company_id),
@@ -159,6 +163,7 @@ def init_order_support_views(app, get_db):
                 SELECT i.id, i.code, i.name, i.supplier_id, i.est_order_qty, i.category
                 FROM mst_items i
                 WHERE i.is_active = 1 AND i.company_id = %s
+                  AND i.is_orderable = TRUE
                 ORDER BY i.code
                 """,
                 (company_id,),
