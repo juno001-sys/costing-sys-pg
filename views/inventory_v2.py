@@ -1,8 +1,10 @@
 # views/inventory_v2.py
 
+import csv
+import io
 import time
 from datetime import datetime
-from flask import render_template, request, redirect, url_for, flash, g
+from flask import render_template, request, redirect, url_for, flash, g, Response
 from views.reports.audit_log import log_event
 
 from utils.access_scope import (
@@ -846,6 +848,127 @@ def init_inventory_views_v3(app, get_db):
             count_date=count_date,
             items=items,
             latest_dates=latest_dates,
+        )
+
+    # ── CSV export (for accounting) ──────────────────────────────────────
+    @app.route("/inventory/count/export-csv", methods=["GET"],
+               endpoint="inventory_count_export_csv")
+    def inventory_count_export_csv():
+        """Export the counted stock for (store, count_date) as a CSV file
+        for the accounting team. Columns:
+        店舗 / カウント日 / コード / 品目名 / カテゴリ / 仕入先 / 単位 /
+        数量 / 単価 / 金額.
+
+        Output is UTF-8 with BOM so Excel on Japanese Windows opens it
+        without mojibake.
+        """
+        db = get_db()
+        company_id = getattr(g, "current_company_id", None)
+        today = datetime.today().strftime("%Y-%m-%d")
+
+        selected_store_id = normalize_accessible_store_id(
+            request.args.get("store_id")
+        )
+        count_date = request.args.get("count_date") or today
+
+        if not selected_store_id:
+            flash("店舗を選択してください。")
+            return redirect(url_for("inventory_count_v3"))
+
+        store = db.execute(
+            "SELECT id, code, name FROM mst_stores WHERE id = %s AND company_id = %s",
+            (selected_store_id, company_id),
+        ).fetchone()
+
+        # Latest counted_qty per item for (store, date). DISTINCT ON takes the
+        # most-recent row when an item was counted multiple times that day.
+        rows = db.execute(
+            """
+            SELECT DISTINCT ON (sc.item_id)
+              sc.item_id,
+              sc.counted_qty,
+              i.code  AS item_code,
+              i.name  AS item_name,
+              i.category,
+              i.unit,
+              s.name  AS supplier_name
+            FROM stock_counts sc
+            JOIN mst_items i ON i.id = sc.item_id
+            LEFT JOIN pur_suppliers s ON s.id = i.supplier_id
+            WHERE sc.store_id = %s
+              AND sc.count_date = %s
+              AND i.company_id = %s
+            ORDER BY sc.item_id, sc.count_date DESC, sc.id DESC
+            """,
+            (selected_store_id, count_date, company_id),
+        ).fetchall()
+
+        item_ids = [r["item_id"] for r in rows] or [0]
+        price_rows = db.execute(
+            """
+            SELECT item_id,
+                   CASE WHEN SUM(quantity) > 0
+                        THEN SUM(quantity * unit_price)::numeric / SUM(quantity)
+                        ELSE 0 END AS unit_price
+            FROM purchases
+            WHERE store_id = %s AND item_id = ANY(%s)
+              AND is_deleted = 0 AND delivery_date <= %s
+            GROUP BY item_id
+            """,
+            (selected_store_id, item_ids, count_date),
+        ).fetchall()
+        price_map = {r["item_id"]: float(r["unit_price"] or 0) for r in price_rows}
+
+        buf = io.StringIO()
+        writer = csv.writer(buf, quoting=csv.QUOTE_MINIMAL)
+        writer.writerow([
+            "店舗", "カウント日", "コード", "品目名", "カテゴリ",
+            "仕入先", "単位", "数量", "単価", "金額",
+        ])
+
+        store_name = store["name"] if store else ""
+        for r in rows:
+            qty = int(r["counted_qty"] or 0)
+            price = price_map.get(r["item_id"], 0.0)
+            amount = round(qty * price)
+            writer.writerow([
+                store_name,
+                count_date,
+                r["item_code"] or "",
+                r["item_name"] or "",
+                r["category"] or "",
+                r["supplier_name"] or "",
+                r["unit"] or "",
+                qty,
+                round(price),
+                amount,
+            ])
+
+        # UTF-8 BOM so Excel on Japanese Windows auto-detects the encoding.
+        body = "\ufeff" + buf.getvalue()
+
+        store_code = (store["code"] if store else str(selected_store_id)) or str(selected_store_id)
+        filename = f"inventory_{store_code}_{count_date}.csv"
+
+        try:
+            log_event(
+                db, action="EXPORT", module="inv",
+                entity_table="stock_counts",
+                entity_id=f"{selected_store_id}:{count_date}",
+                message=f"Inventory CSV exported ({store_name} {count_date})",
+                store_id=int(selected_store_id), status_code=200,
+                meta={"rows": len(rows), "count_date": count_date},
+            )
+            db.commit()
+        except Exception:
+            pass
+
+        return Response(
+            body.encode("utf-8"),
+            mimetype="text/csv; charset=utf-8",
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"',
+            },
         )
 
     # ── Smartphone v3 ─────────────────────────────────────────────────────

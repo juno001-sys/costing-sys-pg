@@ -10,6 +10,18 @@
   </h2>
 
   <div>
+    {% if selected_store_id %}
+    <a href="{{ url_for('inventory_count_export_csv',
+                        store_id=selected_store_id,
+                        count_date=count_date) }}"
+       style="margin-right:12px; padding:4px 10px;
+              border:1px solid #5a8a5d; border-radius:4px;
+              background:#5a8a5d; color:#fff; text-decoration:none;
+              font-size:12px; font-weight:600;"
+       title="{{ count_date }} の棚卸しデータを CSV で出力">
+      📥 CSV 出力（経理用）
+    </a>
+    {% endif %}
     <a href="{{ url_for('inventory_locations', store_id=selected_store_id) }}">
       {{ t("inventory.locations_view") }}
     </a>
