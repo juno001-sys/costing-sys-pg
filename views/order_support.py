@@ -166,35 +166,41 @@ def init_order_support_views(app, get_db):
                 items_by_supplier[sid].append(item)
                 all_item_ids.append(item["id"])
 
-            # ── Get latest stock counts ──────────────────────────────
+            # ── Latest stock count per item + purchases after that count,
+            #    collapsed into one query (was N+1: one SUM per item).
             stock_map = {}
             if all_item_ids:
                 stock_rows = db.execute(
                     """
-                    SELECT DISTINCT ON (item_id) item_id, counted_qty, count_date
-                    FROM stock_counts
-                    WHERE store_id = %s AND count_date <= %s
-                    ORDER BY item_id, count_date DESC, id DESC
+                    WITH latest AS (
+                      SELECT DISTINCT ON (item_id)
+                        item_id, counted_qty, count_date
+                      FROM stock_counts
+                      WHERE store_id = %s AND count_date <= %s
+                      ORDER BY item_id, count_date DESC, id DESC
+                    )
+                    SELECT
+                      l.item_id,
+                      l.counted_qty,
+                      l.count_date,
+                      COALESCE(SUM(p.quantity), 0) AS qty_after
+                    FROM latest l
+                    LEFT JOIN purchases p
+                      ON p.store_id = %s
+                     AND p.item_id = l.item_id
+                     AND p.is_deleted = 0
+                     AND p.delivery_date > l.count_date
+                    GROUP BY l.item_id, l.counted_qty, l.count_date
                     """,
-                    (selected_store_id, base_date),
+                    (selected_store_id, base_date, selected_store_id),
                 ).fetchall()
                 stock_map = {
-                    r["item_id"]: {"qty": r["counted_qty"] or 0, "date": r["count_date"]}
+                    r["item_id"]: {
+                        "qty": (r["counted_qty"] or 0) + (r["qty_after"] or 0),
+                        "date": r["count_date"],
+                    }
                     for r in stock_rows
                 }
-
-                # Purchases after last count per item
-                for item_id, info in stock_map.items():
-                    pur_row = db.execute(
-                        """
-                        SELECT COALESCE(SUM(quantity), 0) AS qty_after
-                        FROM purchases
-                        WHERE store_id = %s AND item_id = %s
-                          AND is_deleted = 0 AND delivery_date > %s
-                        """,
-                        (selected_store_id, item_id, info["date"]),
-                    ).fetchone()
-                    info["qty"] += pur_row["qty_after"] if pur_row else 0
 
             # ── Build supplier cards ─────────────────────────────────
             for supplier in suppliers:
