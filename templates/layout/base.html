@@ -442,13 +442,6 @@
               📝 {{ t("nav.purchase_form") }}</a>
           </li>
           {% endif %}
-          {% if feature_enabled('inventory_count') and nav_allowed('inventory_count') %}
-          <li>
-            <a href="{{ url_for('inventory_count_v2') }}"
-              class="{% if request.endpoint == 'inventory_count_v2' %}active{% endif %}">
-              📋 {{ t("nav.inventory_count") }}</a>
-          </li>
-          {% endif %}
           {% if feature_enabled('inventory_count') and nav_allowed('inventory_count_smart') %}
           <li>
             <a href="{{ url_for('inventory_count_v3') }}"
