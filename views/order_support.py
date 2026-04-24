@@ -235,10 +235,11 @@ def init_order_support_views(app, get_db):
                 elif not all_deliveries and schedule:
                     # No deliveries in window at all — surface up to 3 upcoming
                     # deliveries beyond the window so the card matches the
-                    # 発注〆切 / 納品 layout of other suppliers.
+                    # 発注〆切 / 納品 layout of other suppliers. 45-day window
+                    # handles weekly (21d → 3) and biweekly (42d → 3) schedules.
                     next_after_now = _find_next_delivery_after(schedule, base_date - timedelta(days=1), holidays_set)
                     if next_after_now:
-                        upcoming = _get_delivery_dates(schedule, next_after_now, 14, holidays_set)[:3]
+                        upcoming = _get_delivery_dates(schedule, next_after_now, 45, holidays_set)[:3]
                         if upcoming:
                             deliveries = upcoming
                         gap_warning = {
@@ -247,11 +248,18 @@ def init_order_support_views(app, get_db):
                             'last_in_window': None,
                         }
 
-                # Stale-banner suppression: once the earliest visible deadline
-                # has passed, the "◯日空きます" banner is no longer actionable
-                # (operator can't meet that deadline anymore) — hide it.
-                if gap_warning and deliveries and deliveries[0]['deadline_date'] < base_date:
-                    gap_warning = None
+                # Gap-banner suppression:
+                #   (a) the banner's "次回" date is already a column in the
+                #       deliveries table — banner is redundant, or
+                #   (b) the earliest visible deadline has already passed —
+                #       banner is stale (operator can't act on it).
+                if gap_warning:
+                    shown_dates = {d['delivery_date'] for d in deliveries}
+                    first_deadline = deliveries[0]['deadline_date'] if deliveries else None
+                    if gap_warning['next_date'] in shown_dates:
+                        gap_warning = None
+                    elif first_deadline and first_deadline < base_date:
+                        gap_warning = None
 
                 # Build items list with stock info
                 supplier_items = items_by_supplier.get(sid, [])
