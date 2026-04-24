@@ -57,6 +57,12 @@
       {% if card.low_count > 0 %}
         <span style="color:#d29a55; font-weight:600;">📉 {{ card.low_count }}品目 残少</span>
       {% endif %}
+      <a href="{{ url_for('order_support_order_form', supplier_id=card.id, store_id=selected_store_id) }}"
+         target="_blank"
+         style="padding:4px 10px; border:1px solid #5a8a5d; border-radius:4px;
+                background:#5a8a5d; color:#fff; text-decoration:none; font-size:12px; font-weight:600;">
+        📝 発注書生成
+      </a>
       <form method="post"
             action="{{ url_for('order_support_hide_supplier', supplier_id=card.id) }}"
             style="margin:0; display:inline-flex; align-items:center; gap:4px;">
