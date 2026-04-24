@@ -2,102 +2,153 @@
 {% block title %}{{ t("purchase.delivery_paste.title") }}{% endblock %}
 {% block content %}
 
-<h3>{{ t("purchase.delivery_paste.title") }}
-  <a href="{{ url_for('new_purchase') }}"
-     style="font-size:13px; font-weight:normal; margin-left:12px;">{{ t("purchase.delivery_paste.back") }}</a>
-</h3>
+{# `active_tab` defaults to 'paste'; JS switches to 'csv' on hashchange. #}
+{% set active_tab = 'paste' %}
+{% include "pur/partials/_purchase_tabs.html" %}
 
-<p style="color:#555; margin-bottom:16px;">
-  {{ t("purchase.delivery_paste.description") }}<br>
-  {{ t("purchase.delivery_paste.description2") }}
-</p>
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!--  PASTE tab                                                           -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div id="tab_paste_content">
 
-<!-- ── Step 1: Paste ──────────────────────────────────────────────────────── -->
-<div id="step1">
+  <p style="color:#555; margin-bottom:16px;">
+    {{ t("purchase.delivery_paste.description") }}<br>
+    {{ t("purchase.delivery_paste.description2") }}
+  </p>
 
-  <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:12px;">
-    <label><strong>{{ t("form.store") }}：</strong>
-      <select id="sel_store" style="min-width:140px;">
-        <option value="">{{ t("common.company_wide") }}</option>
-        {% for s in stores %}
-        <option value="{{ s.id }}">{{ s.name }}</option>
-        {% endfor %}
-      </select>
-    </label>
+  <div id="step1">
+    <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:12px;">
+      <label><strong>{{ t("form.store") }}：</strong>
+        <select id="sel_store" style="min-width:140px;">
+          <option value="">{{ t("common.company_wide") }}</option>
+          {% for s in stores %}
+          <option value="{{ s.id }}">{{ s.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
 
-    <label><strong>{{ t("form.supplier") }}：</strong>
-      <select id="sel_supplier" style="min-width:200px;">
-        <option value="">{{ t("common.select") }}</option>
-        {% for s in suppliers %}
-        <option value="{{ s.id }}">{{ s.code }} {{ s.name }}</option>
-        {% endfor %}
-      </select>
-    </label>
+      <label><strong>{{ t("form.supplier") }}：</strong>
+        <select id="sel_supplier" style="min-width:200px;">
+          <option value="">{{ t("common.select") }}</option>
+          {% for s in suppliers %}
+          <option value="{{ s.id }}">{{ s.code }} {{ s.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
 
-    <label><strong>{{ t("purchase.delivery_date") }}：</strong>
-      <input type="date" id="inp_date" style="min-width:140px;">
-    </label>
+      <label><strong>{{ t("purchase.delivery_date") }}：</strong>
+        <input type="date" id="inp_date" style="min-width:140px;">
+      </label>
+    </div>
+
+    <textarea id="paste_area"
+      placeholder="ここに納品書メールのテキストを丸ごとコピー＆ペーストしてください…"
+      style="width:100%; height:220px; font-size:13px; padding:10px;
+             border:1px solid #ccc; border-radius:4px; box-sizing:border-box;"></textarea>
+
+    <div style="margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <button onclick="parseText()"
+        style="padding:7px 22px; font-size:14px; background:#5a8a5d; color:white;
+               border:none; border-radius:4px; cursor:pointer;">
+        {{ t("purchase.delivery_paste.parse") }}
+      </button>
+      <span style="font-size:12px; color:#888;">
+        {{ t("purchase.delivery_paste.format_note") }}
+      </span>
+    </div>
   </div>
 
-  <textarea id="paste_area"
-    placeholder="ここに納品書メールのテキストを丸ごとコピー＆ペーストしてください…"
-    style="width:100%; height:220px; font-size:13px; padding:10px;
-           border:1px solid #ccc; border-radius:4px; box-sizing:border-box;"></textarea>
+  <!-- Step 2 lives inside the paste tab so it hides when switching to CSV -->
+  <div id="step2" style="display:none; margin-top:24px;">
+    <h4>{{ t("purchase.delivery_paste.result") }}
+      <span id="parse_summary" style="font-size:13px; font-weight:normal; color:#555;"></span>
+    </h4>
 
-  <div style="margin-top:10px;">
-    <button onclick="parseText()"
-      style="padding:7px 22px; font-size:14px; background:#444; color:white;
-             border:none; border-radius:4px; cursor:pointer;">
-      {{ t("purchase.delivery_paste.parse") }}
-    </button>
-    <span style="font-size:12px; color:#888; margin-left:10px;">
-      {{ t("purchase.delivery_paste.format_note") }}
-    </span>
+    <table border="1" cellpadding="5" cellspacing="0"
+           style="width:100%; font-size:13px; border-collapse:collapse;">
+      <thead style="background:#f0f0f0;">
+        <tr>
+          <th style="min-width:120px;">{{ t("purchase.delivery_paste.item_name") }}</th>
+          <th>{{ t("form.quantity") }}</th>
+          <th>{{ t("common.unit") }}</th>
+          <th>{{ t("purchase.delivery_paste.unit_price") }}</th>
+          <th>{{ t("common.subtotal") }}</th>
+          <th style="min-width:220px;">{{ t("purchase.delivery_paste.item_master") }}</th>
+        </tr>
+      </thead>
+      <tbody id="preview_body"></tbody>
+      <tfoot style="background:#f0f0f0; font-weight:bold;">
+        <tr>
+          <td style="text-align:right;">{{ t("common.total") }}</td>
+          <td></td><td></td><td></td>
+          <td id="grand_total" style="text-align:right; padding-right:8px; font-size:15px;">0</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div style="margin-top:20px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+      <button onclick="saveAll()"
+        style="padding:8px 24px; font-size:15px; background:#5a8a5d; color:white;
+               border:none; border-radius:4px; cursor:pointer;">
+        {{ t("purchase.delivery_paste.save") }}
+      </button>
+      <button onclick="resetAll()"
+        style="padding:8px 16px; background:#888; color:white;
+               border:none; border-radius:4px; cursor:pointer;">
+        {{ t("common.retry") }}
+      </button>
+      <a href="{{ url_for('new_purchase') }}" style="color:#555;">{{ t("common.cancel") }}</a>
+    </div>
   </div>
+
 </div>
 
-<!-- ── Step 2: Preview & confirm ─────────────────────────────────────────── -->
-<div id="step2" style="display:none; margin-top:24px;">
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!--  CSV tab                                                             -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div id="tab_csv_content" style="display:none;">
+  <p style="color:#555; margin-bottom:14px;">
+    {% if csv_profile_names %}
+      対応フォーマット：
+      {% for name in csv_profile_names %}
+        <span style="display:inline-block; background:#f0f5ec; border:1px solid #e0e8d8;
+                     color:#5a8a5d; padding:2px 10px; border-radius:12px;
+                     font-weight:600; margin-right:4px;">
+          {{ name }}
+        </span>
+      {% endfor %}
+      <br>
+      上記の仕入先サイトからダウンロードしたCSVファイルをアップロードすると、伝票ごとに分かれた取込画面を表示します。
+    {% else %}
+      CSVファイルをアップロードすると、伝票ごとに分かれた取込画面を表示します。
+    {% endif %}
+    <br>
+    新しい仕入先サイトに対応するには、
+    <a href="{{ url_for('admin_csv_profiles') }}" style="color:#5a8a5d;">
+      CSV取込プロファイル管理
+    </a>
+    で列名マッピングを登録してください。
+  </p>
+  <div>
+    <label for="csv_file"
+           style="padding:9px 22px; font-size:14px; background:#5a8a5d; color:white;
+                  border-radius:4px; cursor:pointer; display:inline-block;">
+      📎 CSVファイルを選択
+    </label>
+    <input type="file" id="csv_file" accept=".csv"
+           onchange="uploadCsv(this)" style="display:none;">
+  </div>
 
-  <h4>{{ t("purchase.delivery_paste.result") }}
-    <span id="parse_summary" style="font-size:13px; font-weight:normal; color:#555;"></span>
-  </h4>
-
-  <table border="1" cellpadding="5" cellspacing="0"
-         style="width:100%; font-size:13px; border-collapse:collapse;">
-    <thead style="background:#f0f0f0;">
-      <tr>
-        <th style="min-width:120px;">{{ t("purchase.delivery_paste.item_name") }}</th>
-        <th>{{ t("form.quantity") }}</th>
-        <th>{{ t("common.unit") }}</th>
-        <th>{{ t("purchase.delivery_paste.unit_price") }}</th>
-        <th>{{ t("common.subtotal") }}</th>
-        <th style="min-width:220px;">{{ t("purchase.delivery_paste.item_master") }}</th>
-      </tr>
-    </thead>
-    <tbody id="preview_body"></tbody>
-    <tfoot style="background:#f0f0f0; font-weight:bold;">
-      <tr>
-        <td style="text-align:right;">{{ t("common.total") }}</td>
-        <td></td><td></td><td></td>
-        <td id="grand_total" style="text-align:right; padding-right:8px; font-size:15px;">0</td>
-        <td></td>
-      </tr>
-    </tfoot>
-  </table>
-
-  <div style="margin-top:20px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-    <button onclick="saveAll()"
-      style="padding:8px 24px; font-size:15px; background:#5a8a5d; color:white;
-             border:none; border-radius:4px; cursor:pointer;">
-      {{ t("purchase.delivery_paste.save") }}
-    </button>
-    <button onclick="resetAll()"
-      style="padding:8px 16px; background:#888; color:white;
-             border:none; border-radius:4px; cursor:pointer;">
-      {{ t("common.retry") }}
-    </button>
-    <a href="{{ url_for('new_purchase') }}" style="color:#555;">{{ t("common.cancel") }}</a>
+  <div id="csv_container" style="display:none; margin-top:24px;">
+    <h4 style="margin-bottom:8px;">📄 CSV取込結果
+      <span id="csv_summary" style="font-size:13px; font-weight:normal; color:#555; margin-left:10px;"></span>
+    </h4>
+    <p style="color:#666; font-size:13px; margin-bottom:16px;">
+      伝票ごとにセクションが分かれています。各セクションの 🛒 保存ボタンで個別に登録できます。
+      既に同じ店舗・仕入先・納品日で保存されている伝票には ⚠️ 警告が出ます。
+    </p>
+    <div id="invoice_sections"></div>
   </div>
 </div>
 
@@ -448,5 +499,327 @@ function resetAll() {
   document.getElementById('step2').style.display = 'none';
   document.getElementById('paste_area').value = '';
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  CSV upload mode (シーニュ/尾家産業-style multi-invoice exports)
+// ═══════════════════════════════════════════════════════════════════════════
+
+let CSV_STORES = [];
+let CSV_SUPPLIERS = [];
+
+async function uploadCsv(fileInput) {
+  const f = fileInput.files[0];
+  if (!f) return;
+  const fd = new FormData();
+  fd.append('file', f);
+
+  try {
+    const resp = await fetch('{{ url_for("delivery_paste_csv_upload") }}', {
+      method: 'POST', body: fd,
+    });
+    const data = await resp.json();
+    if (!resp.ok) {
+      alert(data.error || 'CSVの読み込みに失敗しました。');
+      return;
+    }
+    CSV_STORES    = data.stores    || [];
+    CSV_SUPPLIERS = data.suppliers || [];
+    renderInvoiceSections(data.invoices || []);
+  } catch (e) {
+    alert('CSV送信中にエラーが発生しました: ' + e.message);
+  } finally {
+    fileInput.value = ''; // allow re-uploading the same file
+  }
+}
+
+function renderInvoiceSections(invoices) {
+  const container = document.getElementById('invoice_sections');
+  const summaryEl = document.getElementById('csv_summary');
+  container.innerHTML = '';
+
+  if (!invoices.length) {
+    alert('伝票が見つかりませんでした。CSVの形式をご確認ください。');
+    return;
+  }
+
+  const totalItems = invoices.reduce((n, inv) => n + inv.items.length, 0);
+  const dupCount   = invoices.filter(inv => inv.existing_count > 0).length;
+  summaryEl.textContent =
+    `${invoices.length}伝票 ／ ${totalItems}行`
+    + (dupCount ? ` ／ ⚠️ 既保存 ${dupCount}伝票` : '');
+
+  invoices.forEach((inv, idx) => {
+    container.appendChild(buildInvoiceSection(inv, idx));
+  });
+
+  // Attach item-autocomplete handlers to all per-row inputs
+  attachCsvSearchHandlers();
+
+  document.getElementById('csv_container').style.display = '';
+  document.getElementById('csv_container').scrollIntoView({ behavior: 'smooth' });
+}
+
+function buildInvoiceSection(inv, idx) {
+  const section = document.createElement('section');
+  section.className = 'csv-invoice';
+  section.dataset.invIdx = idx;
+  const isDup = inv.existing_count > 0;
+  section.style.cssText =
+    'border:1px solid #ccc; border-radius:6px; margin-bottom:20px;'
+    + 'background:' + (isDup ? '#fff8e1' : '#fafafa') + ';';
+
+  const supplierOptions = CSV_SUPPLIERS.map(s =>
+    `<option value="${s.id}" ${s.id === inv.supplier_id ? 'selected' : ''}>${s.code} ${escapeHtml(s.name)}</option>`
+  ).join('');
+  const storeOptions = CSV_STORES.map(s =>
+    `<option value="${s.id}" ${s.id === inv.store_id ? 'selected' : ''}>${escapeHtml(s.name)}</option>`
+  ).join('');
+
+  section.innerHTML = `
+    <header style="padding:12px 16px; background:${isDup ? '#fbe7c8' : '#f0f5ec'};
+                   border-bottom:1px solid #ccc; border-radius:6px 6px 0 0;
+                   display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
+      <div style="font-weight:600; font-size:15px;">
+        伝票 #${escapeHtml(inv.invoice_no)}
+      </div>
+      <label>仕入先：
+        <select class="csv-supplier" style="min-width:180px;">
+          <option value="">（選択）</option>${supplierOptions}
+        </select>
+      </label>
+      <label>店舗：
+        <select class="csv-store" style="min-width:140px;">
+          <option value="">（選択）</option>${storeOptions}
+        </select>
+      </label>
+      <label>納品日：
+        <input type="date" class="csv-date" value="${inv.delivery_date || ''}">
+      </label>
+      <div style="margin-left:auto; font-size:12px; color:#666;">
+        <div>CSV取引先：<code>${escapeHtml(inv.csv_supplier)}</code></div>
+        <div>納品場所：<code>${escapeHtml(inv.csv_place)}</code></div>
+      </div>
+    </header>
+    ${isDup ? `
+      <div style="padding:10px 16px; background:#fff3e0;
+                  border-bottom:1px solid #e0a810; color:#7a5a00; font-size:13px;">
+        ⚠️ 既にこの店舗・仕入先・納品日の仕入れ記録が <strong>${inv.existing_count}件</strong> あります。
+        重複登録を避けたい場合はスキップしてください。
+        <label style="margin-left:12px;">
+          <input type="checkbox" class="csv-override"> 重複を承認して保存
+        </label>
+      </div>` : ''}
+    <table border="1" cellpadding="5" cellspacing="0"
+           style="width:100%; font-size:13px; border-collapse:collapse; background:white;">
+      <thead style="background:#f0f0f0;">
+        <tr>
+          <th style="min-width:220px;">品名</th>
+          <th>数量</th>
+          <th>単位</th>
+          <th>単価</th>
+          <th>小計</th>
+          <th style="min-width:220px;">品目マスタ</th>
+        </tr>
+      </thead>
+      <tbody class="csv-rows"></tbody>
+    </table>
+    <div style="padding:12px 16px; display:flex; gap:12px; align-items:center;">
+      <button type="button" class="csv-save-btn"
+              style="padding:8px 22px; font-size:14px; background:#5a8a5d; color:white;
+                     border:none; border-radius:4px; cursor:pointer;"
+              onclick="saveInvoice(this)">
+        🛒 この伝票を保存
+      </button>
+      <span class="csv-save-status" style="font-size:13px; color:#666;"></span>
+    </div>
+  `;
+
+  // Populate item rows
+  const tbody = section.querySelector('.csv-rows');
+  inv.items.forEach(it => {
+    const matched = autoMatch(it.item_name);
+    const tr = document.createElement('tr');
+    tr.dataset.unit = it.unit;
+    tr.style.background = matched ? '' : '#fffbe6';
+    tr.innerHTML = `
+      <td>
+        <strong>${escapeHtml(it.item_name)}</strong><br>
+        <small style="color:#999;">仕入先コード：${escapeHtml(it.item_code || '')}</small>
+      </td>
+      <td><input type="number" value="${it.quantity}" min="0" step="0.01"
+                 style="width:64px; text-align:right;" oninput="recalcCsv(this)"></td>
+      <td style="text-align:center; color:#666;">${escapeHtml(it.unit || '')}</td>
+      <td><input type="number" value="${it.unit_price}" min="0" step="1"
+                 style="width:80px; text-align:right;" oninput="recalcCsv(this)"></td>
+      <td class="csv-amt" style="text-align:right; padding-right:8px;">
+        ${(it.line_amount || (it.quantity * it.unit_price)).toLocaleString()}
+      </td>
+      <td>
+        ${buildSearchWidget(matched)}
+        <div style="font-size:11px; margin-top:3px;">
+          ${matched
+            ? `<span style="color:green;">✅ 自動マッチ</span>`
+            : `<span style="color:orange;">⚠️ 品名を入力して検索してください</span>`}
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  return section;
+}
+
+function recalcCsv(input) {
+  const tr     = input.closest('tr');
+  const inputs = tr.querySelectorAll('input[type=number]');
+  const qty    = parseFloat(inputs[0].value) || 0;
+  const price  = parseFloat(inputs[1].value) || 0;
+  tr.querySelector('.csv-amt').textContent = Math.round(qty * price).toLocaleString();
+}
+
+function attachCsvSearchHandlers() {
+  const container = document.getElementById('invoice_sections');
+  let isComposing = false;
+
+  container.addEventListener('compositionstart', e => {
+    if (e.target.classList.contains('dp-search')) isComposing = true;
+  });
+  container.addEventListener('compositionend', e => {
+    if (!e.target.classList.contains('dp-search')) return;
+    isComposing = false;
+    e.target.closest('.item-cell').querySelector('.dp-item-id').value = '';
+    buildDpSuggestions(e.target, false);
+  });
+  container.addEventListener('input', e => {
+    if (!e.target.classList.contains('dp-search')) return;
+    if (isComposing || e.isComposing) return;
+    e.target.closest('.item-cell').querySelector('.dp-item-id').value = '';
+    buildDpSuggestions(e.target, false);
+  });
+  container.addEventListener('focusin', e => {
+    if (!e.target.classList.contains('dp-search')) return;
+    buildDpSuggestions(e.target, true);
+  });
+  container.addEventListener('focusout', e => {
+    if (!e.target.classList.contains('dp-search')) return;
+    setTimeout(() => {
+      const box = e.target.closest('.item-cell')?.querySelector('.item-suggestions');
+      if (box) { box.hidden = true; box.innerHTML = ''; }
+    }, 150);
+  });
+  container.addEventListener('keydown', e => {
+    if (!e.target.classList.contains('dp-search')) return;
+    if (isComposing || e.isComposing || e.key === 'Process') return;
+    const box = e.target.closest('.item-cell').querySelector('.item-suggestions');
+    if (box.hidden) return;
+    const items = Array.from(box.querySelectorAll('.item-suggest-item'));
+    let idx = items.findIndex(el => el.classList.contains('active'));
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      items.forEach(el => el.classList.remove('active'));
+      idx = Math.min(idx + 1, items.length - 1);
+      items[idx]?.classList.add('active');
+      items[idx]?.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      items.forEach(el => el.classList.remove('active'));
+      idx = Math.max(idx - 1, 0);
+      items[idx]?.classList.add('active');
+      items[idx]?.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      items[idx]?.dispatchEvent(new MouseEvent('mousedown'));
+    } else if (e.key === 'Escape') {
+      box.hidden = true; box.innerHTML = '';
+    }
+  });
+}
+
+async function saveInvoice(btn) {
+  const section    = btn.closest('.csv-invoice');
+  const supplierId = section.querySelector('.csv-supplier').value;
+  const storeId    = section.querySelector('.csv-store').value;
+  const date       = section.querySelector('.csv-date').value;
+  const override   = section.querySelector('.csv-override');
+  const status     = section.querySelector('.csv-save-status');
+
+  if (!supplierId) { alert('仕入先を選択してください。'); return; }
+  if (!storeId)    { alert('店舗を選択してください。');   return; }
+  if (!date)       { alert('納品日を入力してください。'); return; }
+  if (override && !override.checked) {
+    alert('既保存の警告があります。「重複を承認して保存」にチェックしてください。');
+    return;
+  }
+
+  const rows = [];
+  section.querySelectorAll('.csv-rows tr').forEach(tr => {
+    const itemId = tr.querySelector('.dp-item-id').value;
+    if (!itemId) return;
+    const inputs = tr.querySelectorAll('input[type=number]');
+    const qty    = parseFloat(inputs[0].value) || 0;
+    const price  = parseFloat(inputs[1].value) || 0;
+    if (!qty) return;
+    rows.push({ item_id: parseInt(itemId), quantity: qty, unit_price: price });
+  });
+
+  if (!rows.length) {
+    alert('保存できる行がありません。品目マスタで品目を選択してください。');
+    return;
+  }
+  if (!confirm(`${rows.length}件の仕入れ記録を登録します。よろしいですか？`)) return;
+
+  const fd = new FormData();
+  fd.append('store_id',      storeId);
+  fd.append('supplier_id',   supplierId);
+  fd.append('delivery_date', date);
+  fd.append('rows_json',     JSON.stringify(rows));
+
+  btn.disabled = true;
+  status.textContent = '保存中…';
+  try {
+    // Reuse the existing save endpoint. It does a full-page redirect on
+    // success, so we can't read the response body easily — but fetch()
+    // follows the redirect and the 200 OK tells us it worked.
+    const resp = await fetch('{{ url_for("delivery_paste_save") }}',
+                             { method: 'POST', body: fd });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    status.textContent = `✅ ${rows.length}件 登録完了`;
+    status.style.color = 'green';
+    btn.style.background = '#aaa';
+    // Disable all inputs in this section to signal "done".
+    section.querySelectorAll('input, select, button').forEach(el => el.disabled = true);
+  } catch (e) {
+    status.textContent = '❌ 保存失敗: ' + e.message;
+    status.style.color = 'red';
+    btn.disabled = false;
+  }
+}
+
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Tab switching — hash-driven. '#csv' shows CSV section; anything else
+//  (including empty) shows the paste section. Updates the purchase-tabs
+//  active state so the whole page stays consistent.
+// ═══════════════════════════════════════════════════════════════════════════
+function applyTabFromHash() {
+  const isCsv = window.location.hash === '#csv';
+  const pasteEl = document.getElementById('tab_paste_content');
+  const csvEl   = document.getElementById('tab_csv_content');
+  if (pasteEl) pasteEl.style.display = isCsv ? 'none' : '';
+  if (csvEl)   csvEl.style.display   = isCsv ? '' : 'none';
+  document.querySelectorAll('#purchase-tabs a').forEach(a => {
+    a.classList.toggle('active',
+      (isCsv && a.dataset.tab === 'csv') ||
+      (!isCsv && a.dataset.tab === 'paste')
+    );
+  });
+}
+window.addEventListener('hashchange', applyTabFromHash);
+document.addEventListener('DOMContentLoaded', applyTabFromHash);
 </script>
 {% endblock %}

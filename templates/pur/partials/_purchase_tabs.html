@@ -1,0 +1,55 @@
+{#
+  Tab bar shared by the 仕入れ入力 screens. The caller sets `active_tab`
+  to one of: 'direct' (new_purchase form) / 'paste' / 'csv'.
+
+  The paste and csv tabs both link to /pur/delivery_paste; hash controls
+  which section is visible within that page.
+#}
+<style>
+  .pur-tabs {
+    display: flex;
+    gap: 2px;
+    border-bottom: 2px solid #5a8a5d;
+    margin-bottom: 18px;
+    padding: 0 2px;
+  }
+  .pur-tabs a {
+    padding: 8px 20px;
+    text-decoration: none;
+    color: #777;
+    background: #f0f5ec;
+    border: 1px solid #e0e8d8;
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    font-weight: 500;
+    font-size: 14px;
+    position: relative;
+    bottom: -2px;
+    transition: background .15s, color .15s;
+  }
+  .pur-tabs a:hover { background: #e0e8d8; color: #5a8a5d; }
+  .pur-tabs a.active {
+    background: #fff;
+    color: #5a8a5d;
+    border-color: #5a8a5d;
+    border-bottom: 2px solid #fff;
+    font-weight: 700;
+  }
+</style>
+<div class="pur-tabs" id="purchase-tabs">
+  <a href="{{ url_for('new_purchase') }}"
+     class="{{ 'active' if active_tab == 'direct' }}"
+     data-tab="direct">
+    📝 {{ t("purchase.tab.direct") }}
+  </a>
+  <a href="{{ url_for('delivery_paste') }}#paste"
+     class="{{ 'active' if active_tab == 'paste' }}"
+     data-tab="paste">
+    ✉️ {{ t("purchase.tab.paste") }}
+  </a>
+  <a href="{{ url_for('delivery_paste') }}#csv"
+     class="{{ 'active' if active_tab == 'csv' }}"
+     data-tab="csv">
+    📎 {{ t("purchase.tab.csv") }}
+  </a>
+</div>

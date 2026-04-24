@@ -25,6 +25,7 @@ from views.auth.invite import init_auth_invite_views
 
 from views.admin.users import init_admin_user_views
 from views.admin.nav_policy import init_admin_nav_policy_views
+from views.admin.csv_import_admin import init_csv_import_admin_views
 from views.admin.invites import init_admin_invites_views
 from views.admin.profit_settings import bp as admin_profit_settings_bp
 
@@ -430,6 +431,7 @@ init_auth_invite_views(app, get_db)
 init_admin_invites_views(app, get_db)
 init_admin_user_views(app, get_db)
 init_admin_nav_policy_views(app, get_db)
+init_csv_import_admin_views(app, get_db)
 init_admin_system_home_views(app, get_db)
 init_admin_system_company_views(app, get_db)
 init_admin_system_features_views(app, get_db)

@@ -1,0 +1,97 @@
+{% extends "layout/base.html" %}
+{% block title %}店舗別名マスタ{% endblock %}
+{% block content %}
+
+<div style="max-width:980px; margin:0 auto;">
+  <h2>店舗別名マスタ <span style="font-size:0.7em; color:#777;">（CSV取込用の同義語）</span></h2>
+
+  <p style="color:#555; line-height:1.7; margin-bottom:18px;">
+    CSV納品書を取り込む際、仕入先によって店舗名の表記が異なることがあります
+    （例: <code>ＡＰＡ　ＨＯＴＥＬ長野</code> / <code>アパホテル仕入れ</code> → APA朝食）。
+    ここに別名を登録しておくと、その表記もCMSの店舗に自動マッチします。
+  </p>
+
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for m in messages %}
+        <div class="flash">{{ m }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div style="margin-bottom: 12px;">
+    <a href="{{ url_for('admin_users') }}" style="color:#555;">← ユーザー管理に戻る</a>
+  </div>
+
+  <!-- ============== Add alias ============== -->
+  <div style="background:#fff; border:1px solid #ddd; border-radius:6px;
+              padding:16px 18px; margin-bottom:22px;">
+    <h3 style="margin-top:0; font-size:16px;">➕ 別名を追加</h3>
+    <form method="post" style="display:flex; gap:12px; flex-wrap:wrap; align-items:end;">
+      <input type="hidden" name="action" value="add">
+      <label>
+        <div style="font-size:0.85em; color:#777;">店舗</div>
+        <select name="store_id" required style="min-width:160px;">
+          <option value="">（選択）</option>
+          {% for s in stores %}
+            <option value="{{ s.id }}">{{ s.code }} {{ s.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label style="flex:1; min-width:220px;">
+        <div style="font-size:0.85em; color:#777;">別名テキスト（CSVに書かれている通りに）</div>
+        <input type="text" name="alias_text" required
+               placeholder="例: ＡＰＡ　ＨＯＴＥＬ長野"
+               style="width:100%; padding:7px; border:1px solid #ccc; border-radius:4px;">
+      </label>
+      <button type="submit"
+              style="padding:8px 22px; background:#5a8a5d; color:white;
+                     border:none; border-radius:4px; cursor:pointer;">
+        追加
+      </button>
+    </form>
+  </div>
+
+  <!-- ============== Existing aliases ============== -->
+  <h3 style="font-size:16px;">登録済み別名（{{ aliases|length }}件）</h3>
+  <table style="width:100%; border-collapse:collapse; background:white;
+                border:1px solid #ddd;">
+    <thead style="background:#f4f4f4;">
+      <tr>
+        <th style="padding:8px; text-align:left; border-bottom:1px solid #ddd;">店舗</th>
+        <th style="padding:8px; text-align:left; border-bottom:1px solid #ddd;">別名テキスト</th>
+        <th style="padding:8px; text-align:left; border-bottom:1px solid #ddd; color:#888; font-weight:normal;">正規化後</th>
+        <th style="padding:8px; text-align:center; border-bottom:1px solid #ddd; width:80px;">削除</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for a in aliases %}
+      <tr style="border-bottom:1px solid #eee;">
+        <td style="padding:8px;">{{ a.store_code }} {{ a.store_name }}</td>
+        <td style="padding:8px;"><code>{{ a.alias_text }}</code></td>
+        <td style="padding:8px; color:#888; font-size:0.85em;"><code>{{ a.normalized_alias }}</code></td>
+        <td style="padding:8px; text-align:center;">
+          <form method="post" style="display:inline;"
+                onsubmit="return confirm('この別名を削除しますか？');">
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="alias_id" value="{{ a.id }}">
+            <button type="submit"
+                    style="background:#ffe5e5; color:#a33; border:1px solid #f0a0a0;
+                           border-radius:3px; cursor:pointer; padding:3px 10px;">
+              削除
+            </button>
+          </form>
+        </td>
+      </tr>
+    {% else %}
+      <tr>
+        <td colspan="4" style="padding:16px; text-align:center; color:#999;">
+          まだ登録されていません。
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}
