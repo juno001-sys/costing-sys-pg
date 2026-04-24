@@ -248,18 +248,13 @@ def init_order_support_views(app, get_db):
                             'last_in_window': None,
                         }
 
-                # Gap-banner suppression:
-                #   (a) the banner's "次回" date is already a column in the
-                #       deliveries table — banner is redundant, or
-                #   (b) the earliest visible deadline has already passed —
-                #       banner is stale (operator can't act on it).
-                if gap_warning:
-                    shown_dates = {d['delivery_date'] for d in deliveries}
-                    first_deadline = deliveries[0]['deadline_date'] if deliveries else None
-                    if gap_warning['next_date'] in shown_dates:
-                        gap_warning = None
-                    elif first_deadline and first_deadline < base_date:
-                        gap_warning = None
+                # Gap-banner suppression: once the earliest visible deadline
+                # has passed, the banner is stale — the operator cannot place
+                # an order for that delivery anymore, even if the delivery
+                # date itself is still in the future. Delivery date is
+                # irrelevant; deadline is what gates actionability.
+                if gap_warning and deliveries and deliveries[0]['deadline_date'] < base_date:
+                    gap_warning = None
 
                 # Build items list with stock info
                 supplier_items = items_by_supplier.get(sid, [])
