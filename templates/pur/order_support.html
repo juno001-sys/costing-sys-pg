@@ -50,13 +50,25 @@
         <a href="{{ card.order_url }}" target="_blank" style="font-size:11px; margin-left:8px;">🔗 発注サイト</a>
       {% endif %}
     </div>
-    <div style="font-size:12px; color:#666;">
+    <div style="font-size:12px; color:#666; display:flex; align-items:center; gap:12px;">
       {% if card.shortage_count > 0 %}
         <span style="color:#c75a4a; font-weight:600;">⚠ {{ card.shortage_count }}品目 不足</span>
       {% endif %}
       {% if card.low_count > 0 %}
-        <span style="color:#d29a55; font-weight:600; margin-left:8px;">📉 {{ card.low_count }}品目 残少</span>
+        <span style="color:#d29a55; font-weight:600;">📉 {{ card.low_count }}品目 残少</span>
       {% endif %}
+      <form method="post"
+            action="{{ url_for('order_support_hide_supplier', supplier_id=card.id) }}"
+            style="margin:0; display:inline-flex; align-items:center; gap:4px;">
+        <input type="hidden" name="store_id" value="{{ selected_store_id }}">
+        <input type="hidden" name="base_date" value="{{ base_date }}">
+        <input type="hidden" name="view" value="{{ view_mode }}">
+        <label style="font-size:11px; color:#888; cursor:pointer;">
+          <input type="checkbox"
+                 onchange="if(this.checked && confirm('{{ card.name }} を発注サポートから非表示にします。よろしいですか？（次回の仕入れ登録で自動的に再表示されます）')) this.form.submit(); else this.checked = false;">
+          発注対象外
+        </label>
+      </form>
     </div>
   </div>
 
@@ -109,6 +121,7 @@
         <th style="text-align:center;">{{ t("inventory.sp.last_count") }}</th>
         <th style="text-align:right;">{{ t("order_support.est_qty") }}</th>
         <th>{{ t("order_support.status") }}</th>
+        <th style="text-align:center; width:60px;">発注対象外</th>
       </tr>
     </thead>
     <tbody>
@@ -138,6 +151,18 @@
           {% else %}
             <span style="color:#999;">-</span>
           {% endif %}
+        </td>
+        <td style="text-align:center;">
+          <form method="post"
+                action="{{ url_for('order_support_hide_item', item_id=item.id) }}"
+                style="margin:0;">
+            <input type="hidden" name="store_id" value="{{ selected_store_id }}">
+            <input type="hidden" name="base_date" value="{{ base_date }}">
+            <input type="hidden" name="view" value="{{ view_mode }}">
+            <input type="checkbox"
+                   title="この品目を発注サポートから非表示にする"
+                   onchange="if(this.checked && confirm('{{ item.name }} を発注サポートから非表示にします。よろしいですか？（次回の仕入れ登録で自動的に再表示されます）')) this.form.submit(); else this.checked = false;">
+          </form>
         </td>
       </tr>
       {% endfor %}

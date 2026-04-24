@@ -10,12 +10,13 @@ For each supplier, shows:
 
 import json
 from datetime import date, timedelta
-from flask import render_template, request, g
+from flask import render_template, request, redirect, url_for, g
 
 from utils.access_scope import (
     get_accessible_stores,
     normalize_accessible_store_id,
 )
+from views.reports.audit_log import log_event
 
 
 DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
@@ -393,3 +394,57 @@ def init_order_support_views(app, get_db):
             view_mode=view_mode,
             DAY_LABELS=DAY_LABELS,
         )
+
+    # ----------------------------------------
+    # In-screen 発注対象外 toggles. Operators can hide an item or an
+    # entire supplier from the order-support screen without leaving
+    # the page. Both auto-reset to visible when a purchase lands
+    # (see pur_purchases INSERT trigger).
+    # ----------------------------------------
+    def _redirect_back_to_order_support():
+        return redirect(url_for(
+            "order_support",
+            store_id=request.form.get("store_id") or request.args.get("store_id"),
+            base_date=request.form.get("base_date") or request.args.get("base_date"),
+            view=request.form.get("view") or request.args.get("view"),
+        ))
+
+    @app.route("/order-support/item/<int:item_id>/hide", methods=["POST"])
+    def order_support_hide_item(item_id):
+        db = get_db()
+        company_id = getattr(g, "current_company_id", None)
+        db.execute(
+            "UPDATE mst_items SET is_orderable = FALSE "
+            "WHERE id = %s AND company_id = %s",
+            (item_id, company_id),
+        )
+        try:
+            log_event(
+                db, action="HIDE", module="order_support",
+                entity_table="mst_items", entity_id=str(item_id),
+                message="Item hidden from order support",
+            )
+        except Exception:
+            pass
+        db.commit()
+        return _redirect_back_to_order_support()
+
+    @app.route("/order-support/supplier/<int:supplier_id>/hide", methods=["POST"])
+    def order_support_hide_supplier(supplier_id):
+        db = get_db()
+        company_id = getattr(g, "current_company_id", None)
+        db.execute(
+            "UPDATE pur_suppliers SET is_orderable = FALSE "
+            "WHERE id = %s AND company_id = %s",
+            (supplier_id, company_id),
+        )
+        try:
+            log_event(
+                db, action="HIDE", module="order_support",
+                entity_table="pur_suppliers", entity_id=str(supplier_id),
+                message="Supplier hidden from order support",
+            )
+        except Exception:
+            pass
+        db.commit()
+        return _redirect_back_to_order_support()
