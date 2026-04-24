@@ -67,6 +67,7 @@
         <th>{{ t("form.supplier") }}</th>
         <th>{{ t("items.category") }}</th>
         <th style="text-align:right;">{{ t("form.quantity") }}</th>
+        <th style="text-align:right;">{{ t("dashboard.avg_unit_price") }}</th>
         <th style="text-align:right;">{{ t("form.amount") }}</th>
         <th style="text-align:right;">{{ t("dashboard.share") }}</th>
       </tr>
@@ -80,6 +81,13 @@
         <td>{{ item.supplier_name }}</td>
         <td>{{ item.category or '' }}</td>
         <td style="text-align:right;">{{ "{:,}".format(item.total_qty) }}</td>
+        <td style="text-align:right;">
+          {% if item.total_qty %}
+            ¥{{ "{:,}".format((item.total_amount / item.total_qty)|round(0)|int) }}
+          {% else %}
+            -
+          {% endif %}
+        </td>
         <td style="text-align:right;">¥{{ "{:,}".format(item.total_amount) }}</td>
         <td style="text-align:right;">
           {% if grand_total > 0 %}
@@ -90,7 +98,7 @@
         </td>
       </tr>
       {% else %}
-      <tr><td colspan="8">{{ t("common.no_data") }}</td></tr>
+      <tr><td colspan="9">{{ t("common.no_data") }}</td></tr>
       {% endfor %}
     </tbody>
   </table>

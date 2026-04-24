@@ -290,6 +290,7 @@
   "dashboard.dead_stock.description": "カテゴリごとに「適正な滞留日数」を設定し、それを超えて入荷がない在庫を抽出します。未分類の品目は基準0日として常に表示され、カテゴリ設定の見直しを促します。",
   "dashboard.dead_stock.current_stock": "現在庫",
   "dashboard.dead_stock.unit_price": "単価",
+  "dashboard.avg_unit_price": "平均単価",
   "dashboard.dead_stock.estimated_value": "推定金額",
   "dashboard.dead_stock.last_purchase_date": "最終入荷日",
   "dashboard.dead_stock.days_since_purchase": "経過日数",
