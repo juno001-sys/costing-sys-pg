@@ -915,8 +915,14 @@ def init_inventory_views_v3(app, get_db):
             (selected_store_id, company_id),
         ).fetchall()
 
+        # Drop zero-qty items — the accounting team only wants lines that
+        # actually represent stock on hand. DISTINCT ON runs first (above)
+        # so "latest count = 0" correctly skips items whose stock was
+        # exhausted in the most recent count.
+        rows = [r for r in rows if (r["counted_qty"] or 0) > 0]
+
         if not rows:
-            flash("この店舗の棚卸しデータがありません。")
+            flash("この店舗の棚卸しデータがありません（在庫数量ゼロの品目のみ、または未カウント）。")
             return redirect(url_for(
                 "inventory_count_v3", store_id=selected_store_id,
             ))
