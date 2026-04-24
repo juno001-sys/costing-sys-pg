@@ -1,9 +1,9 @@
 {% extends "layout/base.html" %}
-{% block title %}Users{% endblock %}
+{% block title %}{{ t("admin.hub.title") }}{% endblock %}
 {% block content %}
 
 <div style="max-width:980px; margin:0 auto;">
-  <h2>Users</h2>
+  <h2>⚙ {{ t("admin.hub.title") }}</h2>
 
   {% with messages = get_flashed_messages() %}
     {% if messages %}
@@ -13,8 +13,16 @@
     {% endif %}
   {% endwith %}
 
-  {% if actor_is_chief %}
-  <div style="margin-bottom: 16px; display:flex; gap:8px; flex-wrap:wrap;">
+  {# Admin-hub navigation pills — visible to any admin-role user. Chief-admin-
+     only items (nav policy, store aliases, CSV profiles) still gated below. #}
+  <div style="margin-bottom: 18px; display:flex; gap:8px; flex-wrap:wrap;">
+    <a href="{{ url_for('reports.work_logs') }}"
+       style="display:inline-block; padding:6px 14px; background:#f0f5ec;
+              border:1px solid #e0e8d8; border-radius:4px; color:#5a8a5d;
+              text-decoration:none;">
+      📝 {{ t("admin.hub.link_work_logs") }}
+    </a>
+    {% if actor_is_chief %}
     <a href="{{ url_for('admin_nav_policy') }}"
        style="display:inline-block; padding:6px 14px; background:#f0f5ec;
               border:1px solid #e0e8d8; border-radius:4px; color:#5a8a5d;
@@ -33,8 +41,10 @@
               text-decoration:none;">
       📎 CSV取込プロファイル
     </a>
+    {% endif %}
   </div>
-  {% endif %}
+
+  <h3 style="margin-top:12px;">👤 {{ t("admin.hub.users_section") }}</h3>
 
   <!-- ============== Create user ============== -->
   <div class="card" style="margin-bottom:20px;">

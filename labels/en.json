@@ -841,5 +841,12 @@
   "admin.nav_policy.role_auditor": "Supervisor",
   "admin.nav_policy.save": "Save",
   "admin.nav_policy.back_to_users": "Back to user management",
-  "admin.nav_policy.note_admin_always_visible": "Note: users with the Admin role always see all menu items, regardless of this setting."
+  "admin.nav_policy.note_admin_always_visible": "Note: users with the Admin role always see all menu items, regardless of this setting.",
+  "nav.admin_menu": "Admin menu",
+  "purchase.tab.direct": "Direct entry",
+  "purchase.tab.paste": "Paste email",
+  "purchase.tab.csv": "CSV upload",
+  "admin.hub.title": "Admin menu",
+  "admin.hub.users_section": "User management",
+  "admin.hub.link_work_logs": "Work logs"
 }

@@ -2,122 +2,139 @@
 {% block title %}{{ t("purchase.delivery_paste.title") }}{% endblock %}
 {% block content %}
 
-<h3>{{ t("purchase.delivery_paste.title") }}
-  <a href="{{ url_for('new_purchase') }}"
-     style="font-size:13px; font-weight:normal; margin-left:12px;">{{ t("purchase.delivery_paste.back") }}</a>
-</h3>
+{# `active_tab` defaults to 'paste'; JS switches to 'csv' on hashchange. #}
+{% set active_tab = 'paste' %}
+{% include "pur/partials/_purchase_tabs.html" %}
 
 <p style="color:#555; margin-bottom:16px;">
   {{ t("purchase.delivery_paste.description") }}<br>
   {{ t("purchase.delivery_paste.description2") }}
 </p>
 
-<!-- ── Step 1: Paste ──────────────────────────────────────────────────────── -->
-<div id="step1">
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!--  PASTE tab                                                           -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div id="tab_paste_content">
 
-  <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:12px;">
-    <label><strong>{{ t("form.store") }}：</strong>
-      <select id="sel_store" style="min-width:140px;">
-        <option value="">{{ t("common.company_wide") }}</option>
-        {% for s in stores %}
-        <option value="{{ s.id }}">{{ s.name }}</option>
-        {% endfor %}
-      </select>
-    </label>
+  <div id="step1">
+    <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:12px;">
+      <label><strong>{{ t("form.store") }}：</strong>
+        <select id="sel_store" style="min-width:140px;">
+          <option value="">{{ t("common.company_wide") }}</option>
+          {% for s in stores %}
+          <option value="{{ s.id }}">{{ s.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
 
-    <label><strong>{{ t("form.supplier") }}：</strong>
-      <select id="sel_supplier" style="min-width:200px;">
-        <option value="">{{ t("common.select") }}</option>
-        {% for s in suppliers %}
-        <option value="{{ s.id }}">{{ s.code }} {{ s.name }}</option>
-        {% endfor %}
-      </select>
-    </label>
+      <label><strong>{{ t("form.supplier") }}：</strong>
+        <select id="sel_supplier" style="min-width:200px;">
+          <option value="">{{ t("common.select") }}</option>
+          {% for s in suppliers %}
+          <option value="{{ s.id }}">{{ s.code }} {{ s.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
 
-    <label><strong>{{ t("purchase.delivery_date") }}：</strong>
-      <input type="date" id="inp_date" style="min-width:140px;">
-    </label>
+      <label><strong>{{ t("purchase.delivery_date") }}：</strong>
+        <input type="date" id="inp_date" style="min-width:140px;">
+      </label>
+    </div>
+
+    <textarea id="paste_area"
+      placeholder="ここに納品書メールのテキストを丸ごとコピー＆ペーストしてください…"
+      style="width:100%; height:220px; font-size:13px; padding:10px;
+             border:1px solid #ccc; border-radius:4px; box-sizing:border-box;"></textarea>
+
+    <div style="margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <button onclick="parseText()"
+        style="padding:7px 22px; font-size:14px; background:#5a8a5d; color:white;
+               border:none; border-radius:4px; cursor:pointer;">
+        {{ t("purchase.delivery_paste.parse") }}
+      </button>
+      <span style="font-size:12px; color:#888;">
+        {{ t("purchase.delivery_paste.format_note") }}
+      </span>
+    </div>
   </div>
 
-  <textarea id="paste_area"
-    placeholder="ここに納品書メールのテキストを丸ごとコピー＆ペーストしてください…"
-    style="width:100%; height:220px; font-size:13px; padding:10px;
-           border:1px solid #ccc; border-radius:4px; box-sizing:border-box;"></textarea>
+  <!-- Step 2 lives inside the paste tab so it hides when switching to CSV -->
+  <div id="step2" style="display:none; margin-top:24px;">
+    <h4>{{ t("purchase.delivery_paste.result") }}
+      <span id="parse_summary" style="font-size:13px; font-weight:normal; color:#555;"></span>
+    </h4>
 
-  <div style="margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-    <button onclick="parseText()"
-      style="padding:7px 22px; font-size:14px; background:#444; color:white;
-             border:none; border-radius:4px; cursor:pointer;">
-      {{ t("purchase.delivery_paste.parse") }}
-    </button>
-    <span style="color:#aaa;">｜</span>
+    <table border="1" cellpadding="5" cellspacing="0"
+           style="width:100%; font-size:13px; border-collapse:collapse;">
+      <thead style="background:#f0f0f0;">
+        <tr>
+          <th style="min-width:120px;">{{ t("purchase.delivery_paste.item_name") }}</th>
+          <th>{{ t("form.quantity") }}</th>
+          <th>{{ t("common.unit") }}</th>
+          <th>{{ t("purchase.delivery_paste.unit_price") }}</th>
+          <th>{{ t("common.subtotal") }}</th>
+          <th style="min-width:220px;">{{ t("purchase.delivery_paste.item_master") }}</th>
+        </tr>
+      </thead>
+      <tbody id="preview_body"></tbody>
+      <tfoot style="background:#f0f0f0; font-weight:bold;">
+        <tr>
+          <td style="text-align:right;">{{ t("common.total") }}</td>
+          <td></td><td></td><td></td>
+          <td id="grand_total" style="text-align:right; padding-right:8px; font-size:15px;">0</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div style="margin-top:20px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+      <button onclick="saveAll()"
+        style="padding:8px 24px; font-size:15px; background:#5a8a5d; color:white;
+               border:none; border-radius:4px; cursor:pointer;">
+        {{ t("purchase.delivery_paste.save") }}
+      </button>
+      <button onclick="resetAll()"
+        style="padding:8px 16px; background:#888; color:white;
+               border:none; border-radius:4px; cursor:pointer;">
+        {{ t("common.retry") }}
+      </button>
+      <a href="{{ url_for('new_purchase') }}" style="color:#555;">{{ t("common.cancel") }}</a>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!--  CSV tab                                                             -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div id="tab_csv_content" style="display:none;">
+  <p style="color:#555; margin-bottom:14px;">
+    仕入先サイトからダウンロードした CSV ファイルをアップロードすると、伝票ごとに分かれた取込画面を表示します。<br>
+    新しい仕入先サイトに対応するには、
+    <a href="{{ url_for('admin_csv_profiles') }}" style="color:#5a8a5d;">
+      CSV取込プロファイル管理
+    </a>
+    で列名マッピングを登録してください。
+  </p>
+  <div>
     <label for="csv_file"
-           style="padding:7px 18px; font-size:14px; background:#5a8a5d; color:white;
+           style="padding:9px 22px; font-size:14px; background:#5a8a5d; color:white;
                   border-radius:4px; cursor:pointer; display:inline-block;">
-      📎 CSVアップロード（シーニュ等）
+      📎 CSVファイルを選択
     </label>
     <input type="file" id="csv_file" accept=".csv"
            onchange="uploadCsv(this)" style="display:none;">
-    <span style="font-size:12px; color:#888;">
-      {{ t("purchase.delivery_paste.format_note") }}
-    </span>
   </div>
-</div>
 
-<!-- ── CSV mode: grouped invoice sections ────────────────────────────────── -->
-<div id="csv_container" style="display:none; margin-top:24px;">
-  <h4 style="margin-bottom:8px;">📄 CSV取込結果
-    <span id="csv_summary" style="font-size:13px; font-weight:normal; color:#555; margin-left:10px;"></span>
-  </h4>
-  <p style="color:#666; font-size:13px; margin-bottom:16px;">
-    伝票ごとにセクションが分かれています。各セクションの 🛒 保存ボタンで個別に登録できます。
-    既に同じ店舗・仕入先・納品日で保存されている伝票には ⚠️ 警告が出ます。
-  </p>
-  <div id="invoice_sections"></div>
-</div>
-
-<!-- ── Step 2: Preview & confirm ─────────────────────────────────────────── -->
-<div id="step2" style="display:none; margin-top:24px;">
-
-  <h4>{{ t("purchase.delivery_paste.result") }}
-    <span id="parse_summary" style="font-size:13px; font-weight:normal; color:#555;"></span>
-  </h4>
-
-  <table border="1" cellpadding="5" cellspacing="0"
-         style="width:100%; font-size:13px; border-collapse:collapse;">
-    <thead style="background:#f0f0f0;">
-      <tr>
-        <th style="min-width:120px;">{{ t("purchase.delivery_paste.item_name") }}</th>
-        <th>{{ t("form.quantity") }}</th>
-        <th>{{ t("common.unit") }}</th>
-        <th>{{ t("purchase.delivery_paste.unit_price") }}</th>
-        <th>{{ t("common.subtotal") }}</th>
-        <th style="min-width:220px;">{{ t("purchase.delivery_paste.item_master") }}</th>
-      </tr>
-    </thead>
-    <tbody id="preview_body"></tbody>
-    <tfoot style="background:#f0f0f0; font-weight:bold;">
-      <tr>
-        <td style="text-align:right;">{{ t("common.total") }}</td>
-        <td></td><td></td><td></td>
-        <td id="grand_total" style="text-align:right; padding-right:8px; font-size:15px;">0</td>
-        <td></td>
-      </tr>
-    </tfoot>
-  </table>
-
-  <div style="margin-top:20px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-    <button onclick="saveAll()"
-      style="padding:8px 24px; font-size:15px; background:#5a8a5d; color:white;
-             border:none; border-radius:4px; cursor:pointer;">
-      {{ t("purchase.delivery_paste.save") }}
-    </button>
-    <button onclick="resetAll()"
-      style="padding:8px 16px; background:#888; color:white;
-             border:none; border-radius:4px; cursor:pointer;">
-      {{ t("common.retry") }}
-    </button>
-    <a href="{{ url_for('new_purchase') }}" style="color:#555;">{{ t("common.cancel") }}</a>
+  <div id="csv_container" style="display:none; margin-top:24px;">
+    <h4 style="margin-bottom:8px;">📄 CSV取込結果
+      <span id="csv_summary" style="font-size:13px; font-weight:normal; color:#555; margin-left:10px;"></span>
+    </h4>
+    <p style="color:#666; font-size:13px; margin-bottom:16px;">
+      伝票ごとにセクションが分かれています。各セクションの 🛒 保存ボタンで個別に登録できます。
+      既に同じ店舗・仕入先・納品日で保存されている伝票には ⚠️ 警告が出ます。
+    </p>
+    <div id="invoice_sections"></div>
   </div>
 </div>
 
@@ -769,5 +786,26 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c =>
     ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Tab switching — hash-driven. '#csv' shows CSV section; anything else
+//  (including empty) shows the paste section. Updates the purchase-tabs
+//  active state so the whole page stays consistent.
+// ═══════════════════════════════════════════════════════════════════════════
+function applyTabFromHash() {
+  const isCsv = window.location.hash === '#csv';
+  const pasteEl = document.getElementById('tab_paste_content');
+  const csvEl   = document.getElementById('tab_csv_content');
+  if (pasteEl) pasteEl.style.display = isCsv ? 'none' : '';
+  if (csvEl)   csvEl.style.display   = isCsv ? '' : 'none';
+  document.querySelectorAll('#purchase-tabs a').forEach(a => {
+    a.classList.toggle('active',
+      (isCsv && a.dataset.tab === 'csv') ||
+      (!isCsv && a.dataset.tab === 'paste')
+    );
+  });
+}
+window.addEventListener('hashchange', applyTabFromHash);
+document.addEventListener('DOMContentLoaded', applyTabFromHash);
 </script>
 {% endblock %}

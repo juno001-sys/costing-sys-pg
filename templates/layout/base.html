@@ -515,18 +515,13 @@
               ❓ {{ t("nav.help") }}</a>
           </li>
           {% endif %}
-          {% if nav_allowed('work_logs') %}
-          <li>
-            <a href="{{ url_for('reports.work_logs') }}"
-              class="{% if request.endpoint == 'reports.work_logs' %}active{% endif %}">
-              📝 {{ t("nav.work_logs") }}</a>
-          </li>
-          {% endif %}
           {% if current_role == "admin" %}
           <li>
             <a href="{{ url_for('admin_users') }}"
-              class="{% if request.endpoint == 'admin_users' %}active{% endif %}">
-              👤 {{ t("nav.admin_users") }}</a>
+              class="{% if request.endpoint in ['admin_users', 'admin_nav_policy',
+                                                'admin_store_aliases', 'admin_csv_profiles',
+                                                'reports.work_logs'] %}active{% endif %}">
+              ⚙ {{ t("nav.admin_menu") }}</a>
           </li>
           {% endif %}
         </ul>
