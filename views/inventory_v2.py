@@ -854,22 +854,23 @@ def init_inventory_views_v3(app, get_db):
     @app.route("/inventory/count/export-csv", methods=["GET"],
                endpoint="inventory_count_export_csv")
     def inventory_count_export_csv():
-        """Export the counted stock for (store, count_date) as a CSV file
-        for the accounting team. Columns:
-        店舗 / カウント日 / コード / 品目名 / カテゴリ / 仕入先 / 単位 /
-        数量 / 単価 / 金額.
+        """Export the latest count of every item at this store as a CSV
+        snapshot for the accounting team. v3 is per-item independent, so
+        different items may have different last-count dates — each row
+        carries its own 最終棚卸日 column.
+
+        Columns: 店舗 / コード / 品目名 / カテゴリ / 仕入先 / 単位 /
+        数量 / 単価 / 金額 / 最終棚卸日.
 
         Output is UTF-8 with BOM so Excel on Japanese Windows opens it
         without mojibake.
         """
         db = get_db()
         company_id = getattr(g, "current_company_id", None)
-        today = datetime.today().strftime("%Y-%m-%d")
 
         selected_store_id = normalize_accessible_store_id(
             request.args.get("store_id")
         )
-        count_date = request.args.get("count_date") or today
 
         if not selected_store_id:
             flash("店舗を選択してください。")
@@ -880,86 +881,60 @@ def init_inventory_views_v3(app, get_db):
             (selected_store_id, company_id),
         ).fetchone()
 
-        # Latest counted_qty per item for (store, date). DISTINCT ON takes the
-        # most-recent row when an item was counted multiple times that day.
+        # Latest count per item at this store + weighted-avg unit price
+        # computed over each item's own count_date (LATERAL subquery).
         rows = db.execute(
             """
             SELECT DISTINCT ON (sc.item_id)
               sc.item_id,
+              sc.count_date,
               sc.counted_qty,
-              i.code  AS item_code,
-              i.name  AS item_name,
+              i.code     AS item_code,
+              i.name     AS item_name,
               i.category,
               i.unit,
-              s.name  AS supplier_name
+              s.name     AS supplier_name,
+              COALESCE(pr.weighted_price, 0) AS unit_price
             FROM stock_counts sc
             JOIN mst_items i ON i.id = sc.item_id
             LEFT JOIN pur_suppliers s ON s.id = i.supplier_id
+            LEFT JOIN LATERAL (
+              SELECT CASE WHEN SUM(p.quantity) > 0
+                          THEN SUM(p.quantity * p.unit_price)::numeric / SUM(p.quantity)
+                          ELSE 0 END AS weighted_price
+              FROM purchases p
+              WHERE p.store_id = sc.store_id
+                AND p.item_id  = sc.item_id
+                AND p.is_deleted = 0
+                AND p.delivery_date <= sc.count_date
+            ) pr ON TRUE
             WHERE sc.store_id = %s
-              AND sc.count_date = %s
               AND i.company_id = %s
             ORDER BY sc.item_id, sc.count_date DESC, sc.id DESC
             """,
-            (selected_store_id, count_date, company_id),
+            (selected_store_id, company_id),
         ).fetchall()
 
-        # Empty result: redirect back with a helpful flash (and nudge toward
-        # the most recent count date if the operator happened to pick a
-        # day with no saved counts — common when today is selected by default).
         if not rows:
-            latest_with_data = db.execute(
-                """
-                SELECT MAX(count_date) AS d
-                FROM stock_counts
-                WHERE store_id = %s
-                """,
-                (selected_store_id,),
-            ).fetchone()
-            latest_date = latest_with_data["d"] if latest_with_data else None
-            if latest_date:
-                flash(
-                    f"{count_date} の棚卸しデータがありません。"
-                    f"最終棚卸日（{latest_date}）を選択して再度お試しください。"
-                )
-            else:
-                flash(f"{count_date} の棚卸しデータがありません。")
+            flash("この店舗の棚卸しデータがありません。")
             return redirect(url_for(
-                "inventory_count_v3",
-                store_id=selected_store_id,
-                count_date=count_date,
+                "inventory_count_v3", store_id=selected_store_id,
             ))
-
-        item_ids = [r["item_id"] for r in rows] or [0]
-        price_rows = db.execute(
-            """
-            SELECT item_id,
-                   CASE WHEN SUM(quantity) > 0
-                        THEN SUM(quantity * unit_price)::numeric / SUM(quantity)
-                        ELSE 0 END AS unit_price
-            FROM purchases
-            WHERE store_id = %s AND item_id = ANY(%s)
-              AND is_deleted = 0 AND delivery_date <= %s
-            GROUP BY item_id
-            """,
-            (selected_store_id, item_ids, count_date),
-        ).fetchall()
-        price_map = {r["item_id"]: float(r["unit_price"] or 0) for r in price_rows}
 
         buf = io.StringIO()
         writer = csv.writer(buf, quoting=csv.QUOTE_MINIMAL)
         writer.writerow([
-            "店舗", "カウント日", "コード", "品目名", "カテゴリ",
-            "仕入先", "単位", "数量", "単価", "金額",
+            "店舗", "コード", "品目名", "カテゴリ",
+            "仕入先", "単位", "数量", "単価", "金額", "最終棚卸日",
         ])
 
         store_name = store["name"] if store else ""
         for r in rows:
             qty = int(r["counted_qty"] or 0)
-            price = price_map.get(r["item_id"], 0.0)
+            price = float(r["unit_price"] or 0)
             amount = round(qty * price)
             writer.writerow([
                 store_name,
-                count_date,
                 r["item_code"] or "",
                 r["item_name"] or "",
                 r["category"] or "",
@@ -968,22 +943,24 @@ def init_inventory_views_v3(app, get_db):
                 qty,
                 round(price),
                 amount,
+                r["count_date"].isoformat() if r["count_date"] else "",
             ])
 
         # UTF-8 BOM so Excel on Japanese Windows auto-detects the encoding.
         body = "\ufeff" + buf.getvalue()
 
+        today_str = datetime.today().strftime("%Y-%m-%d")
         store_code = (store["code"] if store else str(selected_store_id)) or str(selected_store_id)
-        filename = f"inventory_{store_code}_{count_date}.csv"
+        filename = f"inventory_snapshot_{store_code}_{today_str}.csv"
 
         try:
             log_event(
                 db, action="EXPORT", module="inv",
                 entity_table="stock_counts",
-                entity_id=f"{selected_store_id}:{count_date}",
-                message=f"Inventory CSV exported ({store_name} {count_date})",
+                entity_id=f"{selected_store_id}:snapshot",
+                message=f"Inventory snapshot CSV exported ({store_name})",
                 store_id=int(selected_store_id), status_code=200,
-                meta={"rows": len(rows), "count_date": count_date},
+                meta={"rows": len(rows), "exported_on": today_str},
             )
             db.commit()
         except Exception:
