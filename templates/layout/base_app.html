@@ -191,14 +191,6 @@
             {{ t("nav.purchase_form") }}
           </a>
         </li>
-        <li>
-          <a
-            href="{{ url_for('inventory_count_v2') }}"
-            class="{% if request.endpoint == 'inventory_count_v2' %}active{% endif %}"
-          >
-            {{ t("nav.inventory_count") }} v2
-          </a>
-        </li>
         {% endif %} {% if current_role in ["admin", "auditor"] %}
         <li>
           <a href="{{ url_for('reports.cost_report') }}"

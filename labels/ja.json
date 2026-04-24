@@ -422,7 +422,7 @@
   "report.integrated.no_count": "棚卸し記録なし",
   "report.integrated.all_suppliers": "全仕入先",
   "nav.integrated_report": "仕入れ金額数量照会",
-  "nav.inventory_count_smart": "棚卸し入力（差分保存）",
+  "nav.inventory_count_smart": "棚卸し入力",
   "inventory.smart.title": "棚卸し入力（差分保存版）",
   "inventory.smart.sp_title": "棚卸し（差分保存）",
   "inventory.smart.hint": "数量を変更した品目だけが保存されます。品目ごとに保存時刻が記録されます。",
