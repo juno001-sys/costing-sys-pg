@@ -66,6 +66,7 @@
   </div>
   {% else %}
 
+  {% if card.deliveries %}
   <!-- Delivery info -->
   <div style="margin-bottom:12px;">
     <table style="font-size:13px; border-collapse:collapse;">
@@ -87,6 +88,7 @@
       </tr>
     </table>
   </div>
+  {% endif %}
 
   {% if card.gap_warning %}
   <div style="padding:8px 12px; background:#fff3cd; border:1px solid #ffc107; border-radius:6px; margin-bottom:12px; font-size:13px; color:#856404;">
