@@ -14,6 +14,23 @@
         </option>
       {% endfor %}
     </select>
+
+    <span style="margin-left: 16px;">
+      <label>{{ t("form.view") }}：</label>
+      <label style="margin-right: 8px;">
+        <input type="radio" name="view" value="monthly"
+               {% if view != 'yearly' %}checked{% endif %}
+               onchange="this.form.submit()">
+        {{ t("form.view_monthly") }}
+      </label>
+      <label>
+        <input type="radio" name="view" value="yearly"
+               {% if view == 'yearly' %}checked{% endif %}
+               onchange="this.form.submit()">
+        {{ t("form.view_yearly") }}
+      </label>
+    </span>
+
     <noscript>
       <button type="submit">{{ t("form.show") }}</button>
     </noscript>
@@ -58,7 +75,7 @@
     </tbody>
     <tfoot>
       <tr>
-        <th>{{ t("report.monthly_total") }}</th>
+        <th>{{ t("report.yearly_total") if view == 'yearly' else t("report.monthly_total") }}</th>
         {% for total in month_totals %}
           <th style="text-align:right;">
             {{ "{:,}".format(total) }}

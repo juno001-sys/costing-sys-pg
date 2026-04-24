@@ -21,18 +21,29 @@ def purchase_report():
         request.args.get("store_id")
     )
 
-    # last 13 months (computed regardless so the template still renders headers)
-    today = datetime.now().date()
-    year, month = today.year, today.month
+    view = request.args.get("view") or "monthly"
+    if view not in ("monthly", "yearly"):
+        view = "monthly"
 
-    month_keys = []
-    for _ in range(13):
-        month_keys.append(f"{year:04d}-{month:02d}")
-        month -= 1
-        if month == 0:
-            month = 12
-            year -= 1
-    month_keys.reverse()
+    today = datetime.now().date()
+
+    if view == "yearly":
+        # last 5 years (calendar years)
+        end_year = today.year
+        month_keys = [f"{y:04d}" for y in range(end_year - 4, end_year + 1)]
+        date_fmt = "YYYY"
+    else:
+        # last 12 months
+        year, month = today.year, today.month
+        month_keys = []
+        for _ in range(12):
+            month_keys.append(f"{year:04d}-{month:02d}")
+            month -= 1
+            if month == 0:
+                month = 12
+                year -= 1
+        month_keys.reverse()
+        date_fmt = "YYYY-MM"
 
     # Order-support pattern: empty state until a store is picked.
     if not selected_store_id:
@@ -43,21 +54,26 @@ def purchase_report():
             rows=[],
             month_keys=month_keys,
             month_totals=[0] * len(month_keys),
+            view=view,
             no_store_selected=True,
         )
 
-    start_date = month_keys[0] + "-01"
-    ey, em = map(int, month_keys[-1].split("-"))
-    end_date = f"{ey + (em == 12):04d}-{1 if em == 12 else em + 1:02d}-01"
+    if view == "yearly":
+        start_date = f"{month_keys[0]}-01-01"
+        end_date = f"{int(month_keys[-1]) + 1:04d}-01-01"
+    else:
+        start_date = month_keys[0] + "-01"
+        ey, em = map(int, month_keys[-1].split("-"))
+        end_date = f"{ey + (em == 12):04d}-{1 if em == 12 else em + 1:02d}-01"
 
     company_id = getattr(g, "current_company_id", None)
 
     rows_raw = db.execute(
-        """
+        f"""
         SELECT
             s.id AS supplier_id,
             s.name AS supplier_name,
-            TO_CHAR(p.delivery_date, 'YYYY-MM') AS ym,
+            TO_CHAR(p.delivery_date, '{date_fmt}') AS ym,
             SUM(p.amount) AS total_amount
         FROM purchases p
         LEFT JOIN mst_items i ON p.item_id = i.id
@@ -105,5 +121,6 @@ def purchase_report():
         rows=rows,
         month_keys=month_keys,
         month_totals=month_totals,
+        view=view,
         no_store_selected=False,
     )

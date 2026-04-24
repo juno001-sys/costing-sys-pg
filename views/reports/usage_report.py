@@ -28,13 +28,13 @@ def usage_report():
 
     company_id = getattr(g, "current_company_id", None)
 
-    # Last 13 months (computed up front so the empty-state template still
+    # Last 12 months (computed up front so the empty-state template still
     # has column headers to render.)
     today = datetime.now().date()
     y, m = today.year, today.month
 
     month_keys = []
-    for _ in range(13):
+    for _ in range(12):
         month_keys.append(f"{y:04d}-{m:02d}")
         m -= 1
         if m == 0:

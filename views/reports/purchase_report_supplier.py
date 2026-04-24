@@ -60,13 +60,13 @@ def purchase_report_supplier(supplier_id: int):
             return redirect(url_for("reports.purchase_report"))
         supplier_name = supplier_row["name"]
 
-    # 直近13ヶ月
+    # 直近12ヶ月
     today = datetime.now().date()
     year = today.year
     month = today.month
 
     month_keys = []
-    for _ in range(13):
+    for _ in range(12):
         month_keys.append(f"{year:04d}-{month:02d}")
         month -= 1
         if month == 0:

@@ -32,12 +32,12 @@ def cost_report():
         request.args.get("store_id")
     )
 
-    # last 13 months (computed up front so empty-state template has headers)
+    # last 12 months (computed up front so empty-state template has headers)
     today = datetime.now().date()
     y, m = today.year, today.month
 
     month_keys = []
-    for _ in range(13):
+    for _ in range(12):
         month_keys.append(f"{y:04d}-{m:02d}")
         m -= 1
         if m == 0:
