@@ -8,7 +8,7 @@ from utils.access_scope import (
     normalize_accessible_store_id,
 )
 
-from . import reports_bp, get_db
+from . import reports_bp, get_db, shift_ym, parse_to_ym, month_keys_ending_at
 
 
 @reports_bp.route("/purchases/report", methods=["GET"])
@@ -21,18 +21,14 @@ def purchase_report():
         request.args.get("store_id")
     )
 
-    # last 13 months (computed regardless so the template still renders headers)
     today = datetime.now().date()
-    year, month = today.year, today.month
+    current_ym = f"{today.year:04d}-{today.month:02d}"
+    to_ym = parse_to_ym(request.args.get("to_ym"), current_ym)
 
-    month_keys = []
-    for _ in range(13):
-        month_keys.append(f"{year:04d}-{month:02d}")
-        month -= 1
-        if month == 0:
-            month = 12
-            year -= 1
-    month_keys.reverse()
+    month_keys = month_keys_ending_at(to_ym, 12)
+    prev_to_ym = shift_ym(to_ym, -12)
+    next_to_ym = shift_ym(to_ym, 12)
+    is_current = (to_ym == current_ym)
 
     # Order-support pattern: empty state until a store is picked.
     if not selected_store_id:
@@ -43,6 +39,10 @@ def purchase_report():
             rows=[],
             month_keys=month_keys,
             month_totals=[0] * len(month_keys),
+            to_ym=to_ym,
+            prev_to_ym=prev_to_ym,
+            next_to_ym=next_to_ym,
+            is_current=is_current,
             no_store_selected=True,
         )
 
@@ -105,5 +105,9 @@ def purchase_report():
         rows=rows,
         month_keys=month_keys,
         month_totals=month_totals,
+        to_ym=to_ym,
+        prev_to_ym=prev_to_ym,
+        next_to_ym=next_to_ym,
+        is_current=is_current,
         no_store_selected=False,
     )

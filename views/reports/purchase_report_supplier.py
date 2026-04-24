@@ -7,7 +7,7 @@ from utils.access_scope import (
     get_accessible_stores,
     normalize_accessible_store_id,
 )
-from . import reports_bp, get_db
+from . import reports_bp, get_db, shift_ym, parse_to_ym, month_keys_ending_at
 
 
 # ----------------------------------------
@@ -60,19 +60,14 @@ def purchase_report_supplier(supplier_id: int):
             return redirect(url_for("reports.purchase_report"))
         supplier_name = supplier_row["name"]
 
-    # 直近13ヶ月
+    # 12 months ending at to_ym (default = current month → rolling window)
     today = datetime.now().date()
-    year = today.year
-    month = today.month
-
-    month_keys = []
-    for _ in range(13):
-        month_keys.append(f"{year:04d}-{month:02d}")
-        month -= 1
-        if month == 0:
-            month = 12
-            year -= 1
-    month_keys = list(reversed(month_keys))
+    current_ym = f"{today.year:04d}-{today.month:02d}"
+    to_ym = parse_to_ym(request.args.get("to_ym"), current_ym)
+    month_keys = month_keys_ending_at(to_ym, 12)
+    prev_to_ym = shift_ym(to_ym, -12)
+    next_to_ym = shift_ym(to_ym, 12)
+    is_current = (to_ym == current_ym)
 
     # 日付範囲
     start_ym = month_keys[0]
@@ -189,4 +184,8 @@ def purchase_report_supplier(supplier_id: int):
         month_totals_amount=month_totals_amount,
         month_totals_qty=month_totals_qty,
         suppliers=suppliers,
+        to_ym=to_ym,
+        prev_to_ym=prev_to_ym,
+        next_to_ym=next_to_ym,
+        is_current=is_current,
     )

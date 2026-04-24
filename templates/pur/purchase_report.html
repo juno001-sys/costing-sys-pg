@@ -14,6 +14,26 @@
         </option>
       {% endfor %}
     </select>
+
+    <span style="margin-left: 16px;">
+      <a href="{{ url_for('reports.purchase_report', store_id=selected_store_id, to_ym=prev_to_ym) }}"
+         style="padding: 4px 10px; border: 1px solid #c8d4bc; border-radius: 4px; background: #f0f5ec; color: #3a6c3e; text-decoration: none;">
+        ◀ {{ t("common.prev_year") }}
+      </a>
+      <label style="margin: 0 8px;">{{ t("form.ending_month") }}：</label>
+      <input type="month" name="to_ym" value="{{ to_ym }}" onchange="this.form.submit()">
+      <a href="{{ url_for('reports.purchase_report', store_id=selected_store_id, to_ym=next_to_ym) }}"
+         style="padding: 4px 10px; border: 1px solid #c8d4bc; border-radius: 4px; background: #f0f5ec; color: #3a6c3e; text-decoration: none; margin-left: 4px;">
+        {{ t("common.next_year") }} ▶
+      </a>
+      {% if not is_current %}
+        <a href="{{ url_for('reports.purchase_report', store_id=selected_store_id) }}"
+           style="margin-left: 8px; color: #5a8a5d; font-size: 0.9em;">
+          {{ t("common.latest") }}
+        </a>
+      {% endif %}
+    </span>
+
     <noscript>
       <button type="submit">{{ t("form.show") }}</button>
     </noscript>
@@ -64,7 +84,9 @@
             {{ "{:,}".format(total) }}
           </th>
         {% endfor %}
-        <th></th>
+        <th style="text-align:right;">
+          {{ "{:,}".format(month_totals|sum) }}
+        </th>
       </tr>
     </tfoot>
   </table>

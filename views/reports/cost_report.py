@@ -10,7 +10,7 @@ from utils.access_scope import (
     normalize_accessible_store_id,
 )
 
-from . import reports_bp, get_db
+from . import reports_bp, get_db, shift_ym, parse_to_ym, month_keys_ending_at
 
 def ym_to_month_start(ym: str) -> date:
     y, m = ym.split("-")
@@ -32,18 +32,14 @@ def cost_report():
         request.args.get("store_id")
     )
 
-    # last 13 months (computed up front so empty-state template has headers)
+    # 12 months ending at to_ym (default = current month → rolling window)
     today = datetime.now().date()
-    y, m = today.year, today.month
-
-    month_keys = []
-    for _ in range(13):
-        month_keys.append(f"{y:04d}-{m:02d}")
-        m -= 1
-        if m == 0:
-            m = 12
-            y -= 1
-    month_keys = list(reversed(month_keys))
+    current_ym = f"{today.year:04d}-{today.month:02d}"
+    to_ym = parse_to_ym(request.args.get("to_ym"), current_ym)
+    month_keys = month_keys_ending_at(to_ym, 12)
+    prev_to_ym = shift_ym(to_ym, -12)
+    next_to_ym = shift_ym(to_ym, 12)
+    is_current = (to_ym == current_ym)
 
     # Order-support pattern: require an explicit store selection.
     if not selected_store_id:
@@ -65,6 +61,10 @@ def cost_report():
             profit_ym=None,
             profit_setting_row=None,
             profit_est=None,
+            to_ym=to_ym,
+            prev_to_ym=prev_to_ym,
+            next_to_ym=next_to_ym,
+            is_current=is_current,
             no_store_selected=True,
         )
 
@@ -380,5 +380,9 @@ def cost_report():
         profit_ym=profit_ym,
         profit_setting_row=profit_setting_row,
         profit_est=profit_est,
+        to_ym=to_ym,
+        prev_to_ym=prev_to_ym,
+        next_to_ym=next_to_ym,
+        is_current=is_current,
         no_store_selected=False,
     )
