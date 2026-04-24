@@ -8,27 +8,7 @@ from utils.access_scope import (
     normalize_accessible_store_id,
 )
 
-from . import reports_bp, get_db
-
-
-def _shift_ym(ym: str, delta_months: int) -> str:
-    y, m = map(int, ym.split("-"))
-    total = y * 12 + (m - 1) + delta_months
-    ny, nm = divmod(total, 12)
-    return f"{ny:04d}-{nm + 1:02d}"
-
-
-def _parse_to_ym(raw: str | None, fallback: str) -> str:
-    if not raw:
-        return fallback
-    try:
-        y, m = raw.split("-")
-        yi, mi = int(y), int(m)
-        if 1 <= mi <= 12 and 2000 <= yi <= 2100:
-            return f"{yi:04d}-{mi:02d}"
-    except Exception:
-        pass
-    return fallback
+from . import reports_bp, get_db, shift_ym, parse_to_ym, month_keys_ending_at
 
 
 @reports_bp.route("/purchases/report", methods=["GET"])
@@ -43,21 +23,11 @@ def purchase_report():
 
     today = datetime.now().date()
     current_ym = f"{today.year:04d}-{today.month:02d}"
-    to_ym = _parse_to_ym(request.args.get("to_ym"), current_ym)
+    to_ym = parse_to_ym(request.args.get("to_ym"), current_ym)
 
-    # 12 months ending at to_ym (inclusive)
-    year, month = map(int, to_ym.split("-"))
-    month_keys = []
-    for _ in range(12):
-        month_keys.append(f"{year:04d}-{month:02d}")
-        month -= 1
-        if month == 0:
-            month = 12
-            year -= 1
-    month_keys.reverse()
-
-    prev_to_ym = _shift_ym(to_ym, -12)
-    next_to_ym = _shift_ym(to_ym, 12)
+    month_keys = month_keys_ending_at(to_ym, 12)
+    prev_to_ym = shift_ym(to_ym, -12)
+    next_to_ym = shift_ym(to_ym, 12)
     is_current = (to_ym == current_ym)
 
     # Order-support pattern: empty state until a store is picked.

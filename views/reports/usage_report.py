@@ -8,7 +8,7 @@ from utils.access_scope import (
     normalize_accessible_store_id,
 )
 
-from . import reports_bp, get_db
+from . import reports_bp, get_db, shift_ym, parse_to_ym, month_keys_ending_at
 
 
 @reports_bp.route("/usage/report", methods=["GET"])
@@ -28,19 +28,14 @@ def usage_report():
 
     company_id = getattr(g, "current_company_id", None)
 
-    # Last 12 months (computed up front so the empty-state template still
-    # has column headers to render.)
+    # 12 months ending at to_ym (default = current month → rolling window)
     today = datetime.now().date()
-    y, m = today.year, today.month
-
-    month_keys = []
-    for _ in range(12):
-        month_keys.append(f"{y:04d}-{m:02d}")
-        m -= 1
-        if m == 0:
-            m = 12
-            y -= 1
-    month_keys = list(reversed(month_keys))
+    current_ym = f"{today.year:04d}-{today.month:02d}"
+    to_ym = parse_to_ym(request.args.get("to_ym"), current_ym)
+    month_keys = month_keys_ending_at(to_ym, 12)
+    prev_to_ym = shift_ym(to_ym, -12)
+    next_to_ym = shift_ym(to_ym, 12)
+    is_current = (to_ym == current_ym)
 
     # Order-support pattern: require a store selection before fetching data.
     if not selected_store_id:
@@ -52,6 +47,10 @@ def usage_report():
             selected_supplier_id=selected_supplier_id,
             month_keys=month_keys,
             item_rows=[],
+            to_ym=to_ym,
+            prev_to_ym=prev_to_ym,
+            next_to_ym=next_to_ym,
+            is_current=is_current,
             no_store_selected=True,
         )
 
@@ -239,5 +238,9 @@ def usage_report():
         selected_supplier_id=selected_supplier_id,
         month_keys=month_keys,
         item_rows=item_rows,
+        to_ym=to_ym,
+        prev_to_ym=prev_to_ym,
+        next_to_ym=next_to_ym,
+        is_current=is_current,
         no_store_selected=False,
     )

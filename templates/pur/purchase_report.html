@@ -84,7 +84,9 @@
             {{ "{:,}".format(total) }}
           </th>
         {% endfor %}
-        <th></th>
+        <th style="text-align:right;">
+          {{ "{:,}".format(month_totals|sum) }}
+        </th>
       </tr>
     </tfoot>
   </table>
