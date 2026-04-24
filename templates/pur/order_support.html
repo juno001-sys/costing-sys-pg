@@ -57,12 +57,14 @@
       {% if card.low_count > 0 %}
         <span style="color:#d29a55; font-weight:600;">📉 {{ card.low_count }}品目 残少</span>
       {% endif %}
+      {% if (card.order_method or '')|lower|trim != 'web' %}
       <a href="{{ url_for('order_support_order_form', supplier_id=card.id, store_id=selected_store_id) }}"
          target="_blank"
          style="padding:4px 10px; border:1px solid #5a8a5d; border-radius:4px;
                 background:#5a8a5d; color:#fff; text-decoration:none; font-size:12px; font-weight:600;">
         📝 発注書生成
       </a>
+      {% endif %}
       <form method="post"
             action="{{ url_for('order_support_hide_supplier', supplier_id=card.id) }}"
             style="margin:0; display:inline-flex; align-items:center; gap:4px;">
@@ -71,8 +73,8 @@
         <input type="hidden" name="view" value="{{ view_mode }}">
         <label style="font-size:11px; color:#888; cursor:pointer;">
           <input type="checkbox"
-                 onchange="if(this.checked && confirm('{{ card.name }} を発注サポートから非表示にします。よろしいですか？（次回の仕入れ登録で自動的に再表示されます）')) this.form.submit(); else this.checked = false;">
-          発注対象外
+                 onchange="if(this.checked && confirm('{{ card.name }} をリストから削除します。よろしいですか？（次回の仕入れ登録で自動的に再表示されます）')) this.form.submit(); else this.checked = false;">
+          リストから削除
         </label>
       </form>
     </div>
@@ -128,7 +130,7 @@
         <th style="text-align:right;">{{ t("order_support.est_qty") }}</th>
         <th style="text-align:right; width:90px;">発注数</th>
         <th>{{ t("order_support.status") }}</th>
-        <th style="text-align:center; width:60px;">発注対象外</th>
+        <th style="text-align:center; width:70px;">リストから削除</th>
       </tr>
     </thead>
     <tbody>
@@ -176,8 +178,8 @@
             <input type="hidden" name="base_date" value="{{ base_date }}">
             <input type="hidden" name="view" value="{{ view_mode }}">
             <input type="checkbox"
-                   title="この品目を発注サポートから非表示にする"
-                   onchange="if(this.checked && confirm('{{ item.name }} を発注サポートから非表示にします。よろしいですか？（次回の仕入れ登録で自動的に再表示されます）')) this.form.submit(); else this.checked = false;">
+                   title="この品目をリストから削除する"
+                   onchange="if(this.checked && confirm('{{ item.name }} をリストから削除します。よろしいですか？（次回の仕入れ登録で自動的に再表示されます）')) this.form.submit(); else this.checked = false;">
           </form>
         </td>
       </tr>
