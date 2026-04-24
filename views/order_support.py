@@ -27,10 +27,13 @@ def _date_to_day_key(d):
     return DAY_KEYS[d.weekday()]
 
 
-def _get_delivery_dates(schedule, start_date, num_days, holidays_set):
+def _get_delivery_dates(schedule, start_date, num_days, holidays_set, min_deadline_date=None):
     """
     Get all delivery dates in a date range, excluding supplier holidays.
     Returns list of (delivery_date, deadline_date, deadline_time).
+
+    If min_deadline_date is set, skip deliveries whose deadline has passed
+    (operator can no longer place an order for them).
     """
     if not schedule:
         return []
@@ -51,6 +54,10 @@ def _get_delivery_dates(schedule, start_date, num_days, holidays_set):
             # If deadline falls on a supplier holiday, shift earlier
             while str(deadline_date) in holidays_set:
                 deadline_date -= timedelta(days=1)
+
+            # Skip past-deadline deliveries (non-actionable for ordering)
+            if min_deadline_date and deadline_date < min_deadline_date:
+                continue
 
             results.append({
                 'delivery_date': d,
@@ -211,8 +218,11 @@ def init_order_support_views(app, get_db):
                 if supplier["holidays_off"]:
                     holidays_set |= store_holiday_set
 
-                # Delivery dates in the 7-day window
-                all_deliveries = _get_delivery_dates(schedule, base_date, window_days, holidays_set)
+                # Delivery dates in the 7-day window (deadline must be future)
+                all_deliveries = _get_delivery_dates(
+                    schedule, base_date, window_days, holidays_set,
+                    min_deadline_date=base_date,
+                )
                 deliveries = all_deliveries[:3]  # Show only next 2-3 deliveries
 
                 # Find next delivery after window (for gap warning)
@@ -239,7 +249,10 @@ def init_order_support_views(app, get_db):
                     # handles weekly (21d → 3) and biweekly (42d → 3) schedules.
                     next_after_now = _find_next_delivery_after(schedule, base_date - timedelta(days=1), holidays_set)
                     if next_after_now:
-                        upcoming = _get_delivery_dates(schedule, next_after_now, 45, holidays_set)[:3]
+                        upcoming = _get_delivery_dates(
+                            schedule, next_after_now, 45, holidays_set,
+                            min_deadline_date=base_date,
+                        )[:3]
                         if upcoming:
                             # Deadline is now visible in the table, which is
                             # the actionable info — no banner needed. The
