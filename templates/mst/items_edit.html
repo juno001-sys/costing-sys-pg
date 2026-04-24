@@ -108,6 +108,16 @@
             {{ t("items.is_internal") }}
           </label>
         </div>
+        <div class="card-field">
+          <label>
+            <input type="checkbox" name="not_orderable" value="1"
+                   {% if item.is_orderable == false %}checked{% endif %}>
+            {{ t("items.not_orderable") }}
+          </label>
+          <div style="font-size:11px; color:#888; margin-top:4px;">
+            {{ t("items.not_orderable_help") }}
+          </div>
+        </div>
       </div>
 
       <!-- 統計情報（発注目安の根拠） -->

@@ -10,6 +10,25 @@
   </h2>
 
   <div>
+    {% if selected_store_id %}
+      <a href="{{ url_for('inventory_count_export_csv',
+                          store_id=selected_store_id) }}"
+         style="margin-right:12px; padding:4px 10px;
+                border:1px solid #5a8a5d; border-radius:4px;
+                background:#5a8a5d; color:#fff; text-decoration:none;
+                font-size:12px; font-weight:600;"
+         title="各品目の最終棚卸データを CSV で出力">
+        📥 CSV 出力（経理用）
+      </a>
+    {% else %}
+      <span style="margin-right:12px; padding:4px 10px;
+                   border:1px solid #c8d4bc; border-radius:4px;
+                   background:#f0f5ec; color:#999;
+                   font-size:12px; font-weight:600;"
+            title="店舗を選択するとCSVを出力できます">
+        📥 CSV 出力（経理用）
+      </span>
+    {% endif %}
     <a href="{{ url_for('inventory_locations', store_id=selected_store_id) }}">
       {{ t("inventory.locations_view") }}
     </a>

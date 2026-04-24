@@ -10,12 +10,13 @@ For each supplier, shows:
 
 import json
 from datetime import date, timedelta
-from flask import render_template, request, g
+from flask import render_template, request, redirect, url_for, g, jsonify
 
 from utils.access_scope import (
     get_accessible_stores,
     normalize_accessible_store_id,
 )
+from views.reports.audit_log import log_event
 
 
 DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
@@ -27,10 +28,13 @@ def _date_to_day_key(d):
     return DAY_KEYS[d.weekday()]
 
 
-def _get_delivery_dates(schedule, start_date, num_days, holidays_set):
+def _get_delivery_dates(schedule, start_date, num_days, holidays_set, min_deadline_date=None):
     """
     Get all delivery dates in a date range, excluding supplier holidays.
     Returns list of (delivery_date, deadline_date, deadline_time).
+
+    If min_deadline_date is set, skip deliveries whose deadline has passed
+    (operator can no longer place an order for them).
     """
     if not schedule:
         return []
@@ -51,6 +55,10 @@ def _get_delivery_dates(schedule, start_date, num_days, holidays_set):
             # If deadline falls on a supplier holiday, shift earlier
             while str(deadline_date) in holidays_set:
                 deadline_date -= timedelta(days=1)
+
+            # Skip past-deadline deliveries (non-actionable for ordering)
+            if min_deadline_date and deadline_date < min_deadline_date:
+                continue
 
             results.append({
                 'delivery_date': d,
@@ -104,6 +112,8 @@ def init_order_support_views(app, get_db):
 
         if selected_store_id:
             # ── Get all active suppliers with their items ────────────
+            # is_orderable filter: operator can hide a supplier from this
+            # screen (auto-resets when a purchase is recorded).
             suppliers = db.execute(
                 """
                 SELECT DISTINCT s.id, s.code, s.name, s.order_method, s.order_url,
@@ -111,7 +121,9 @@ def init_order_support_views(app, get_db):
                 FROM pur_suppliers s
                 JOIN mst_items i ON i.supplier_id = s.id
                 WHERE s.is_active = 1 AND s.company_id = %s
+                  AND s.is_orderable = TRUE
                   AND i.is_active = 1 AND i.company_id = %s
+                  AND i.is_orderable = TRUE
                 ORDER BY s.code
                 """,
                 (company_id, company_id),
@@ -152,6 +164,7 @@ def init_order_support_views(app, get_db):
                 SELECT i.id, i.code, i.name, i.supplier_id, i.est_order_qty, i.category
                 FROM mst_items i
                 WHERE i.is_active = 1 AND i.company_id = %s
+                  AND i.is_orderable = TRUE
                 ORDER BY i.code
                 """,
                 (company_id,),
@@ -166,35 +179,60 @@ def init_order_support_views(app, get_db):
                 items_by_supplier[sid].append(item)
                 all_item_ids.append(item["id"])
 
-            # ── Get latest stock counts ──────────────────────────────
+            # ── Latest stock count per item + purchases after that count,
+            #    collapsed into one query (was N+1: one SUM per item).
             stock_map = {}
             if all_item_ids:
                 stock_rows = db.execute(
                     """
-                    SELECT DISTINCT ON (item_id) item_id, counted_qty, count_date
-                    FROM stock_counts
-                    WHERE store_id = %s AND count_date <= %s
-                    ORDER BY item_id, count_date DESC, id DESC
+                    WITH latest AS (
+                      SELECT DISTINCT ON (item_id)
+                        item_id, counted_qty, count_date
+                      FROM stock_counts
+                      WHERE store_id = %s AND count_date <= %s
+                      ORDER BY item_id, count_date DESC, id DESC
+                    )
+                    SELECT
+                      l.item_id,
+                      l.counted_qty,
+                      l.count_date,
+                      COALESCE(SUM(p.quantity), 0) AS qty_after
+                    FROM latest l
+                    LEFT JOIN purchases p
+                      ON p.store_id = %s
+                     AND p.item_id = l.item_id
+                     AND p.is_deleted = 0
+                     AND p.delivery_date > l.count_date
+                    GROUP BY l.item_id, l.counted_qty, l.count_date
                     """,
-                    (selected_store_id, base_date),
+                    (selected_store_id, base_date, selected_store_id),
                 ).fetchall()
                 stock_map = {
-                    r["item_id"]: {"qty": r["counted_qty"] or 0, "date": r["count_date"]}
+                    r["item_id"]: {
+                        "qty": (r["counted_qty"] or 0) + (r["qty_after"] or 0),
+                        "date": r["count_date"],
+                    }
                     for r in stock_rows
                 }
 
-                # Purchases after last count per item
-                for item_id, info in stock_map.items():
-                    pur_row = db.execute(
-                        """
-                        SELECT COALESCE(SUM(quantity), 0) AS qty_after
-                        FROM purchases
-                        WHERE store_id = %s AND item_id = %s
-                          AND is_deleted = 0 AND delivery_date > %s
-                        """,
-                        (selected_store_id, item_id, info["date"]),
-                    ).fetchone()
-                    info["qty"] += pur_row["qty_after"] if pur_row else 0
+            # ── Load today's draft order qtys (one query for the store) ──
+            # Key: (supplier_id, item_id) → quantity. Used to pre-fill the
+            # qty inputs on the items table.
+            today_date = date.today()
+            draft_rows = db.execute(
+                """
+                SELECT d.supplier_id, i.item_id, i.quantity
+                FROM pur_order_drafts d
+                JOIN pur_order_draft_items i ON i.order_draft_id = d.id
+                WHERE d.company_id = %s
+                  AND d.store_id = %s
+                  AND d.order_date = %s
+                """,
+                (company_id, selected_store_id, today_date),
+            ).fetchall()
+            draft_qty_map = {
+                (r["supplier_id"], r["item_id"]): r["quantity"] for r in draft_rows
+            }
 
             # ── Build supplier cards ─────────────────────────────────
             for supplier in suppliers:
@@ -205,8 +243,11 @@ def init_order_support_views(app, get_db):
                 if supplier["holidays_off"]:
                     holidays_set |= store_holiday_set
 
-                # Delivery dates in the 7-day window
-                all_deliveries = _get_delivery_dates(schedule, base_date, window_days, holidays_set)
+                # Delivery dates in the 7-day window (deadline must be future)
+                all_deliveries = _get_delivery_dates(
+                    schedule, base_date, window_days, holidays_set,
+                    min_deadline_date=base_date,
+                )
                 deliveries = all_deliveries[:3]  # Show only next 2-3 deliveries
 
                 # Find next delivery after window (for gap warning)
@@ -227,14 +268,34 @@ def init_order_support_views(app, get_db):
                             'last_in_window': all_deliveries[-1]['delivery_date'],
                         }
                 elif not all_deliveries and schedule:
-                    # No deliveries in window at all
+                    # No deliveries in window — try to surface up to 3 upcoming
+                    # deliveries beyond the window so the card matches the
+                    # 発注〆切 / 納品 layout of other suppliers. 45-day window
+                    # handles weekly (21d → 3) and biweekly (42d → 3) schedules.
                     next_after_now = _find_next_delivery_after(schedule, base_date - timedelta(days=1), holidays_set)
                     if next_after_now:
-                        gap_warning = {
-                            'days': (next_after_now - base_date).days,
-                            'next_date': next_after_now,
-                            'last_in_window': None,
-                        }
+                        upcoming = _get_delivery_dates(
+                            schedule, next_after_now, 45, holidays_set,
+                            min_deadline_date=base_date,
+                        )[:3]
+                        if upcoming:
+                            # Deadline is now visible in the table, which is
+                            # the actionable info — no banner needed. The
+                            # banner is only a fallback when we can't surface
+                            # dates below.
+                            deliveries = upcoming
+                        else:
+                            gap_warning = {
+                                'days': (next_after_now - base_date).days,
+                                'next_date': next_after_now,
+                                'last_in_window': None,
+                            }
+
+                # Normal-supplier gap-banner suppression: once the earliest
+                # visible deadline has passed, the banner is stale — operator
+                # can't place an order for that delivery anymore.
+                if gap_warning and deliveries and deliveries[0]['deadline_date'] < base_date:
+                    gap_warning = None
 
                 # Build items list with stock info
                 supplier_items = items_by_supplier.get(sid, [])
@@ -264,6 +325,7 @@ def init_order_support_views(app, get_db):
                         "last_count_date": last_count_date,
                         "est_order_qty": est_qty,
                         "status": status,
+                        "draft_qty": draft_qty_map.get((sid, item["id"]), 0),
                     })
 
                 # Sort: shortage first, then low, then ok
@@ -352,3 +414,258 @@ def init_order_support_views(app, get_db):
             view_mode=view_mode,
             DAY_LABELS=DAY_LABELS,
         )
+
+    # ----------------------------------------
+    # In-screen 発注対象外 toggles. Operators can hide an item or an
+    # entire supplier from the order-support screen without leaving
+    # the page. Both auto-reset to visible when a purchase lands
+    # (see pur_purchases INSERT trigger).
+    # ----------------------------------------
+    def _redirect_back_to_order_support():
+        return redirect(url_for(
+            "order_support",
+            store_id=request.form.get("store_id") or request.args.get("store_id"),
+            base_date=request.form.get("base_date") or request.args.get("base_date"),
+            view=request.form.get("view") or request.args.get("view"),
+        ))
+
+    @app.route("/order-support/item/<int:item_id>/hide", methods=["POST"])
+    def order_support_hide_item(item_id):
+        db = get_db()
+        company_id = getattr(g, "current_company_id", None)
+        db.execute(
+            "UPDATE mst_items SET is_orderable = FALSE "
+            "WHERE id = %s AND company_id = %s",
+            (item_id, company_id),
+        )
+        try:
+            log_event(
+                db, action="HIDE", module="order_support",
+                entity_table="mst_items", entity_id=str(item_id),
+                message="Item hidden from order support",
+            )
+        except Exception:
+            pass
+        db.commit()
+        return _redirect_back_to_order_support()
+
+    @app.route("/order-support/supplier/<int:supplier_id>/order-form", methods=["GET"])
+    def order_support_order_form(supplier_id):
+        """Render a printable / mailto / web-ref / phone-ref order form
+        for one supplier, based on the supplier's order_method. Reads
+        today's draft_order_items to fill the qty column."""
+        db = get_db()
+        company_id = getattr(g, "current_company_id", None)
+
+        try:
+            store_id = int(request.args.get("store_id") or 0)
+        except (TypeError, ValueError):
+            store_id = 0
+        if not (company_id and store_id):
+            return "missing store_id", 400
+
+        supplier = db.execute(
+            """
+            SELECT id, code, name, email, fax, phone, company_phone,
+                   contact_person, contact_phone, address,
+                   order_method, order_url, order_notes, delivery_schedule,
+                   holidays_off
+            FROM pur_suppliers
+            WHERE id = %s AND company_id = %s AND is_active = 1
+            """,
+            (supplier_id, company_id),
+        ).fetchone()
+        if not supplier:
+            return "supplier not found", 404
+
+        store = db.execute(
+            "SELECT id, code, name FROM mst_stores WHERE id = %s AND company_id = %s",
+            (store_id, company_id),
+        ).fetchone()
+        company = db.execute(
+            "SELECT id, code, name FROM mst_companies WHERE id = %s",
+            (company_id,),
+        ).fetchone()
+
+        today_date = date.today()
+
+        draft_items = db.execute(
+            """
+            SELECT di.item_id, di.quantity,
+                   i.code  AS item_code,
+                   i.name  AS item_name,
+                   i.unit  AS item_unit,
+                   i.category
+            FROM pur_order_drafts d
+            JOIN pur_order_draft_items di ON di.order_draft_id = d.id
+            JOIN mst_items i ON i.id = di.item_id
+            WHERE d.company_id = %s
+              AND d.store_id = %s
+              AND d.supplier_id = %s
+              AND d.order_date = %s
+              AND di.quantity > 0
+            ORDER BY i.code
+            """,
+            (company_id, store_id, supplier_id, today_date),
+        ).fetchall()
+
+        # Next-delivery date to pre-fill 納品希望日 on the form.
+        # Reuse the supplier's delivery_schedule + holidays.
+        schedule = supplier["delivery_schedule"] or {}
+        holiday_rows = db.execute(
+            """
+            SELECT holiday_date FROM supplier_holidays
+            WHERE supplier_id = %s AND company_id = %s
+              AND holiday_date >= %s AND holiday_date <= %s
+            """,
+            (supplier_id, company_id, today_date, today_date + timedelta(days=45)),
+        ).fetchall()
+        holidays_set = {str(h["holiday_date"]) for h in holiday_rows}
+        if supplier["holidays_off"]:
+            store_holiday_rows = db.execute(
+                """
+                SELECT holiday_date FROM store_holidays
+                WHERE store_id = %s AND company_id = %s
+                  AND holiday_date >= %s AND holiday_date <= %s
+                """,
+                (store_id, company_id, today_date, today_date + timedelta(days=45)),
+            ).fetchall()
+            holidays_set |= {str(h["holiday_date"]) for h in store_holiday_rows}
+
+        delivery_candidates = _get_delivery_dates(
+            schedule, today_date, 45, holidays_set, min_deadline_date=today_date,
+        )
+        next_delivery = delivery_candidates[0] if delivery_candidates else None
+
+        method = (supplier["order_method"] or "").lower().strip()
+
+        # Plain-text body used both by the mailto: link and the copy-paste panel.
+        mail_lines = [
+            f"{supplier['name']} ご担当者様",
+            "",
+            "お世話になっております。",
+            f"{company['name'] if company else ''} {store['name'] if store else ''} です。",
+            "以下の通り発注いたします。",
+            "",
+        ]
+        if next_delivery:
+            mail_lines.append(f"納品希望日：{next_delivery['delivery_date'].strftime('%Y-%m-%d')}（{next_delivery['delivery_day_label']}）")
+            mail_lines.append("")
+        mail_lines.append("---")
+        for it in draft_items:
+            unit_tail = f" ×{it['item_unit']}" if it['item_unit'] else ""
+            code_head = f"[{it['item_code']}] " if it['item_code'] else ""
+            mail_lines.append(f"{code_head}{it['item_name']} — {it['quantity']}{unit_tail}")
+        mail_lines.append("---")
+        if supplier["order_notes"]:
+            mail_lines.append("")
+            mail_lines.append(f"備考：{supplier['order_notes']}")
+        mail_lines.append("")
+        mail_lines.append("何卒よろしくお願いいたします。")
+        mail_body_plain = "\n".join(mail_lines)
+
+        return render_template(
+            "pur/order_form.html",
+            supplier=supplier,
+            store=store,
+            company=company,
+            order_date=today_date,
+            draft_items=draft_items,
+            next_delivery=next_delivery,
+            method=method,
+            mail_body_plain=mail_body_plain,
+        )
+
+    @app.route("/order-support/draft/save", methods=["POST"])
+    def order_support_draft_save():
+        """Upsert a single (store, supplier, item, today) draft qty. JSON body:
+        {store_id, supplier_id, item_id, quantity}.
+        Quantity = 0 removes the row; header is kept (operator may add more
+        items later the same day)."""
+        db = get_db()
+        company_id = getattr(g, "current_company_id", None)
+        current_user = getattr(g, "current_user", None) or {}
+        operator_id = current_user.get("id")
+
+        payload = request.get_json(silent=True) or {}
+        try:
+            store_id = int(payload.get("store_id") or 0)
+            supplier_id = int(payload.get("supplier_id") or 0)
+            item_id = int(payload.get("item_id") or 0)
+            quantity = int(payload.get("quantity") or 0)
+        except (TypeError, ValueError):
+            return jsonify({"ok": False, "error": "invalid_payload"}), 400
+
+        if not (company_id and store_id and supplier_id and item_id):
+            return jsonify({"ok": False, "error": "missing_fields"}), 400
+        if quantity < 0:
+            return jsonify({"ok": False, "error": "negative_qty"}), 400
+
+        # Verify the item + supplier belong to the current company (defense in depth)
+        ok_row = db.execute(
+            """
+            SELECT 1
+            FROM mst_items i
+            JOIN pur_suppliers s ON s.id = %s AND s.company_id = i.company_id
+            WHERE i.id = %s AND i.company_id = %s
+            """,
+            (supplier_id, item_id, company_id),
+        ).fetchone()
+        if not ok_row:
+            return jsonify({"ok": False, "error": "not_found"}), 404
+
+        today_date = date.today()
+
+        # Upsert header
+        header_row = db.execute(
+            """
+            INSERT INTO pur_order_drafts
+              (company_id, store_id, supplier_id, order_date, operator_id, status, updated_at)
+            VALUES (%s, %s, %s, %s, %s, 'draft', NOW())
+            ON CONFLICT (company_id, store_id, supplier_id, order_date)
+            DO UPDATE SET operator_id = EXCLUDED.operator_id,
+                          updated_at  = NOW()
+            RETURNING id
+            """,
+            (company_id, store_id, supplier_id, today_date, operator_id),
+        ).fetchone()
+        header_id = header_row["id"]
+
+        if quantity == 0:
+            db.execute(
+                "DELETE FROM pur_order_draft_items WHERE order_draft_id = %s AND item_id = %s",
+                (header_id, item_id),
+            )
+        else:
+            db.execute(
+                """
+                INSERT INTO pur_order_draft_items (order_draft_id, item_id, quantity)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (order_draft_id, item_id)
+                DO UPDATE SET quantity = EXCLUDED.quantity
+                """,
+                (header_id, item_id, quantity),
+            )
+
+        db.commit()
+        return jsonify({"ok": True, "quantity": quantity})
+
+    @app.route("/order-support/supplier/<int:supplier_id>/hide", methods=["POST"])
+    def order_support_hide_supplier(supplier_id):
+        db = get_db()
+        company_id = getattr(g, "current_company_id", None)
+        db.execute(
+            "UPDATE pur_suppliers SET is_orderable = FALSE "
+            "WHERE id = %s AND company_id = %s",
+            (supplier_id, company_id),
+        )
+        try:
+            log_event(
+                db, action="HIDE", module="order_support",
+                entity_table="pur_suppliers", entity_id=str(supplier_id),
+                message="Supplier hidden from order support",
+            )
+        except Exception:
+            pass
+        db.commit()
+        return _redirect_back_to_order_support()

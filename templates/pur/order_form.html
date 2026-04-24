@@ -1,0 +1,250 @@
+{% extends "layout/base.html" %}
+{% block title %}発注書 - {{ supplier.name }}{% endblock %}
+{% block content %}
+
+<style>
+  .order-sheet {
+    max-width: 720px;
+    margin: 16px auto;
+    background: #fff;
+    padding: 24px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+  }
+  .order-sheet h1 {
+    text-align: center;
+    margin: 0 0 18px 0;
+    font-size: 28px;
+    letter-spacing: 8px;
+  }
+  .order-sheet .meta-grid {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    font-size: 13px;
+  }
+  .order-sheet .meta-grid > div { line-height: 1.7; }
+  .order-sheet .recipient {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .order-sheet table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 14px;
+  }
+  .order-sheet th, .order-sheet td {
+    border: 1px solid #555;
+    padding: 6px 8px;
+  }
+  .order-sheet th {
+    background: #f0f0f0;
+    text-align: center;
+  }
+  .order-sheet .num { text-align: right; }
+  .order-sheet .signature-row {
+    margin-top: 30px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 20px;
+  }
+  .order-sheet .signature-box {
+    width: 120px;
+    height: 80px;
+    border: 1px solid #555;
+    text-align: center;
+    font-size: 11px;
+    color: #888;
+    padding-top: 4px;
+  }
+  .no-print {
+    margin: 12px auto;
+    max-width: 720px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .action-btn {
+    padding: 8px 14px;
+    background: #5a8a5d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .action-btn:hover { background: #3a6c3e; }
+  .action-btn.secondary { background: #888; }
+
+  .method-block {
+    max-width: 720px;
+    margin: 16px auto;
+    padding: 16px;
+    background: #f0f5ec;
+    border: 1px solid #c8d4bc;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  .method-block h3 { margin-top: 0; }
+  .method-block pre {
+    background: #fff;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 12px;
+  }
+
+  @media print {
+    body { background: #fff !important; }
+    .no-print, nav, header, footer, .app-header, .method-block { display: none !important; }
+    .order-sheet { border: none; margin: 0; padding: 0; max-width: 100%; }
+  }
+</style>
+
+<!-- Actions (hidden when printing) -->
+<div class="no-print">
+  <a href="javascript:window.print()" class="action-btn">🖨 印刷</a>
+  {% if method == 'mail' and supplier.email %}
+    <a href="mailto:{{ supplier.email }}?subject={{ ('発注書 ' + store.name + ' ' + order_date.isoformat())|urlencode }}&body={{ mail_body_plain|urlencode }}"
+       class="action-btn">✉️ メールで送る</a>
+  {% endif %}
+  {% if method == 'web' and supplier.order_url %}
+    <a href="{{ supplier.order_url }}" target="_blank" class="action-btn">🔗 発注サイトを開く</a>
+  {% endif %}
+  <a href="{{ url_for('order_support', store_id=store.id) }}" class="action-btn secondary">← 戻る</a>
+</div>
+
+{% if not draft_items %}
+  <div class="order-sheet">
+    <p style="color:#c75a4a; text-align:center;">
+      発注数が入力されていません。発注サポート画面で数量を入力してから再度お試しください。
+    </p>
+  </div>
+{% else %}
+
+<!-- The 発注書 itself — printed as-is for FAX, also shown on screen for
+     all methods so the operator can double-check the content. -->
+<div class="order-sheet">
+  <h1>発 注 書</h1>
+
+  <div class="meta-grid">
+    <div>
+      <div class="recipient">{{ supplier.name }} <span style="font-size:14px;">御中</span></div>
+      {% if supplier.contact_person %}<div>ご担当：{{ supplier.contact_person }} 様</div>{% endif %}
+      {% if supplier.fax %}<div>FAX：{{ supplier.fax }}</div>{% endif %}
+    </div>
+    <div style="text-align:right;">
+      <div>発注日：{{ order_date.strftime('%Y年%m月%d日') }}</div>
+      {% if next_delivery %}
+        <div>納品希望日：{{ next_delivery.delivery_date.strftime('%Y年%m月%d日') }}（{{ next_delivery.delivery_day_label }}）</div>
+      {% else %}
+        <div>納品希望日：_____________________</div>
+      {% endif %}
+      <div style="margin-top:8px; font-weight:700;">{{ company.name }}</div>
+      <div>{{ store.name }}</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:40px;">No.</th>
+        <th style="width:90px;">コード</th>
+        <th>品目名</th>
+        <th style="width:90px;">数量</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in draft_items %}
+      <tr>
+        <td class="num">{{ loop.index }}</td>
+        <td>{{ it.item_code or '' }}</td>
+        <td>{{ it.item_name }}</td>
+        <td class="num">{{ "{:,}".format(it.quantity) }}{% if it.item_unit %} ×{{ it.item_unit }}{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if supplier.order_notes %}
+    <div style="margin-top:10px; padding:8px; background:#f8f9fa; font-size:12px;">
+      📝 {{ supplier.order_notes }}
+    </div>
+  {% endif %}
+
+  <div class="signature-row">
+    <div class="signature-box">発注者印</div>
+    <div class="signature-box">受領印</div>
+  </div>
+</div>
+
+<!-- Method-specific panels (hidden in print) -->
+{% if method == 'mail' %}
+<div class="method-block no-print">
+  <h3>✉️ メール送信用テキスト</h3>
+  <p style="color:#555;">
+    件名と本文をコピーして、メールアプリに貼り付けてください。
+    「メールで送る」ボタンを使うと自動で埋まりますが、うまく起動しない場合はこちらを使ってください。
+  </p>
+  <div><strong>宛先:</strong> {{ supplier.email or '（メール未登録）' }}</div>
+  <div><strong>件名:</strong> 発注書 {{ store.name }} {{ order_date.strftime('%Y-%m-%d') }}</div>
+  <pre id="mail-body-text">{{ mail_body_plain }}</pre>
+  <button type="button" class="action-btn" onclick="navigator.clipboard.writeText(document.getElementById('mail-body-text').textContent).then(()=>alert('コピーしました'))">
+    📋 本文をコピー
+  </button>
+</div>
+{% elif method == 'web' %}
+<div class="method-block no-print">
+  <h3>🔗 発注サイト入力用リスト</h3>
+  <p style="color:#555;">発注サイトに手入力する際のリストです。タブ区切りでコピーできます。</p>
+  <pre id="web-list-text">{% for it in draft_items %}{{ it.item_code or '' }}	{{ it.item_name }}	{{ it.quantity }}
+{% endfor %}</pre>
+  <button type="button" class="action-btn" onclick="navigator.clipboard.writeText(document.getElementById('web-list-text').textContent).then(()=>alert('コピーしました'))">
+    📋 リストをコピー
+  </button>
+</div>
+{% elif method == 'phone' %}
+<div class="method-block no-print">
+  <h3>📞 電話発注用リスト</h3>
+  <p style="color:#555;">担当者に読み上げるためのリストです。</p>
+  <div style="font-size:16px; margin-bottom:8px;">
+    <strong>電話番号:</strong>
+    {% set phone = supplier.contact_phone or supplier.phone or supplier.company_phone %}
+    {% if phone %}<a href="tel:{{ phone }}">{{ phone }}</a>{% else %}（未登録）{% endif %}
+    {% if supplier.contact_person %} ／ {{ supplier.contact_person }} 様{% endif %}
+  </div>
+  <ol style="font-size:14px; line-height:1.8;">
+    {% for it in draft_items %}
+      <li>{{ it.item_name }} — <strong>{{ it.quantity }}</strong>{% if it.item_unit %} ×{{ it.item_unit }}{% endif %}</li>
+    {% endfor %}
+  </ol>
+</div>
+{% elif method == 'fax' %}
+<div class="method-block no-print">
+  <h3>🖨 FAX送信手順</h3>
+  <ol>
+    <li>上の「印刷」ボタンで発注書を印刷</li>
+    {% if supplier.fax %}
+      <li>FAX番号：<strong>{{ supplier.fax }}</strong> へ送信</li>
+    {% else %}
+      <li style="color:#c75a4a;">⚠ FAX番号が仕入先マスタに登録されていません。</li>
+    {% endif %}
+  </ol>
+</div>
+{% else %}
+<div class="method-block no-print">
+  <h3>発注方法</h3>
+  <p style="color:#555;">仕入先マスタに発注方法が登録されていません。「印刷」ボタンで発注書を出力してお使いください。</p>
+</div>
+{% endif %}
+
+{% endif %}
+
+{% endblock %}
