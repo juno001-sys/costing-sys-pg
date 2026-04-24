@@ -6,15 +6,15 @@
 {% set active_tab = 'paste' %}
 {% include "pur/partials/_purchase_tabs.html" %}
 
-<p style="color:#555; margin-bottom:16px;">
-  {{ t("purchase.delivery_paste.description") }}<br>
-  {{ t("purchase.delivery_paste.description2") }}
-</p>
-
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <!--  PASTE tab                                                           -->
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <div id="tab_paste_content">
+
+  <p style="color:#555; margin-bottom:16px;">
+    {{ t("purchase.delivery_paste.description") }}<br>
+    {{ t("purchase.delivery_paste.description2") }}
+  </p>
 
   <div id="step1">
     <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:12px;">
@@ -109,7 +109,21 @@
 <!-- ═══════════════════════════════════════════════════════════════════ -->
 <div id="tab_csv_content" style="display:none;">
   <p style="color:#555; margin-bottom:14px;">
-    仕入先サイトからダウンロードした CSV ファイルをアップロードすると、伝票ごとに分かれた取込画面を表示します。<br>
+    {% if csv_profile_names %}
+      対応フォーマット：
+      {% for name in csv_profile_names %}
+        <span style="display:inline-block; background:#f0f5ec; border:1px solid #e0e8d8;
+                     color:#5a8a5d; padding:2px 10px; border-radius:12px;
+                     font-weight:600; margin-right:4px;">
+          {{ name }}
+        </span>
+      {% endfor %}
+      <br>
+      上記の仕入先サイトからダウンロードしたCSVファイルをアップロードすると、伝票ごとに分かれた取込画面を表示します。
+    {% else %}
+      CSVファイルをアップロードすると、伝票ごとに分かれた取込画面を表示します。
+    {% endif %}
+    <br>
     新しい仕入先サイトに対応するには、
     <a href="{{ url_for('admin_csv_profiles') }}" style="color:#5a8a5d;">
       CSV取込プロファイル管理

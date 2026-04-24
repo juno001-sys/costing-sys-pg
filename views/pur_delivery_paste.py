@@ -275,11 +275,17 @@ def init_delivery_paste_views(app, get_db):
             for r in items
         ]
 
+        # Active CSV profiles for this company — the names are shown in
+        # the CSV tab description so operators know which exports work.
+        csv_profiles = _load_csv_profiles(db, company_id)
+        csv_profile_names = [p["name"] for p in csv_profiles]
+
         return render_template(
             "pur/delivery_paste.html",
             items_json=json.dumps(items_list, ensure_ascii=False),
             stores=stores,
             suppliers=suppliers,
+            csv_profile_names=csv_profile_names,
         )
 
     # ── POST: parse uploaded CSV (Shift-JIS / cp932) → JSON by invoice ──────
