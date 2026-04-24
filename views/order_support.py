@@ -233,19 +233,25 @@ def init_order_support_views(app, get_db):
                             'last_in_window': all_deliveries[-1]['delivery_date'],
                         }
                 elif not all_deliveries and schedule:
-                    # No deliveries in window at all — surface the next one
-                    # beyond the window so the card still shows a
-                    # 発注〆切 / 納品 pair (consistent with other suppliers).
+                    # No deliveries in window at all — surface up to 3 upcoming
+                    # deliveries beyond the window so the card matches the
+                    # 発注〆切 / 納品 layout of other suppliers.
                     next_after_now = _find_next_delivery_after(schedule, base_date - timedelta(days=1), holidays_set)
                     if next_after_now:
-                        next_entries = _get_delivery_dates(schedule, next_after_now, 1, holidays_set)
-                        if next_entries:
-                            deliveries = next_entries
+                        upcoming = _get_delivery_dates(schedule, next_after_now, 14, holidays_set)[:3]
+                        if upcoming:
+                            deliveries = upcoming
                         gap_warning = {
                             'days': (next_after_now - base_date).days,
                             'next_date': next_after_now,
                             'last_in_window': None,
                         }
+
+                # Stale-banner suppression: once the earliest visible deadline
+                # has passed, the "◯日空きます" banner is no longer actionable
+                # (operator can't meet that deadline anymore) — hide it.
+                if gap_warning and deliveries and deliveries[0]['deadline_date'] < base_date:
+                    gap_warning = None
 
                 # Build items list with stock info
                 supplier_items = items_by_supplier.get(sid, [])
