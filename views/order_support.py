@@ -233,7 +233,7 @@ def init_order_support_views(app, get_db):
                             'last_in_window': all_deliveries[-1]['delivery_date'],
                         }
                 elif not all_deliveries and schedule:
-                    # No deliveries in window at all — surface up to 3 upcoming
+                    # No deliveries in window — try to surface up to 3 upcoming
                     # deliveries beyond the window so the card matches the
                     # 発注〆切 / 納品 layout of other suppliers. 45-day window
                     # handles weekly (21d → 3) and biweekly (42d → 3) schedules.
@@ -241,18 +241,21 @@ def init_order_support_views(app, get_db):
                     if next_after_now:
                         upcoming = _get_delivery_dates(schedule, next_after_now, 45, holidays_set)[:3]
                         if upcoming:
+                            # Deadline is now visible in the table, which is
+                            # the actionable info — no banner needed. The
+                            # banner is only a fallback when we can't surface
+                            # dates below.
                             deliveries = upcoming
-                        gap_warning = {
-                            'days': (next_after_now - base_date).days,
-                            'next_date': next_after_now,
-                            'last_in_window': None,
-                        }
+                        else:
+                            gap_warning = {
+                                'days': (next_after_now - base_date).days,
+                                'next_date': next_after_now,
+                                'last_in_window': None,
+                            }
 
-                # Gap-banner suppression: once the earliest visible deadline
-                # has passed, the banner is stale — the operator cannot place
-                # an order for that delivery anymore, even if the delivery
-                # date itself is still in the future. Delivery date is
-                # irrelevant; deadline is what gates actionability.
+                # Normal-supplier gap-banner suppression: once the earliest
+                # visible deadline has passed, the banner is stale — operator
+                # can't place an order for that delivery anymore.
                 if gap_warning and deliveries and deliveries[0]['deadline_date'] < base_date:
                     gap_warning = None
 
