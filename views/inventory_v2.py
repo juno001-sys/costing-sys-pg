@@ -903,6 +903,32 @@ def init_inventory_views_v3(app, get_db):
             (selected_store_id, count_date, company_id),
         ).fetchall()
 
+        # Empty result: redirect back with a helpful flash (and nudge toward
+        # the most recent count date if the operator happened to pick a
+        # day with no saved counts — common when today is selected by default).
+        if not rows:
+            latest_with_data = db.execute(
+                """
+                SELECT MAX(count_date) AS d
+                FROM stock_counts
+                WHERE store_id = %s
+                """,
+                (selected_store_id,),
+            ).fetchone()
+            latest_date = latest_with_data["d"] if latest_with_data else None
+            if latest_date:
+                flash(
+                    f"{count_date} の棚卸しデータがありません。"
+                    f"最終棚卸日（{latest_date}）を選択して再度お試しください。"
+                )
+            else:
+                flash(f"{count_date} の棚卸しデータがありません。")
+            return redirect(url_for(
+                "inventory_count_v3",
+                store_id=selected_store_id,
+                count_date=count_date,
+            ))
+
         item_ids = [r["item_id"] for r in rows] or [0]
         price_rows = db.execute(
             """
