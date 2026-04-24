@@ -128,7 +128,9 @@
         <th style="text-align:right;">{{ t("order_support.current_stock") }}</th>
         <th style="text-align:center;">{{ t("inventory.sp.last_count") }}</th>
         <th style="text-align:right;">{{ t("order_support.est_qty") }}</th>
+        {% if (card.order_method or '')|lower|trim != 'web' %}
         <th style="text-align:right; width:90px;">発注数</th>
+        {% endif %}
         <th>{{ t("order_support.status") }}</th>
         <th style="text-align:center; width:70px;">リストから削除</th>
       </tr>
@@ -150,6 +152,7 @@
           {{ item.last_count_date or '—' }}
         </td>
         <td style="text-align:right;">{{ item.est_order_qty or '-' }}</td>
+        {% if (card.order_method or '')|lower|trim != 'web' %}
         <td style="text-align:right;">
           <input type="number" min="0" step="1"
                  value="{{ item.draft_qty if item.draft_qty else '' }}"
@@ -159,6 +162,7 @@
                  style="width:70px; text-align:right; padding:2px 4px;">
           <span class="js-draft-status" style="font-size:10px; color:#888;"></span>
         </td>
+        {% endif %}
         <td style="text-align:center;">
           {% if item.status == 'shortage' %}
             <span style="color:#c75a4a; font-weight:600;">⚠ {{ t("order_support.status_shortage") }}</span>
