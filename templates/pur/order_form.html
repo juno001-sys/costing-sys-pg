@@ -148,7 +148,12 @@
         <div>納品希望日：_____________________</div>
       {% endif %}
       <div style="margin-top:8px; font-weight:700;">{{ company.name }}</div>
-      <div>{{ store.name }}</div>
+      <div style="font-weight:700;">{{ store.name }}</div>
+      {% if store.address %}<div style="font-size:12px;">{{ store.address }}</div>{% endif %}
+      {% if store.phone %}<div style="font-size:12px;">TEL：{{ store.phone }}</div>{% endif %}
+      {% if store.fax %}<div style="font-size:12px;">FAX：{{ store.fax }}</div>{% endif %}
+      {% if store.email %}<div style="font-size:12px;">{{ store.email }}</div>{% endif %}
+      {% if store.contact_person %}<div style="font-size:12px;">担当：{{ store.contact_person }}</div>{% endif %}
     </div>
   </div>
 

@@ -67,6 +67,32 @@
       <label>{{ t("stores.closed_on") }}：</label>
       <input type="date" name="closed_on" value="{{ store.closed_on or '' }}">
     </div>
+
+    <hr style="margin: 20px 0; border: none; border-top: 1px solid #e0e8d8;">
+    <h4 style="margin: 0 0 12px 0; color: #3a6c3e; font-size: 14px;">
+      {{ t("stores.contact_section") }}
+    </h4>
+    <div class="form-group">
+      <label>{{ t("stores.address") }}：</label>
+      <input type="text" name="address" value="{{ store.address or '' }}" style="width:100%; max-width:480px;">
+    </div>
+    <div class="form-group">
+      <label>{{ t("stores.phone") }}：</label>
+      <input type="text" name="phone" value="{{ store.phone or '' }}">
+    </div>
+    <div class="form-group">
+      <label>{{ t("stores.fax") }}：</label>
+      <input type="text" name="fax" value="{{ store.fax or '' }}">
+    </div>
+    <div class="form-group">
+      <label>{{ t("stores.email") }}：</label>
+      <input type="email" name="email" value="{{ store.email or '' }}">
+    </div>
+    <div class="form-group">
+      <label>{{ t("stores.contact_person") }}：</label>
+      <input type="text" name="contact_person" value="{{ store.contact_person or '' }}">
+    </div>
+
     <div class="tab-save-bar">
       <button type="submit" class="btn btn-primary">{{ t("common.update") }}</button>
       <button type="submit" name="delete" value="1" class="btn"

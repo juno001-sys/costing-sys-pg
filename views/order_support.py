@@ -479,7 +479,12 @@ def init_order_support_views(app, get_db):
             return "supplier not found", 404
 
         store = db.execute(
-            "SELECT id, code, name FROM mst_stores WHERE id = %s AND company_id = %s",
+            """
+            SELECT id, code, name,
+                   address, phone, fax, email, contact_person
+            FROM mst_stores
+            WHERE id = %s AND company_id = %s
+            """,
             (store_id, company_id),
         ).fetchone()
         company = db.execute(
