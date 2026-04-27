@@ -941,7 +941,7 @@ def init_master_views(app, get_db):
         store = db.execute(
             """
             SELECT id, code, name, seats, opened_on, closed_on, is_active,
-                   address, phone, fax, email, contact_person
+                   address, phone, fax, email, contact_person, contact_mobile
             FROM mst_stores
             WHERE id = %s
              AND company_id = %s
@@ -1111,6 +1111,7 @@ def init_master_views(app, get_db):
             fax = (request.form.get("fax") or "").strip()
             email = (request.form.get("email") or "").strip()
             contact_person = (request.form.get("contact_person") or "").strip()
+            contact_mobile = (request.form.get("contact_mobile") or "").strip()
 
             def to_int_or_none(v):
                 if not v:
@@ -1139,12 +1140,12 @@ def init_master_views(app, get_db):
                 SET code = %s, name = %s, seats = %s,
                     opened_on = %s, closed_on = %s,
                     address = %s, phone = %s, fax = %s,
-                    email = %s, contact_person = %s
+                    email = %s, contact_person = %s, contact_mobile = %s
                 WHERE id = %s
                 """,
                 (code or None, name, seats_val, opened_on or None, closed_on or None,
                  address or None, phone or None, fax or None,
-                 email or None, contact_person or None,
+                 email or None, contact_person or None, contact_mobile or None,
                  store_id),
             )
 

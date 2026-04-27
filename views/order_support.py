@@ -481,7 +481,7 @@ def init_order_support_views(app, get_db):
         store = db.execute(
             """
             SELECT id, code, name,
-                   address, phone, fax, email, contact_person
+                   address, phone, fax, email, contact_person, contact_mobile
             FROM mst_stores
             WHERE id = %s AND company_id = %s
             """,

@@ -150,10 +150,11 @@
       <div style="margin-top:8px; font-weight:700;">{{ company.name }}</div>
       <div style="font-weight:700;">{{ store.name }}</div>
       {% if store.address %}<div style="font-size:12px;">{{ store.address }}</div>{% endif %}
-      {% if store.phone %}<div style="font-size:12px;">TEL：{{ store.phone }}</div>{% endif %}
+      {% if store.phone %}<div style="font-size:12px;">店舗電話：{{ store.phone }}</div>{% endif %}
       {% if store.fax %}<div style="font-size:12px;">FAX：{{ store.fax }}</div>{% endif %}
       {% if store.email %}<div style="font-size:12px;">{{ store.email }}</div>{% endif %}
       {% if store.contact_person %}<div style="font-size:12px;">担当：{{ store.contact_person }}</div>{% endif %}
+      {% if store.contact_mobile %}<div style="font-size:12px;">担当携帯：{{ store.contact_mobile }}</div>{% endif %}
     </div>
   </div>
 
