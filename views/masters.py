@@ -940,7 +940,8 @@ def init_master_views(app, get_db):
         # 店舗情報
         store = db.execute(
             """
-            SELECT id, code, name, seats, opened_on, closed_on, is_active
+            SELECT id, code, name, seats, opened_on, closed_on, is_active,
+                   address, phone, fax, email, contact_person, contact_mobile
             FROM mst_stores
             WHERE id = %s
              AND company_id = %s
@@ -1105,6 +1106,12 @@ def init_master_views(app, get_db):
             seats_raw = (request.form.get("seats") or "").strip()
             opened_on = (request.form.get("opened_on") or "").strip()
             closed_on = (request.form.get("closed_on") or "").strip()
+            address = (request.form.get("address") or "").strip()
+            phone = (request.form.get("phone") or "").strip()
+            fax = (request.form.get("fax") or "").strip()
+            email = (request.form.get("email") or "").strip()
+            contact_person = (request.form.get("contact_person") or "").strip()
+            contact_mobile = (request.form.get("contact_mobile") or "").strip()
 
             def to_int_or_none(v):
                 if not v:
@@ -1130,10 +1137,16 @@ def init_master_views(app, get_db):
             db.execute(
                 """
                 UPDATE mst_stores
-                SET code = %s, name = %s, seats = %s, opened_on = %s, closed_on = %s
+                SET code = %s, name = %s, seats = %s,
+                    opened_on = %s, closed_on = %s,
+                    address = %s, phone = %s, fax = %s,
+                    email = %s, contact_person = %s, contact_mobile = %s
                 WHERE id = %s
                 """,
-                (code or None, name, seats_val, opened_on or None, closed_on or None, store_id),
+                (code or None, name, seats_val, opened_on or None, closed_on or None,
+                 address or None, phone or None, fax or None,
+                 email or None, contact_person or None, contact_mobile or None,
+                 store_id),
             )
 
             # ---- 仕入れ先紐付けの更新 ----

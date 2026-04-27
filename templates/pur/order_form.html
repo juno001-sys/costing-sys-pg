@@ -129,45 +129,99 @@
   </div>
 {% else %}
 
-<!-- The 発注書 itself — printed as-is for FAX, also shown on screen for
-     all methods so the operator can double-check the content. -->
+<!-- The 発注書 itself — laid out to match the Japanese B2B FAX 発注書
+     convention: recipient (TL) / 発注書 title (TC) / sender (TR),
+     big centered 納品日 as the visual anchor, simple
+     商品名 / 数量 / 備考 table, リファックス footer. -->
 <div class="order-sheet">
-  <h1>発 注 書</h1>
 
-  <div class="meta-grid">
-    <div>
-      <div class="recipient">{{ supplier.name }} <span style="font-size:14px;">御中</span></div>
-      {% if supplier.contact_person %}<div>ご担当：{{ supplier.contact_person }} 様</div>{% endif %}
-      {% if supplier.fax %}<div>FAX：{{ supplier.fax }}</div>{% endif %}
-    </div>
-    <div style="text-align:right;">
-      <div>発注日：{{ order_date.strftime('%Y年%m月%d日') }}</div>
-      {% if next_delivery %}
-        <div>納品希望日：{{ next_delivery.delivery_date.strftime('%Y年%m月%d日') }}（{{ next_delivery.delivery_day_label }}）</div>
-      {% else %}
-        <div>納品希望日：_____________________</div>
-      {% endif %}
-      <div style="margin-top:8px; font-weight:700;">{{ company.name }}</div>
-      <div>{{ store.name }}</div>
-    </div>
+  <!-- Header (3-column) -->
+  <table style="width:100%; border:none; border-collapse:collapse; margin-bottom:14px;">
+    <tr>
+      <!-- Recipient (top-left) -->
+      <td style="width:35%; vertical-align:top; border:none; padding:0;">
+        <div style="font-size:20px; font-weight:bold; margin-bottom:6px;">
+          {{ supplier.name }}
+          <span style="font-size:14px; font-weight:normal;">御中</span>
+        </div>
+        {% if supplier.contact_person %}
+          <div style="font-size:13px;">ご担当：{{ supplier.contact_person }} 様</div>
+        {% endif %}
+        {% if supplier.phone %}
+          <div style="font-size:13px;">TEL：{{ supplier.phone }}</div>
+        {% endif %}
+        {% if supplier.fax %}
+          <div style="font-size:13px;">FAX：{{ supplier.fax }}</div>
+        {% endif %}
+      </td>
+
+      <!-- Title (top-center) -->
+      <td style="width:30%; text-align:center; vertical-align:top; border:none; padding:0;">
+        <h1 style="margin:0; font-size:30px; letter-spacing:14px;">発 注 書</h1>
+        <div style="font-size:11px; color:#666; margin-top:8px;">
+          発注日：{{ order_date.strftime('%Y/%m/%d') }}
+        </div>
+      </td>
+
+      <!-- Sender (top-right) -->
+      <td style="width:35%; text-align:right; vertical-align:top; border:none; padding:0;">
+        <div style="font-size:14px; font-weight:bold;">{{ company.name }}</div>
+        <div style="font-size:14px; font-weight:bold;">{{ store.name }}</div>
+        {% if store.address %}<div style="font-size:11px;">{{ store.address }}</div>{% endif %}
+        {% if store.phone %}<div style="font-size:11px;">TEL：{{ store.phone }}</div>{% endif %}
+        {% if store.fax %}<div style="font-size:11px;">FAX：{{ store.fax }}</div>{% endif %}
+        {% if store.email %}<div style="font-size:11px;">{{ store.email }}</div>{% endif %}
+        {% if store.contact_person %}<div style="font-size:11px;">担当：{{ store.contact_person }}</div>{% endif %}
+        {% if store.contact_mobile %}<div style="font-size:11px;">担当携帯：{{ store.contact_mobile }}</div>{% endif %}
+      </td>
+    </tr>
+  </table>
+
+  <!-- Big centered 納品日 — the visual anchor of the FAX sheet.
+       Suppliers reportedly use this form as their internal pick
+       slip, so the delivery date stays prominent. -->
+  <div style="text-align:center; font-size:22px; font-weight:bold;
+              margin:22px 0 18px 0; padding:12px 0;
+              border-top:1.5px solid #555; border-bottom:1.5px solid #555;">
+    納品日：
+    {% if next_delivery %}
+      {{ next_delivery.delivery_date.strftime('%m月%d日') }}
+      （{{ next_delivery.delivery_day_label }}）
+    {% else %}
+      <span style="font-weight:normal; letter-spacing:6px;">　月　日</span>
+    {% endif %}
   </div>
 
-  <table>
+  <!-- Items table — simple 商品名 / 数量 / 備考 layout per the
+       sample. Code drops into 備考 so suppliers can match SKUs
+       without sacrificing a column. -->
+  <table style="width:100%;">
     <thead>
       <tr>
-        <th style="width:40px;">No.</th>
-        <th style="width:90px;">コード</th>
-        <th>品目名</th>
+        <th>商品名</th>
         <th style="width:90px;">数量</th>
+        <th style="width:200px;">備考</th>
       </tr>
     </thead>
     <tbody>
       {% for it in draft_items %}
       <tr>
-        <td class="num">{{ loop.index }}</td>
-        <td>{{ it.item_code or '' }}</td>
         <td>{{ it.item_name }}</td>
-        <td class="num">{{ "{:,}".format(it.quantity) }}{% if it.item_unit %} ×{{ it.item_unit }}{% endif %}</td>
+        <td class="num">
+          {{ "{:,}".format(it.quantity) }}{% if it.item_unit %} ×{{ it.item_unit }}{% endif %}
+        </td>
+        <td style="font-size:11px; color:#666;">
+          {% if it.item_code %}コード：{{ it.item_code }}{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      <!-- Three blank rows so the supplier can hand-write additions
+           or comments, matching the printed-form feel of the sample. -->
+      {% for _ in range(3) %}
+      <tr>
+        <td style="height:30px;">&nbsp;</td>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -179,10 +233,15 @@
     </div>
   {% endif %}
 
-  <div class="signature-row">
-    <div class="signature-box">発注者印</div>
-    <div class="signature-box">受領印</div>
-  </div>
+  <!-- Footer: re-fax request to the sender's own FAX -->
+  {% if store.fax %}
+    <div style="margin-top:30px; font-size:14px;">
+      リファックスをお願いいたします。
+    </div>
+    <div style="font-size:14px;">
+      FAX：{{ store.fax }}
+    </div>
+  {% endif %}
 </div>
 
 <!-- Method-specific panels (hidden in print) -->
