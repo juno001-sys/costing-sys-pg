@@ -105,8 +105,13 @@ def init_order_support_views(app, get_db):
         window_days = 7
         date_range = [base_date + timedelta(days=i) for i in range(window_days)]
 
-        # Extended window for gap detection (look ahead 30 days beyond the 7-day window)
-        extended_end = base_date + timedelta(days=window_days + 30)
+        # Extended window for gap detection (look ahead 30 days beyond the 7-day window).
+        # Widened to a full year so the same holiday sets can also drive the
+        # 納品日 calendar picker's long-term date range — the bounded lookups
+        # below (_get_delivery_dates / _find_next_delivery_after) only look
+        # within their own short windows, so the extra entries are harmless.
+        CALENDAR_HORIZON_DAYS = 365
+        extended_end = base_date + timedelta(days=CALENDAR_HORIZON_DAYS)
 
         supplier_cards = []
 
@@ -116,7 +121,9 @@ def init_order_support_views(app, get_db):
             # screen (auto-resets when a purchase is recorded).
             suppliers = db.execute(
                 """
-                SELECT DISTINCT s.id, s.code, s.name, s.order_method, s.order_url,
+                SELECT DISTINCT s.id, s.code, s.name, s.phone, s.email,
+                       s.contact_phone, s.company_phone,
+                       s.order_method, s.order_url,
                        s.delivery_schedule, s.order_notes, s.holidays_off
                 FROM pur_suppliers s
                 JOIN mst_items i ON i.supplier_id = s.id
@@ -348,10 +355,19 @@ def init_order_support_views(app, get_db):
                         'is_deadline': is_deadline,
                     })
 
+                # Same fallback order used on the order_form 'phone' method:
+                # contact_phone (直通) > phone (代表) > company_phone.
+                # Needed because some suppliers only have contact_phone filled
+                # in (e.g. SMS-order suppliers), so a plain s.phone lookup
+                # was showing nothing for them.
+                display_phone = supplier["contact_phone"] or supplier["phone"] or supplier["company_phone"]
+
                 supplier_cards.append({
                     'id': sid,
                     'code': supplier["code"],
                     'name': supplier["name"],
+                    'phone': display_phone,
+                    'email': supplier["email"],
                     'order_method': supplier["order_method"],
                     'order_url': supplier["order_url"],
                     'order_notes': supplier["order_notes"],
@@ -360,6 +376,11 @@ def init_order_support_views(app, get_db):
                     'gap_warning': gap_warning,
                     'item_rows': item_rows,
                     'day_columns': day_columns,
+                    # Drives the 納品日 calendar picker: which weekdays this
+                    # supplier delivers on, and which upcoming dates are
+                    # holidays (already merged with store holidays above).
+                    'schedule_days': sorted(schedule.keys(), key=DAY_KEYS.index),
+                    'holiday_dates': sorted(holidays_set),
                     'shortage_count': sum(1 for r in item_rows if r["status"] == "shortage"),
                     'low_count': sum(1 for r in item_rows if r["status"] == "low"),
                 })
@@ -413,6 +434,10 @@ def init_order_support_views(app, get_db):
             sheet_rows=sheet_rows,
             view_mode=view_mode,
             DAY_LABELS=DAY_LABELS,
+            # Bounds for the 納品日 calendar picker next to 発注書生成 —
+            # operators plan well beyond the 7-day window (long-lead orders).
+            min_delivery_date=str(date.today()),
+            max_delivery_date=str(date.today() + timedelta(days=365)),
         )
 
     # ----------------------------------------
@@ -517,13 +542,18 @@ def init_order_support_views(app, get_db):
         # Next-delivery date to pre-fill 納品希望日 on the form.
         # Reuse the supplier's delivery_schedule + holidays.
         schedule = supplier["delivery_schedule"] or {}
+        # 1-year lookahead — the operator plans deliveries well beyond the
+        # 7-day order-support window (e.g. seasonal / long-lead orders),
+        # so holiday lookups and the deadline calc need the same horizon.
+        LONG_TERM_DAYS = 365
+        horizon_end = today_date + timedelta(days=LONG_TERM_DAYS)
         holiday_rows = db.execute(
             """
             SELECT holiday_date FROM supplier_holidays
             WHERE supplier_id = %s AND company_id = %s
               AND holiday_date >= %s AND holiday_date <= %s
             """,
-            (supplier_id, company_id, today_date, today_date + timedelta(days=45)),
+            (supplier_id, company_id, today_date, horizon_end),
         ).fetchall()
         holidays_set = {str(h["holiday_date"]) for h in holiday_rows}
         if supplier["holidays_off"]:
@@ -533,14 +563,55 @@ def init_order_support_views(app, get_db):
                 WHERE store_id = %s AND company_id = %s
                   AND holiday_date >= %s AND holiday_date <= %s
                 """,
-                (store_id, company_id, today_date, today_date + timedelta(days=45)),
+                (store_id, company_id, today_date, horizon_end),
             ).fetchall()
             holidays_set |= {str(h["holiday_date"]) for h in store_holiday_rows}
 
-        delivery_candidates = _get_delivery_dates(
-            schedule, today_date, 45, holidays_set, min_deadline_date=today_date,
-        )
-        next_delivery = delivery_candidates[0] if delivery_candidates else None
+        # Operator can now pick any date from a calendar widget on the
+        # order-support screen (not just the next 2-3 computed deliveries),
+        # for longer-term planning. Compute the deadline directly from the
+        # schedule for whichever date they picked, rather than requiring it
+        # to appear in a short precomputed candidate list.
+        requested_date = (request.args.get("delivery_date") or "").strip()
+        next_delivery = None
+        if requested_date:
+            try:
+                req_date = date.fromisoformat(requested_date)
+            except ValueError:
+                req_date = None
+            if req_date:
+                day_key = _date_to_day_key(req_date)
+                info = schedule.get(day_key)
+                if info:
+                    deadline_days = info.get('deadline_days', 1) or 0
+                    deadline_time = info.get('deadline_time') or None
+                    deadline_date = req_date - timedelta(days=deadline_days)
+                    while str(deadline_date) in holidays_set:
+                        deadline_date -= timedelta(days=1)
+                    next_delivery = {
+                        'delivery_date': req_date,
+                        'delivery_day_label': DAY_LABELS.get(day_key, ''),
+                        'deadline_date': deadline_date,
+                        'deadline_day_label': DAY_LABELS.get(_date_to_day_key(deadline_date), ''),
+                        'deadline_time': deadline_time,
+                    }
+                else:
+                    # Supplier has no standing delivery on this weekday, but
+                    # the operator explicitly chose it — honor the date
+                    # rather than silently overriding their pick.
+                    next_delivery = {
+                        'delivery_date': req_date,
+                        'delivery_day_label': DAY_LABELS.get(day_key, ''),
+                        'deadline_date': None,
+                        'deadline_day_label': '',
+                        'deadline_time': None,
+                    }
+
+        if next_delivery is None:
+            delivery_candidates = _get_delivery_dates(
+                schedule, today_date, LONG_TERM_DAYS, holidays_set, min_deadline_date=today_date,
+            )
+            next_delivery = delivery_candidates[0] if delivery_candidates else None
 
         method = (supplier["order_method"] or "").lower().strip()
 

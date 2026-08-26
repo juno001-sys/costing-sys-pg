@@ -108,6 +108,13 @@
   }
 </style>
 
+{% set sms_phone = supplier.contact_phone or supplier.phone or supplier.company_phone %}
+{% set sms_body_plain -%}
+{{ store.name }} 発注：
+{% for it in draft_items %}{{ it.item_name }} {{ it.quantity }}{% if it.item_unit %}×{{ it.item_unit }}{% endif %}
+{% endfor %}
+{%- endset %}
+
 <!-- Actions (hidden when printing) -->
 <div class="no-print">
   <a href="javascript:window.print()" class="action-btn">🖨 印刷</a>
@@ -117,6 +124,10 @@
   {% endif %}
   {% if method == 'web' and supplier.order_url %}
     <a href="{{ supplier.order_url }}" target="_blank" class="action-btn">🔗 発注サイトを開く</a>
+  {% endif %}
+  {% if method == 'sms' and sms_phone %}
+    <a href="sms:{{ sms_phone }}?body={{ sms_body_plain|urlencode }}"
+       class="action-btn">📱 SMSで送る</a>
   {% endif %}
   <a href="{{ url_for('order_support', store_id=store.id) }}" class="action-btn secondary">← 戻る</a>
 </div>
@@ -233,8 +244,10 @@
     </div>
   {% endif %}
 
-  <!-- Footer: re-fax request to the sender's own FAX -->
-  {% if store.fax %}
+  <!-- Footer: re-fax request to the sender's own FAX.
+       FAX-only — an SMS/phone/mail/web order didn't arrive by FAX,
+       so asking the supplier to re-fax it back makes no sense there. -->
+  {% if method == 'fax' and store.fax %}
     <div style="margin-top:30px; font-size:14px;">
       リファックスをお願いいたします。
     </div>
@@ -284,6 +297,22 @@
       <li>{{ it.item_name }} — <strong>{{ it.quantity }}</strong>{% if it.item_unit %} ×{{ it.item_unit }}{% endif %}</li>
     {% endfor %}
   </ol>
+</div>
+{% elif method == 'sms' %}
+<div class="method-block no-print">
+  <h3>📱 SMS送信用テキスト</h3>
+  <p style="color:#555;">
+    番号と本文をコピーして、SMSアプリに貼り付けてください。
+    「SMSで送る」ボタンを使うと自動で埋まりますが、うまく起動しない場合はこちらを使ってください。
+  </p>
+  <div><strong>宛先:</strong>
+    {% if sms_phone %}<a href="sms:{{ sms_phone }}">{{ sms_phone }}</a>{% else %}（電話番号未登録）{% endif %}
+    {% if supplier.contact_person %} ／ {{ supplier.contact_person }} 様{% endif %}
+  </div>
+  <pre id="sms-body-text">{{ sms_body_plain }}</pre>
+  <button type="button" class="action-btn" onclick="navigator.clipboard.writeText(document.getElementById('sms-body-text').textContent).then(()=>alert('コピーしました'))">
+    📋 本文をコピー
+  </button>
 </div>
 {% elif method == 'fax' %}
 <div class="method-block no-print">

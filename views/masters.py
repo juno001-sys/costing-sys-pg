@@ -249,6 +249,7 @@ def init_master_views(app, get_db):
             order_url = (request.form.get("order_url") or "").strip()
             order_notes = (request.form.get("order_notes") or "").strip()
             holidays_off = 1 if request.form.get("holidays_off") else 0
+            is_orderable = False if request.form.get("not_orderable") else True
 
             # Build delivery_schedule JSON
             DAYS = ['mon','tue','wed','thu','fri','sat','sun']

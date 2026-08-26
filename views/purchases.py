@@ -18,6 +18,23 @@ from utils.access_scope import (
 )
 
 
+def _to_int(val: str) -> int:
+    """カンマ入り・全角混じりでも、とにかく int にする保険関数"""
+    if not val:
+        return 0
+    s = str(val)
+    # 全角数字 → 半角
+    s = "".join(
+        chr(ord(c) - 0xFEE0) if "０" <= c <= "９" else c
+        for c in s
+    )
+    # カンマ除去
+    s = s.replace(",", "")
+    try:
+        return int(s)
+    except ValueError:
+        return 0
+
 
 def init_purchase_views(app, get_db, log_purchase_change):
     """
@@ -91,23 +108,6 @@ def init_purchase_views(app, get_db, log_purchase_change):
             except ValueError:
                 row_count = 0
 
-            def to_int(val: str) -> int:
-                """カンマ入り・全角混じりでも、とにかく int にする保険関数"""
-                if not val:
-                    return 0
-                s = str(val)
-                # 全角数字 → 半角
-                s = "".join(
-                    chr(ord(c) - 0xFEE0) if "０" <= c <= "９" else c
-                    for c in s
-                )
-                # カンマ除去
-                s = s.replace(",", "")
-                try:
-                    return int(s)
-                except ValueError:
-                    return 0
-
             any_inserted = False
 
             for i in range(1, row_count + 1):
@@ -115,8 +115,8 @@ def init_purchase_views(app, get_db, log_purchase_change):
                 qty_raw = request.form.get(f"quantity_{i}") or ""
                 unit_price_raw = request.form.get(f"unit_price_{i}") or ""
 
-                qty_val = to_int(qty_raw)
-                unit_price_val = to_int(unit_price_raw)
+                qty_val = _to_int(qty_raw)
+                unit_price_val = _to_int(unit_price_raw)
                 amount_val = qty_val * unit_price_val
 
                 # 完全に空行ならスキップ
@@ -502,4 +502,106 @@ def init_purchase_views(app, get_db, log_purchase_change):
             mst_stores=mst_stores,
             stores=mst_stores,
             suppliers=suppliers,
+        )
+
+    # ----------------------------------------
+    # 直近仕入れ一覧からのチェックボックス選択による一括編集
+    # /purchases/batch_edit
+    #   対象行：edit_<id>=1 がついている行のみ更新
+    #   編集項目：delivery_date, quantity, unit_price（amount は自動計算）
+    # ----------------------------------------
+    @app.route(
+        "/purchases/batch_edit",
+        methods=["POST"],
+        endpoint="purchases_batch_edit",
+    )
+    def purchases_batch_edit():
+        db = get_db()
+        company_id = getattr(g, "current_company_id", None)
+        accessible_store_ids = get_accessible_store_ids()
+
+        ids_raw = request.form.get("purchase_ids") or ""
+        try:
+            purchase_ids = [int(x) for x in ids_raw.split(",") if x.strip()]
+        except ValueError:
+            purchase_ids = []
+
+        updated = 0
+
+        for pid in purchase_ids:
+            if not request.form.get(f"edit_{pid}"):
+                continue
+
+            delivery_date = (request.form.get(f"delivery_date_{pid}") or "").strip()
+            qty_val = _to_int(request.form.get(f"quantity_{pid}") or "")
+            unit_price_val = _to_int(request.form.get(f"unit_price_{pid}") or "")
+
+            if not delivery_date:
+                continue
+
+            # 対象の取引が自社・アクセス可能な店舗に属することを確認
+            old_row = db.execute(
+                """
+                SELECT p.*
+                FROM purchases p
+                LEFT JOIN mst_stores st ON p.store_id = st.id
+                WHERE p.id = %s
+                  AND p.is_deleted = 0
+                  AND st.company_id = %s
+                """,
+                (pid, company_id),
+            ).fetchone()
+            if not old_row:
+                continue
+            if (
+                accessible_store_ids is not None
+                and old_row["store_id"] not in accessible_store_ids
+            ):
+                continue
+
+            amount_val = qty_val * unit_price_val
+
+            db.execute(
+                """
+                UPDATE purchases
+                SET delivery_date = %s,
+                    quantity      = %s,
+                    unit_price    = %s,
+                    amount        = %s
+                WHERE id = %s
+                """,
+                (delivery_date, qty_val, unit_price_val, amount_val, pid),
+            )
+
+            new_row = db.execute(
+                "SELECT * FROM purchases WHERE id = %s",
+                (pid,),
+            ).fetchone()
+
+            log_purchase_change(
+                db,
+                purchase_id=pid,
+                action="UPDATE",
+                old_row=old_row,
+                new_row=new_row,
+                changed_by=None,
+            )
+
+            updated += 1
+
+        if updated:
+            db.commit()
+            flash(f"{updated}件の取引を更新しました。")
+        else:
+            flash("更新対象が選択されていません。")
+
+        return redirect(
+            url_for(
+                "new_purchase",
+                store_id=request.form.get("store_id") or "",
+                supplier_id=request.form.get("supplier_id") or "",
+                from_date=request.form.get("from_date") or "",
+                to_date=request.form.get("to_date") or "",
+                q=request.form.get("q") or "",
+            )
         )
