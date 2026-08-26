@@ -424,6 +424,10 @@ def init_order_support_views(app, get_db):
             sheet_rows=sheet_rows,
             view_mode=view_mode,
             DAY_LABELS=DAY_LABELS,
+            # Bounds for the 納品日 calendar picker next to 発注書生成 —
+            # operators plan well beyond the 7-day window (long-lead orders).
+            min_delivery_date=str(date.today()),
+            max_delivery_date=str(date.today() + timedelta(days=365)),
         )
 
     # ----------------------------------------
@@ -528,13 +532,18 @@ def init_order_support_views(app, get_db):
         # Next-delivery date to pre-fill 納品希望日 on the form.
         # Reuse the supplier's delivery_schedule + holidays.
         schedule = supplier["delivery_schedule"] or {}
+        # 1-year lookahead — the operator plans deliveries well beyond the
+        # 7-day order-support window (e.g. seasonal / long-lead orders),
+        # so holiday lookups and the deadline calc need the same horizon.
+        LONG_TERM_DAYS = 365
+        horizon_end = today_date + timedelta(days=LONG_TERM_DAYS)
         holiday_rows = db.execute(
             """
             SELECT holiday_date FROM supplier_holidays
             WHERE supplier_id = %s AND company_id = %s
               AND holiday_date >= %s AND holiday_date <= %s
             """,
-            (supplier_id, company_id, today_date, today_date + timedelta(days=45)),
+            (supplier_id, company_id, today_date, horizon_end),
         ).fetchall()
         holidays_set = {str(h["holiday_date"]) for h in holiday_rows}
         if supplier["holidays_off"]:
@@ -544,25 +553,54 @@ def init_order_support_views(app, get_db):
                 WHERE store_id = %s AND company_id = %s
                   AND holiday_date >= %s AND holiday_date <= %s
                 """,
-                (store_id, company_id, today_date, today_date + timedelta(days=45)),
+                (store_id, company_id, today_date, horizon_end),
             ).fetchall()
             holidays_set |= {str(h["holiday_date"]) for h in store_holiday_rows}
 
-        delivery_candidates = _get_delivery_dates(
-            schedule, today_date, 45, holidays_set, min_deadline_date=today_date,
-        )
-
-        # Operator may have picked a specific delivery date on the
-        # order-support screen (dropdown next to 発注書生成). Fall back to
-        # the schedule's soonest date if absent or no longer valid.
+        # Operator can now pick any date from a calendar widget on the
+        # order-support screen (not just the next 2-3 computed deliveries),
+        # for longer-term planning. Compute the deadline directly from the
+        # schedule for whichever date they picked, rather than requiring it
+        # to appear in a short precomputed candidate list.
         requested_date = (request.args.get("delivery_date") or "").strip()
         next_delivery = None
         if requested_date:
-            next_delivery = next(
-                (d for d in delivery_candidates if str(d["delivery_date"]) == requested_date),
-                None,
-            )
+            try:
+                req_date = date.fromisoformat(requested_date)
+            except ValueError:
+                req_date = None
+            if req_date:
+                day_key = _date_to_day_key(req_date)
+                info = schedule.get(day_key)
+                if info:
+                    deadline_days = info.get('deadline_days', 1) or 0
+                    deadline_time = info.get('deadline_time') or None
+                    deadline_date = req_date - timedelta(days=deadline_days)
+                    while str(deadline_date) in holidays_set:
+                        deadline_date -= timedelta(days=1)
+                    next_delivery = {
+                        'delivery_date': req_date,
+                        'delivery_day_label': DAY_LABELS.get(day_key, ''),
+                        'deadline_date': deadline_date,
+                        'deadline_day_label': DAY_LABELS.get(_date_to_day_key(deadline_date), ''),
+                        'deadline_time': deadline_time,
+                    }
+                else:
+                    # Supplier has no standing delivery on this weekday, but
+                    # the operator explicitly chose it — honor the date
+                    # rather than silently overriding their pick.
+                    next_delivery = {
+                        'delivery_date': req_date,
+                        'delivery_day_label': DAY_LABELS.get(day_key, ''),
+                        'deadline_date': None,
+                        'deadline_day_label': '',
+                        'deadline_time': None,
+                    }
+
         if next_delivery is None:
+            delivery_candidates = _get_delivery_dates(
+                schedule, today_date, LONG_TERM_DAYS, holidays_set, min_deadline_date=today_date,
+            )
             next_delivery = delivery_candidates[0] if delivery_candidates else None
 
         method = (supplier["order_method"] or "").lower().strip()

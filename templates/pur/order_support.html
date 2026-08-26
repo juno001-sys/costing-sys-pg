@@ -112,16 +112,12 @@
       <form method="get" action="{{ url_for('order_support_order_form', supplier_id=card.id) }}"
             target="_blank" style="margin:0; display:inline-flex; align-items:center; gap:4px;">
         <input type="hidden" name="store_id" value="{{ selected_store_id }}">
-        {% if card.deliveries %}
-        <select name="delivery_date" title="{{ t('order_support.delivery_date_choice') }}"
-                style="font-size:11px; padding:3px 4px; border-radius:4px; border:1px solid #c8d4bc;">
-          {% for dl in card.deliveries %}
-          <option value="{{ dl.delivery_date.isoformat() }}">
-            {{ dl.delivery_date.strftime('%m/%d') }}（{{ dl.delivery_day_label }}）
-          </option>
-          {% endfor %}
-        </select>
-        {% endif %}
+        <!-- Calendar picker, not limited to the next 2-3 computed deliveries —
+             operator needs to plan longer-term (seasonal / long-lead orders). -->
+        <input type="date" name="delivery_date" title="{{ t('order_support.delivery_date_choice') }}"
+               value="{{ card.deliveries[0].delivery_date.isoformat() if card.deliveries else min_delivery_date }}"
+               min="{{ min_delivery_date }}" max="{{ max_delivery_date }}"
+               style="font-size:11px; padding:3px 4px; border-radius:4px; border:1px solid #c8d4bc;">
         <button type="submit"
                 style="padding:4px 10px; border:1px solid #5a8a5d; border-radius:4px;
                        background:#5a8a5d; color:#fff; font-size:12px; font-weight:600;
