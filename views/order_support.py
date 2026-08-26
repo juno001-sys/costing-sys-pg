@@ -105,8 +105,13 @@ def init_order_support_views(app, get_db):
         window_days = 7
         date_range = [base_date + timedelta(days=i) for i in range(window_days)]
 
-        # Extended window for gap detection (look ahead 30 days beyond the 7-day window)
-        extended_end = base_date + timedelta(days=window_days + 30)
+        # Extended window for gap detection (look ahead 30 days beyond the 7-day window).
+        # Widened to a full year so the same holiday sets can also drive the
+        # 納品日 calendar picker's long-term date range — the bounded lookups
+        # below (_get_delivery_dates / _find_next_delivery_after) only look
+        # within their own short windows, so the extra entries are harmless.
+        CALENDAR_HORIZON_DAYS = 365
+        extended_end = base_date + timedelta(days=CALENDAR_HORIZON_DAYS)
 
         supplier_cards = []
 
@@ -371,6 +376,11 @@ def init_order_support_views(app, get_db):
                     'gap_warning': gap_warning,
                     'item_rows': item_rows,
                     'day_columns': day_columns,
+                    # Drives the 納品日 calendar picker: which weekdays this
+                    # supplier delivers on, and which upcoming dates are
+                    # holidays (already merged with store holidays above).
+                    'schedule_days': sorted(schedule.keys(), key=DAY_KEYS.index),
+                    'holiday_dates': sorted(holidays_set),
                     'shortage_count': sum(1 for r in item_rows if r["status"] == "shortage"),
                     'low_count': sum(1 for r in item_rows if r["status"] == "low"),
                 })

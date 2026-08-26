@@ -41,6 +41,36 @@
   .btn-qty-minus:active { background: #c8d4bc; }
   .btn-qty-plus { background: #5a8a5d; color: #fff; }
   .btn-qty-plus:active { background: #3a6c3e; }
+
+  /* 納品日 calendar picker — only the supplier's actual delivery
+     weekdays are selectable; everything else is grayed out. */
+  .ddp { position: relative; display: inline-block; }
+  .ddp-toggle {
+    font-size: 11px; padding: 3px 8px; cursor: pointer;
+    border: 1px solid #c8d4bc; border-radius: 4px; background: #fff; color: #333;
+  }
+  .ddp-toggle:hover { border-color: #5a8a5d; }
+  .ddp-popup {
+    position: absolute; z-index: 50; top: 100%; left: 0; margin-top: 4px;
+    background: #fff; border: 1px solid #c8d4bc; border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12); padding: 8px; width: 220px;
+  }
+  .ddp-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .ddp-nav button {
+    border: none; background: #f0f5ec; color: #5a8a5d; border-radius: 4px;
+    width: 24px; height: 24px; font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+  .ddp-nav button:hover { background: #c8d4bc; }
+  .ddp-title { font-size: 12px; font-weight: 700; color: #333; }
+  .ddp-grid { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .ddp-grid th { color: #888; font-weight: 600; padding: 2px 0; }
+  .ddp-grid td { text-align: center; padding: 0; height: 26px; }
+  .ddp-day.ddp-ok {
+    cursor: pointer; border-radius: 4px; color: #1a1a1a; font-weight: 600;
+    background: #f0fff4;
+  }
+  .ddp-day.ddp-ok:hover { background: #5a8a5d; color: #fff; }
+  .ddp-day.ddp-disabled { color: #ccc; }
 </style>
 
 <h3>{{ t("order_support.title") }}</h3>
@@ -110,14 +140,26 @@
       {% endif %}
       {% if (card.order_method or '')|lower|trim != 'web' %}
       <form method="get" action="{{ url_for('order_support_order_form', supplier_id=card.id) }}"
-            target="_blank" style="margin:0; display:inline-flex; align-items:center; gap:4px;">
+            target="_blank" class="ddp-form" style="margin:0; display:inline-flex; align-items:center; gap:4px;">
         <input type="hidden" name="store_id" value="{{ selected_store_id }}">
         <!-- Calendar picker, not limited to the next 2-3 computed deliveries —
-             operator needs to plan longer-term (seasonal / long-lead orders). -->
-        <input type="date" name="delivery_date" title="{{ t('order_support.delivery_date_choice') }}"
-               value="{{ card.deliveries[0].delivery_date.isoformat() if card.deliveries else min_delivery_date }}"
-               min="{{ min_delivery_date }}" max="{{ max_delivery_date }}"
-               style="font-size:11px; padding:3px 4px; border-radius:4px; border:1px solid #c8d4bc;">
+             operator needs to plan longer-term (seasonal / long-lead orders).
+             Only the supplier's actual delivery weekdays are selectable;
+             everything else (wrong weekday, holidays, out of range) is
+             grayed out. Custom widget because a native <input type="date">
+             has no way to disable individual dates. -->
+        <div class="ddp"
+             data-schedule="{{ card.schedule_days|tojson }}"
+             data-holidays="{{ card.holiday_dates|tojson }}"
+             data-min="{{ min_delivery_date }}"
+             data-max="{{ max_delivery_date }}"
+             data-initial="{{ card.deliveries[0].delivery_date.isoformat() if card.deliveries else '' }}">
+          <button type="button" class="ddp-toggle" title="{{ t('order_support.delivery_date_choice') }}">
+            📅 <span class="ddp-label">{{ t('order_support.delivery_date_choice') }}</span>
+          </button>
+          <input type="hidden" name="delivery_date" class="ddp-value">
+          <div class="ddp-popup" hidden></div>
+        </div>
         <button type="submit"
                 style="padding:4px 10px; border:1px solid #5a8a5d; border-radius:4px;
                        background:#5a8a5d; color:#fff; font-size:12px; font-weight:600;
@@ -272,6 +314,128 @@
 {% endif %}
 
 <script>
+// 納品日 calendar picker — one instance per supplier card. Only dates
+// matching the supplier's delivery_schedule weekdays, not in the merged
+// holiday set, and within [min, max] are clickable; everything else is
+// grayed out and inert.
+(function () {
+  const WEEKDAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"]; // index = Date.getDay()
+  const DOW_LABELS = ["月", "火", "水", "木", "金", "土", "日"]; // header, Monday-first
+
+  function pad2(n) { return String(n).padStart(2, "0"); }
+  function toISO(y, m, d) { return `${y}-${pad2(m)}-${pad2(d)}`; }
+  function parseISO(s) {
+    const [y, m, d] = s.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  }
+
+  function initPicker(root) {
+    const scheduleDays = JSON.parse(root.dataset.schedule || "[]");
+    const holidays = new Set(JSON.parse(root.dataset.holidays || "[]"));
+    const minDate = root.dataset.min ? parseISO(root.dataset.min) : null;
+    const maxDate = root.dataset.max ? parseISO(root.dataset.max) : null;
+
+    const toggleBtn = root.querySelector(".ddp-toggle");
+    const labelEl = root.querySelector(".ddp-label");
+    const valueInput = root.querySelector(".ddp-value");
+    const popup = root.querySelector(".ddp-popup");
+
+    const initial = root.dataset.initial ? parseISO(root.dataset.initial) : new Date();
+    let viewYear = initial.getFullYear();
+    let viewMonth = initial.getMonth(); // 0-indexed
+
+    function isValidDate(date) {
+      if (minDate && date < minDate) return false;
+      if (maxDate && date > maxDate) return false;
+      if (!scheduleDays.includes(WEEKDAY_KEYS[date.getDay()])) return false;
+      if (holidays.has(toISO(date.getFullYear(), date.getMonth() + 1, date.getDate()))) return false;
+      return true;
+    }
+
+    function selectDate(date) {
+      const iso = toISO(date.getFullYear(), date.getMonth() + 1, date.getDate());
+      valueInput.value = iso;
+      labelEl.textContent = `${date.getMonth() + 1}/${date.getDate()}(${DOW_LABELS[(date.getDay() + 6) % 7]})`;
+      popup.hidden = true;
+    }
+
+    function render() {
+      const firstOfMonth = new Date(viewYear, viewMonth, 1);
+      const startOffset = (firstOfMonth.getDay() + 6) % 7; // 0=Mon..6=Sun
+      const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+      let rows = "<tr>";
+      for (let i = 0; i < startOffset; i++) rows += "<td></td>";
+      let col = startOffset;
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(viewYear, viewMonth, day);
+        const ok = isValidDate(date);
+        rows += `<td class="ddp-day ${ok ? "ddp-ok" : "ddp-disabled"}" data-date="${toISO(viewYear, viewMonth + 1, day)}">${day}</td>`;
+        col++;
+        if (col === 7) { rows += "</tr><tr>"; col = 0; }
+      }
+      while (col !== 0 && col < 7) { rows += "<td></td>"; col++; }
+      rows += "</tr>";
+
+      popup.innerHTML = `
+        <div class="ddp-nav">
+          <button type="button" class="ddp-prev">‹</button>
+          <span class="ddp-title">${viewYear}年${viewMonth + 1}月</span>
+          <button type="button" class="ddp-next">›</button>
+        </div>
+        <table class="ddp-grid"><thead><tr>${DOW_LABELS.map((l) => `<th>${l}</th>`).join("")}</tr></thead>
+        <tbody>${rows}</tbody></table>`;
+
+      popup.querySelector(".ddp-prev").addEventListener("click", (e) => {
+        e.stopPropagation();
+        viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+        render();
+      });
+      popup.querySelector(".ddp-next").addEventListener("click", (e) => {
+        e.stopPropagation();
+        viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+        render();
+      });
+      popup.querySelectorAll(".ddp-ok").forEach((cell) => {
+        cell.addEventListener("click", (e) => {
+          e.stopPropagation();
+          selectDate(parseISO(cell.dataset.date));
+        });
+      });
+    }
+
+    toggleBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const wasHidden = popup.hidden;
+      document.querySelectorAll(".ddp-popup").forEach((p) => { p.hidden = true; });
+      if (wasHidden) { render(); popup.hidden = false; }
+    });
+
+    // Pre-fill with the nearest valid date on/after the suggested initial
+    // date (the card's soonest computed delivery), so the common case
+    // still needs no manual picking.
+    if (scheduleDays.length && root.dataset.initial) {
+      const d = new Date(initial);
+      for (let i = 0; i < 400; i++) {
+        if (isValidDate(d)) { selectDate(d); break; }
+        d.setDate(d.getDate() + 1);
+      }
+    }
+
+    root.closest(".ddp-form")?.addEventListener("submit", (e) => {
+      if (!valueInput.value) {
+        e.preventDefault();
+        alert("納品日を選択してください。");
+      }
+    });
+  }
+
+  document.querySelectorAll(".ddp").forEach(initPicker);
+  document.addEventListener("click", () => {
+    document.querySelectorAll(".ddp-popup").forEach((p) => { p.hidden = true; });
+  });
+})();
+
 // Stepper buttons — wired via inline onclick in the template.
 function stepDraftQty(btn, delta) {
   const stepper = btn.closest(".qty-stepper");
