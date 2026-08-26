@@ -149,8 +149,8 @@
              grayed out. Custom widget because a native <input type="date">
              has no way to disable individual dates. -->
         <div class="ddp"
-             data-schedule="{{ card.schedule_days|tojson }}"
-             data-holidays="{{ card.holiday_dates|tojson }}"
+             data-schedule='{{ card.schedule_days|tojson }}'
+             data-holidays='{{ card.holiday_dates|tojson }}'
              data-min="{{ min_delivery_date }}"
              data-max="{{ max_delivery_date }}"
              data-initial="{{ card.deliveries[0].delivery_date.isoformat() if card.deliveries else '' }}">
