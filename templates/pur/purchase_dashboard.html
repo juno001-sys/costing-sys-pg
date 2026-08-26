@@ -66,6 +66,7 @@
         <th>{{ t("items.name") }}</th>
         <th>{{ t("form.supplier") }}</th>
         <th>{{ t("items.category") }}</th>
+        <th>{{ t("items.process_level") }}</th>
         <th style="text-align:right;">{{ t("form.quantity") }}</th>
         <th style="text-align:right;">{{ t("dashboard.avg_unit_price") }}</th>
         <th style="text-align:right;">{{ t("form.amount") }}</th>
@@ -80,6 +81,7 @@
         <td>{{ item.name }}</td>
         <td>{{ item.supplier_name }}</td>
         <td>{{ item.category or '' }}</td>
+        <td>{{ item.process_level or '' }}</td>
         <td style="text-align:right;">{{ "{:,}".format(item.total_qty) }}</td>
         <td style="text-align:right;">
           {% if item.total_qty %}
@@ -98,7 +100,7 @@
         </td>
       </tr>
       {% else %}
-      <tr><td colspan="9">{{ t("common.no_data") }}</td></tr>
+      <tr><td colspan="10">{{ t("common.no_data") }}</td></tr>
       {% endfor %}
     </tbody>
   </table>

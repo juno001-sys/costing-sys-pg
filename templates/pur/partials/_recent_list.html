@@ -10,6 +10,10 @@
 </div>
 
 <form method="get" style="margin-bottom: 12px">
+  <!-- Preserve the header's store selection — without this, submitting
+       this filter form drops store_id and the item list goes blank,
+       forcing the operator to reselect the store a second time. -->
+  <input type="hidden" name="store_id" value="{{ selected_store_id or '' }}">
 
   <!-- Supplier -->
   <label style="margin-right: 12px">
@@ -45,35 +49,119 @@
   </a>
 </form>
 
-<table class="monthly-table">
-  <thead>
-    <tr>
-      <th>{{ t("form.store") }}</th>
-      <th>{{ t("purchase.delivery_date") }}</th>
-      <th>{{ t("form.supplier") }}</th>
-      <th>{{ t("form.item") }}</th>
-      <th class="num">{{ t("form.quantity") }}</th>
-      <th class="num">{{ t("form.unit_price") }}</th>
-      <th class="num">{{ t("form.amount") }}</th>
-      <th>{{ t("common.edit") }}</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for p in purchases %}
-    <tr>
-      <td>{{ p.store_name }}</td>
-      <td>{{ p.delivery_date }}</td>
-      <td>{{ p.supplier_name }}</td>
-      <td>{{ p.item_name }}</td>
-      <td class="num">{{ "{:,}".format(p.quantity) }}</td>
-      <td class="num">{{ "{:,}".format(p.unit_price) }}</td>
-      <td class="num">{{ "{:,}".format(p.amount) }}</td>
-      <td>
-        <a href="{{ url_for('edit_purchase', purchase_id=p.id) }}">
-          {{ t("common.edit") }}
-        </a>
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<p style="font-size:12px; color:#666; margin:4px 0;">{{ t("purchase.batch_edit_hint") }}</p>
+
+<form method="post" action="{{ url_for('purchases_batch_edit') }}" id="batch-edit-form">
+  <input type="hidden" name="store_id" value="{{ selected_store_id or '' }}">
+  <input type="hidden" name="supplier_id" value="{{ selected_supplier_id or '' }}">
+  <input type="hidden" name="from_date" value="{{ from_date or '' }}">
+  <input type="hidden" name="to_date" value="{{ to_date or '' }}">
+  <input type="hidden" name="q" value="{{ search_q or '' }}">
+  <input type="hidden" name="purchase_ids" value="{{ purchases|map(attribute='id')|join(',') }}">
+
+  <table class="monthly-table" id="recent-purchases-table">
+    <thead>
+      <tr>
+        <th style="width:36px;">{{ t("purchase.select_col") }}</th>
+        <th>{{ t("form.store") }}</th>
+        <th>{{ t("purchase.delivery_date") }}</th>
+        <th>{{ t("form.supplier") }}</th>
+        <th>{{ t("form.item") }}</th>
+        <th class="num">{{ t("form.quantity") }}</th>
+        <th class="num">{{ t("form.unit_price") }}</th>
+        <th class="num">{{ t("form.amount") }}</th>
+        <th>{{ t("common.edit") }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in purchases %}
+      <tr class="editable-row">
+        <td style="text-align:center;">
+          <input type="checkbox" class="row-edit-toggle" name="edit_{{ p.id }}" value="1">
+        </td>
+        <td>{{ p.store_name }}</td>
+        <td>
+          <span class="view-cell">{{ p.delivery_date }}</span>
+          <input type="date" name="delivery_date_{{ p.id }}"
+                 value="{{ p.delivery_date }}" class="edit-cell" disabled>
+        </td>
+        <td>{{ p.supplier_name }}</td>
+        <td>{{ p.item_name }}</td>
+        <td class="num">
+          <span class="view-cell">{{ "{:,}".format(p.quantity) }}</span>
+          <input type="text" name="quantity_{{ p.id }}" value="{{ p.quantity }}"
+                 class="edit-cell num qty-edit" data-row-id="{{ p.id }}"
+                 style="width:70px;" disabled>
+        </td>
+        <td class="num">
+          <span class="view-cell">{{ "{:,}".format(p.unit_price) }}</span>
+          <input type="text" name="unit_price_{{ p.id }}" value="{{ p.unit_price }}"
+                 class="edit-cell num price-edit" data-row-id="{{ p.id }}"
+                 style="width:90px;" disabled>
+        </td>
+        <td class="num amount-cell" data-row-id="{{ p.id }}">{{ "{:,}".format(p.amount) }}</td>
+        <td>
+          <a href="{{ url_for('edit_purchase', purchase_id=p.id) }}">
+            {{ t("common.edit") }}
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div style="margin-top:10px;">
+    <button type="submit" id="batch-save-btn" style="display:none;">
+      {{ t("purchase.batch_update") }}
+    </button>
+  </div>
+</form>
+
+<script>
+  (function () {
+    const table = document.getElementById("recent-purchases-table");
+    const saveBtn = document.getElementById("batch-save-btn");
+    if (!table || !saveBtn) return;
+
+    function parseIntSafe(v) {
+      const digits = String(v || "").replace(/[^\d]/g, "");
+      return digits === "" ? 0 : parseInt(digits, 10) || 0;
+    }
+
+    function recalcAmount(rowId) {
+      const qty = table.querySelector(`.qty-edit[data-row-id="${rowId}"]`);
+      const price = table.querySelector(`.price-edit[data-row-id="${rowId}"]`);
+      const amountCell = table.querySelector(`.amount-cell[data-row-id="${rowId}"]`);
+      if (!qty || !price || !amountCell) return;
+      const total = parseIntSafe(qty.value) * parseIntSafe(price.value);
+      amountCell.textContent = total ? total.toLocaleString("ja-JP") : "0";
+    }
+
+    function updateSaveButtonVisibility() {
+      const anyChecked = table.querySelector(".row-edit-toggle:checked");
+      saveBtn.style.display = anyChecked ? "" : "none";
+    }
+
+    table.querySelectorAll(".row-edit-toggle").forEach((cb) => {
+      cb.addEventListener("change", () => {
+        const tr = cb.closest("tr");
+        const editing = cb.checked;
+        tr.querySelectorAll(".view-cell").forEach((el) => {
+          el.style.display = editing ? "none" : "";
+        });
+        tr.querySelectorAll(".edit-cell").forEach((el) => {
+          el.style.display = editing ? "" : "none";
+          el.disabled = !editing;
+        });
+        updateSaveButtonVisibility();
+      });
+    });
+
+    table.querySelectorAll(".qty-edit, .price-edit").forEach((input) => {
+      input.addEventListener("input", () => recalcAmount(input.dataset.rowId));
+    });
+
+    // initial state: hide edit-cells (they render visible-by-default in HTML)
+    table.querySelectorAll(".edit-cell").forEach((el) => { el.style.display = "none"; });
+  })();
+</script>

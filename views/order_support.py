@@ -116,7 +116,8 @@ def init_order_support_views(app, get_db):
             # screen (auto-resets when a purchase is recorded).
             suppliers = db.execute(
                 """
-                SELECT DISTINCT s.id, s.code, s.name, s.order_method, s.order_url,
+                SELECT DISTINCT s.id, s.code, s.name, s.phone, s.email,
+                       s.order_method, s.order_url,
                        s.delivery_schedule, s.order_notes, s.holidays_off
                 FROM pur_suppliers s
                 JOIN mst_items i ON i.supplier_id = s.id
@@ -352,6 +353,8 @@ def init_order_support_views(app, get_db):
                     'id': sid,
                     'code': supplier["code"],
                     'name': supplier["name"],
+                    'phone': supplier["phone"],
+                    'email': supplier["email"],
                     'order_method': supplier["order_method"],
                     'order_url': supplier["order_url"],
                     'order_notes': supplier["order_notes"],
@@ -540,7 +543,19 @@ def init_order_support_views(app, get_db):
         delivery_candidates = _get_delivery_dates(
             schedule, today_date, 45, holidays_set, min_deadline_date=today_date,
         )
-        next_delivery = delivery_candidates[0] if delivery_candidates else None
+
+        # Operator may have picked a specific delivery date on the
+        # order-support screen (dropdown next to 発注書生成). Fall back to
+        # the schedule's soonest date if absent or no longer valid.
+        requested_date = (request.args.get("delivery_date") or "").strip()
+        next_delivery = None
+        if requested_date:
+            next_delivery = next(
+                (d for d in delivery_candidates if str(d["delivery_date"]) == requested_date),
+                None,
+            )
+        if next_delivery is None:
+            next_delivery = delivery_candidates[0] if delivery_candidates else None
 
         method = (supplier["order_method"] or "").lower().strip()
 

@@ -163,7 +163,7 @@ def purchase_dashboard():
     top_items = db.execute(
         """
         SELECT i.code, i.name, s.name AS supplier_name,
-               i.category,
+               i.category, i.process_level,
                SUM(p.quantity) AS total_qty,
                SUM(p.amount) AS total_amount
         FROM purchases p
@@ -175,7 +175,7 @@ def purchase_dashboard():
           AND p.delivery_date < %s
           AND st.company_id = %s
           AND p.store_id = %s
-        GROUP BY i.id, i.code, i.name, s.name, i.category
+        GROUP BY i.id, i.code, i.name, s.name, i.category, i.process_level
         ORDER BY total_amount DESC
         LIMIT 20
         """,

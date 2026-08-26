@@ -82,6 +82,12 @@
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
     <div>
       <span style="font-size:1.1rem; font-weight:700;">{{ card.name }}</span>
+      {% if card.phone %}
+        <span style="font-size:12px; color:#555; margin-left:10px;">☎ {{ card.phone }}</span>
+      {% endif %}
+      {% if card.email %}
+        <span style="font-size:12px; color:#555; margin-left:8px;">✉ {{ card.email }}</span>
+      {% endif %}
       {% if card.order_method %}
         <span style="background:#e9ecef; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; margin-left:8px;">
           {{ card.order_method }}
@@ -99,12 +105,26 @@
         <span style="color:#d29a55; font-weight:600;">📉 {{ card.low_count }}品目 残少</span>
       {% endif %}
       {% if (card.order_method or '')|lower|trim != 'web' %}
-      <a href="{{ url_for('order_support_order_form', supplier_id=card.id, store_id=selected_store_id) }}"
-         target="_blank"
-         style="padding:4px 10px; border:1px solid #5a8a5d; border-radius:4px;
-                background:#5a8a5d; color:#fff; text-decoration:none; font-size:12px; font-weight:600;">
-        📝 発注書生成
-      </a>
+      <form method="get" action="{{ url_for('order_support_order_form', supplier_id=card.id) }}"
+            target="_blank" style="margin:0; display:inline-flex; align-items:center; gap:4px;">
+        <input type="hidden" name="store_id" value="{{ selected_store_id }}">
+        {% if card.deliveries %}
+        <select name="delivery_date" title="{{ t('order_support.delivery_date_choice') }}"
+                style="font-size:11px; padding:3px 4px; border-radius:4px; border:1px solid #c8d4bc;">
+          {% for dl in card.deliveries %}
+          <option value="{{ dl.delivery_date.isoformat() }}">
+            {{ dl.delivery_date.strftime('%m/%d') }}（{{ dl.delivery_day_label }}）
+          </option>
+          {% endfor %}
+        </select>
+        {% endif %}
+        <button type="submit"
+                style="padding:4px 10px; border:1px solid #5a8a5d; border-radius:4px;
+                       background:#5a8a5d; color:#fff; font-size:12px; font-weight:600;
+                       cursor:pointer;">
+          📝 {{ t("order_support.generate_order_form") }}
+        </button>
+      </form>
       {% endif %}
       <form method="post"
             action="{{ url_for('order_support_hide_supplier', supplier_id=card.id) }}"
