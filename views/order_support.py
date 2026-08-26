@@ -117,6 +117,7 @@ def init_order_support_views(app, get_db):
             suppliers = db.execute(
                 """
                 SELECT DISTINCT s.id, s.code, s.name, s.phone, s.email,
+                       s.contact_phone, s.company_phone,
                        s.order_method, s.order_url,
                        s.delivery_schedule, s.order_notes, s.holidays_off
                 FROM pur_suppliers s
@@ -349,11 +350,18 @@ def init_order_support_views(app, get_db):
                         'is_deadline': is_deadline,
                     })
 
+                # Same fallback order used on the order_form 'phone' method:
+                # contact_phone (直通) > phone (代表) > company_phone.
+                # Needed because some suppliers only have contact_phone filled
+                # in (e.g. SMS-order suppliers), so a plain s.phone lookup
+                # was showing nothing for them.
+                display_phone = supplier["contact_phone"] or supplier["phone"] or supplier["company_phone"]
+
                 supplier_cards.append({
                     'id': sid,
                     'code': supplier["code"],
                     'name': supplier["name"],
-                    'phone': supplier["phone"],
+                    'phone': display_phone,
                     'email': supplier["email"],
                     'order_method': supplier["order_method"],
                     'order_url': supplier["order_url"],
