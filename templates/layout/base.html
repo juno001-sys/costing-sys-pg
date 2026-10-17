@@ -261,8 +261,13 @@
         function parseValue(text) {
           const s = (text || "").trim();
 
-          // numeric (commas allowed)
-          const n = s.replace(/,/g, "");
+          // numeric (commas allowed). Also tolerate a leading currency
+          // symbol / plus sign and a trailing unit (%, 円, 日) so cells like
+          // "¥1,234", "+3日" or "15.5%" sort as numbers, not text.
+          const n = s
+            .replace(/[,，]/g, "")
+            .replace(/^[¥￥$+＋]\s*/, "")
+            .replace(/\s*[%％円日]$/, "");
           if (n !== "" && /^-?\d+(\.\d+)?$/.test(n)) {
             return { type: "num", val: parseFloat(n) };
           }
